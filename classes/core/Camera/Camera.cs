@@ -4,7 +4,7 @@ namespace Tiled
 {
     public class Camera : GameComponent
     {
-        Vector2 position;
+        public Vector2 position;
 
         public Camera(Game game) : base(game)
         {

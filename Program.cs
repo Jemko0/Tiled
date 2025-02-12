@@ -1,16 +1,12 @@
-﻿using Tiled;
-
-using var game = new Tiled.Tiled();
-game.Run();
-Main.Init();
+﻿Tiled.Program.Init();
 
 
 namespace Tiled
 {
-    public static class Main
+    public static class Program
     {
-        static readonly Tiled game = new Tiled();
-        public static Tiled GetGame() => game;
+        static readonly Main game = new Main();
+        public static Main GetGame() => game;
 
         public static void Init()
         {
