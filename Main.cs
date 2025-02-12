@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Tiled.DataStructures;
+using Tiled.ID;
 
 namespace Tiled
 {
@@ -11,9 +12,8 @@ namespace Tiled
         private SpriteBatch _spriteBatch;
         public Camera localCamera;
         public World world;
-        Texture2D image;
-        Texture2D tileSprite;
-        public Effect tileShader;
+        Texture2D dbgTileSprite;
+        public Effect fullTileShader;
 
         public Main()
         {
@@ -37,9 +37,10 @@ namespace Tiled
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             
             world.Init();
-            image = new Texture2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
-            tileShader = Content.Load<Effect>("Shaders/TileShader");
-            tileSprite = Content.Load<Texture2D>("Tiles/DebugTile");
+            //tileSprite = new Texture2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            dbgTileSprite = Content.Load<Texture2D>("Tiles/DebugTile");
+            fullTileShader = Content.Load<Effect>("Shaders/FullTileShader");
+            
         }
 
         protected override void Update(GameTime gameTime)
@@ -55,6 +56,14 @@ namespace Tiled
             {
                 localCamera.position.X += 5;
             }
+            if (Keyboard.GetState().IsKeyDown(Keys.W))
+            {
+                localCamera.position.Y -= 5;
+            }
+            if (Keyboard.GetState().IsKeyDown(Keys.S))
+            {
+                localCamera.position.Y += 5;
+            }
             // TODO: Add your update logic here
             base.Update(gameTime);
         }
@@ -62,14 +71,17 @@ namespace Tiled
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            _spriteBatch.Begin(effect: tileShader);
 
-            tileShader.Parameters["cameraPosition"].SetValue(localCamera.position);
-            tileShader.Parameters["tileTexture"].SetValue(localCamera.position);
-            //tileShader.Parameters["tileStart"].SetValue(16);
-            //tileShader.Parameters["tileEnd"].SetValue(16);
+            int startX = (int)(localCamera.position.X / World.renderTileSize + 1);
+            int startY = (int)(localCamera.position.Y / World.renderTileSize + 1);
+            int endX = startX + (Window.ClientBounds.Width / World.renderTileSize - 1);
+            int endY = startY + (Window.ClientBounds.Height / World.renderTileSize - 1);
 
-            _spriteBatch.Draw(image, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+            _spriteBatch.Begin(effect: fullTileShader);
+
+            fullTileShader.Parameters["tiles"].SetValue(World.tiles[0, 0]);
+
+            _spriteBatch.Draw(dbgTileSprite, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
 
             _spriteBatch.End();
         }

@@ -7,18 +7,11 @@
 	#define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
 
-SamplerState tileSamplerState
-{
-    Filter = MIN_MAG_MIP_LINEAR; // Linear filtering for minification, magnification, and mipmapping
-    AddressU = Wrap; // Wrap texture coordinates in the U direction
-    AddressV = Wrap; // Wrap texture coordinates in the V direction
-    AddressW = Wrap; // Wrap texture coordinates in the W direction
-};
-
 float2 cameraPosition;
-Texture2D tileTexture;
-int2 tileStarts;
-int2 tileEnd;
+int light = 16;
+float2 cameraPosRaw;
+float4 frame;
+float screenScale;
 
 sampler TextureSampler : register(s0);
 
@@ -30,7 +23,13 @@ struct VertexShaderOutput
 
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-    return tileTexture.Gather(tileSamplerState, input.TextureCoordinates);
+    float2 tileOffset = float2(frame.x * frame.z, frame.y * frame.w);
+    
+    float2 tileCoords = float2(input.TextureCoordinates.x * frame.x, input.TextureCoordinates.y * frame.y);
+	
+    float2 finalUV = (tileCoords + tileOffset);
+    
+    return tex2D(TextureSampler, finalUV) * (light / 16.0f);
 }
 
 technique SpriteDrawing

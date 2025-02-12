@@ -5,13 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Tiled.classes.core.Rendering
+namespace Tiled
 {
     public class Rendering
     {
-        /*static Vector2 TransformRaw()
+        public static Rectangle GetTileTransform(int x, int y)
         {
-
-        }*/
+            return new Rectangle((int)((x * World.renderTileSize) - Program.GetGame().localCamera.position.X), (int)((y * World.renderTileSize) - Program.GetGame().localCamera.position.Y), World.renderTileSize, World.renderTileSize);
+        }
     }
 }
