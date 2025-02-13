@@ -18,7 +18,7 @@ namespace Tiled.ID
 
             switch(type)
             {
-                case ETileType.None:
+                case ETileType.Air:
                     t.render = false;
                     break;
 
@@ -29,6 +29,29 @@ namespace Tiled.ID
             }
 
             return t;
+        }
+    }
+
+    public class WallID
+    {
+        public static Wall GetWall(EWallType type)
+        {
+            Wall w = new();
+            w.render = true;
+            w.sprite = null;
+
+            switch(type)
+            {
+                case EWallType.Air:
+                    w.render = false;
+                    break;
+
+                case EWallType.Dirt:
+                w.render = true;
+                break;
+            }
+
+            return w;
         }
     }
 }

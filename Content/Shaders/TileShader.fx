@@ -7,9 +7,7 @@
 	#define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
 
-float2 cameraPosition;
-int light = 16;
-float2 cameraPosRaw;
+int light;
 float4 frame;
 float screenScale;
 
@@ -17,6 +15,7 @@ sampler TextureSampler : register(s0);
 
 struct VertexShaderOutput
 {
+    float2 TILE_SCREEN : TS;
 	float4 Color : COLOR0;
 	float2 TextureCoordinates : TEXCOORD0;
 };

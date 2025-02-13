@@ -14,7 +14,7 @@ namespace Tiled
         bool renderWorld = true;
         public const int renderTileSize = 16;
         public static ETileType[,] tiles;
-
+        public static EWallType[,] walls;
         
         public event EventHandler<EventArgs> DrawOrderChanged;
         public event EventHandler<EventArgs> VisibleChanged;
@@ -36,6 +36,7 @@ namespace Tiled
                 for (int j = 0; j < maxTilesY; j++)
                 {
                     tiles[i, j] = ETileType.Dirt;
+                    walls[i, j] = EWallType.Dirt;
                 }
             }
         }
