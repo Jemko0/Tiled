@@ -1,14 +1,15 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Tiled.DataStructures;
 
 namespace Tiled
 {
     public class World
     {
-        public static int maxTilesX = 256;
-        public static int maxTilesY = 256;
+        public static int maxTilesX = 1024;
+        public static int maxTilesY = 512;
 
         public static bool renderWorld = true;
         public const int TILESIZE = 16;
@@ -19,7 +20,7 @@ namespace Tiled
         public static Rectangle[,] wallFramesCached;
         public static uint[,] lightMap;
         public float worldTime = 23.0f;
-        public const float timeSpeed = 0.02f;
+        public const float timeSpeed = 0.001f;
 
         public World()
         {
@@ -57,7 +58,7 @@ namespace Tiled
         }
 
         int lightUpdateCounter = 0;
-        public void UpdateWorld()
+        public async void UpdateWorld()
         {
             worldTime = (worldTime + timeSpeed) % 24.0f;
             Lighting.SKY_LIGHT_MULT = MathHelper.LerpPrecise(0.0f, 1.0f, Math.Abs(12.0f - worldTime) / 12.0f);
@@ -66,7 +67,9 @@ namespace Tiled
             if(lightUpdateCounter >= 180)
             {
                 lightUpdateCounter = 0;
+                Lighting.isPerformingGlobalLightUpdate = true;
                 Lighting.QueueGlobalLightUpdate();
+                Lighting.isPerformingGlobalLightUpdate = false;
             }
             
             System.Diagnostics.Debug.WriteLine("world: " + worldTime + " && " + Lighting.SKY_LIGHT_MULT);

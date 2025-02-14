@@ -14,7 +14,7 @@ namespace Tiled
         public const uint MAX_SKY_LIGHT = 32;
         public static float SKY_LIGHT_MULT = 1.0f;
         private static HashSet<(int x, int y)> lightUpdateQueue = new HashSet<(int x, int y)>();
-
+        public static bool isPerformingGlobalLightUpdate;
         public static void QueueLightUpdate(int x, int y)
         {
             if (!World.IsValidIndex(World.lightMap, x, y)) return;
@@ -45,24 +45,26 @@ namespace Tiled
 
         public static void ProcessLightUpdates()
         {
+
             if (lightUpdateQueue.Count == 0) return;
 
             Queue<(int x, int y)> propagationQueue = new Queue<(int x, int y)>();
 
-            foreach (var pos in lightUpdateQueue)
+            foreach (var pos in lightUpdateQueue.ToList())
             {
+    
                 uint oldLight = World.lightMap[pos.x, pos.y];
                 uint newLight = CalculateLight(pos.x, pos.y);
-
+    
                 if (oldLight != newLight)
                 {
                     World.lightMap[pos.x, pos.y] = newLight;
                     propagationQueue.Enqueue(pos);
                 }
             }
-
+    
             lightUpdateQueue.Clear();
-
+    
             while (propagationQueue.Count > 0)
             {
                 var (x, y) = propagationQueue.Dequeue();

@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-using System.Diagnostics;
 using Tiled.DataStructures;
 using Tiled.ID;
 using Tiled.Input;
@@ -20,10 +19,12 @@ namespace Tiled
 
         public static float renderScale = 1.0f;
         public static Point screenCenter;
+
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
+            Window.Title = "cool game";
             IsMouseVisible = true;
             Window.AllowUserResizing = true;
         }
@@ -57,6 +58,7 @@ namespace Tiled
         private void LMB(MouseButtonEventArgs e)
         {
             Point tile = Rendering.ScreenToTile(e.position);
+
             if(Keyboard.GetState().IsKeyDown(Keys.T))
             {
                 World.SetTile(tile.X, tile.Y, ETileType.Torch);
@@ -74,6 +76,7 @@ namespace Tiled
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             
             world.Init();
+            localCamera.position = new Vector2(0, 8192);
             tileShader = Content.Load<Effect>("Shaders/TileShader");
         }
 
@@ -98,10 +101,11 @@ namespace Tiled
             {
                 localCamera.position.Y += 5;
             }
-            // TODO: Add your update logic here
+
             localInputManager.Update();
             world.UpdateWorld();
             Lighting.ProcessLightUpdates();
+
             base.Update(gameTime);
         }
 
