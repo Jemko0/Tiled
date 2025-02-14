@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Tiled.UI;
 
 namespace Tiled.DataStructures
 {
@@ -66,5 +67,14 @@ namespace Tiled.DataStructures
         Left,
         Middle,
         Right,
+    }
+
+    public class WidgetDestroyArgs
+    {
+        public Widget destroyedWidget;
+        public WidgetDestroyArgs(Widget w)
+        {
+            destroyedWidget = w;
+        }
     }
 }

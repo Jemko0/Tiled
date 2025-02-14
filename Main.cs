@@ -2,9 +2,11 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Threading.Tasks;
 using Tiled.DataStructures;
 using Tiled.ID;
 using Tiled.Input;
+using Tiled.UI;
 
 namespace Tiled
 {
@@ -16,6 +18,7 @@ namespace Tiled
         public World world;
         public Effect tileShader;
         public InputManager localInputManager = new InputManager();
+        public HUD localHUD;
 
         public static float renderScale = 1.0f;
         public static Point screenCenter;
@@ -70,14 +73,15 @@ namespace Tiled
 
         protected override void LoadContent()
         {
-            localCamera = new Camera(this);
             world = new World();
-
+            world.Init();
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             
-            world.Init();
+            localCamera = new Camera(this);
             localCamera.position = new Vector2(0, 8192);
-            tileShader = Content.Load<Effect>("Shaders/TileShader");
+            //tileShader = Content.Load<Effect>("Shaders/TileShader");
+
+            localHUD = new HUD(_spriteBatch, _graphics);
         }
 
         protected override void Update(GameTime gameTime)
@@ -103,9 +107,9 @@ namespace Tiled
             }
 
             localInputManager.Update();
-            world.UpdateWorld();
-            Lighting.ProcessLightUpdates();
 
+            Lighting.Update();
+            world.UpdateWorld();
             base.Update(gameTime);
         }
 
@@ -137,6 +141,8 @@ namespace Tiled
             }
 
             _spriteBatch.End();
+
+            localHUD.DrawWidgets();
         }
 
         public void RenderTile(int x, int y)

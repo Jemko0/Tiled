@@ -20,7 +20,7 @@ namespace Tiled
         public static Rectangle[,] wallFramesCached;
         public static uint[,] lightMap;
         public float worldTime = 23.0f;
-        public const float timeSpeed = 0.001f;
+        public const float timeSpeed = 0.02f;
 
         public World()
         {
@@ -58,20 +58,18 @@ namespace Tiled
         }
 
         int lightUpdateCounter = 0;
-        public async void UpdateWorld()
+        public void UpdateWorld()
         {
             worldTime = (worldTime + timeSpeed) % 24.0f;
             Lighting.SKY_LIGHT_MULT = MathHelper.LerpPrecise(0.0f, 1.0f, Math.Abs(12.0f - worldTime) / 12.0f);
             lightUpdateCounter++;
 
-            if(lightUpdateCounter >= 180)
+            if(lightUpdateCounter >= 30)
             {
                 lightUpdateCounter = 0;
-                Lighting.isPerformingGlobalLightUpdate = true;
                 Lighting.QueueGlobalLightUpdate();
-                Lighting.isPerformingGlobalLightUpdate = false;
             }
-            
+
             System.Diagnostics.Debug.WriteLine("world: " + worldTime + " && " + Lighting.SKY_LIGHT_MULT);
         }
 
