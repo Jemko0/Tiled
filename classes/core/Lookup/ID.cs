@@ -19,11 +19,14 @@ namespace Tiled.ID
             t.useFrames = true;
             t.framePadding = 2;
             t.ignoreNeighbors = new TileNeighbors(0, 0, 0, 0);
+            t.light = 0;
+            t.blockLight = 2;
 
             switch(type)
             {
                 case ETileType.Air:
                     t.render = false;
+                    t.blockLight = 1;
                     break;
 
                 case ETileType.Dirt:
@@ -33,6 +36,8 @@ namespace Tiled.ID
                 case ETileType.Torch:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/torch");
                     t.ignoreNeighbors = new TileNeighbors(0, 0, 1, 1);
+                    t.blockLight = 0;
+                    t.light = 32;
                     break;
             }
 

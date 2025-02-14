@@ -1,8 +1,11 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Diagnostics;
 using Tiled.DataStructures;
 using Tiled.ID;
+using Tiled.Input;
 
 namespace Tiled
 {
@@ -13,7 +16,10 @@ namespace Tiled
         public Camera localCamera;
         public World world;
         public Effect tileShader;
+        public InputManager localInputManager = new InputManager();
 
+        public static float renderScale = 1.0f;
+        public static Point screenCenter;
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -24,10 +30,42 @@ namespace Tiled
 
         protected override void Initialize()
         {
+            InputManager.onLeftMousePressed += LMB;
+            InputManager.onRightMousePressed += RMB; ;
+            CalcRenderScale();
+            Window.ClientSizeChanged += MainWindowResized;
             base.Initialize();
         }
 
-        Texture2D currentTileSprite;
+        private void RMB(MouseButtonEventArgs e)
+        {
+            Point tile = Rendering.ScreenToTile(e.position);
+            World.SetWall(tile.X, tile.Y, EWallType.Air);
+        }
+
+        private void MainWindowResized(object sender, System.EventArgs e)
+        {
+            CalcRenderScale();
+        }
+
+        private void CalcRenderScale()
+        {
+            screenCenter = new Point(Window.ClientBounds.Width / 2, Window.ClientBounds.Height / 2);
+            renderScale = Window.ClientBounds.Height / 1080.0f;
+        }
+
+        private void LMB(MouseButtonEventArgs e)
+        {
+            Point tile = Rendering.ScreenToTile(e.position);
+            if(Keyboard.GetState().IsKeyDown(Keys.T))
+            {
+                World.SetTile(tile.X, tile.Y, ETileType.Torch);
+                return;
+            }
+
+            World.SetTile(tile.X, tile.Y, ETileType.Air);
+        }
+
         protected override void LoadContent()
         {
             localCamera = new Camera(this);
@@ -61,18 +99,25 @@ namespace Tiled
                 localCamera.position.Y += 5;
             }
             // TODO: Add your update logic here
+            localInputManager.Update();
+            world.UpdateWorld();
+            Lighting.ProcessLightUpdates();
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.CornflowerBlue * Lighting.SKY_LIGHT_MULT);
 
-            int startX = (int)(localCamera.position.X / World.TILESIZE + 1);
-            int startY = (int)(localCamera.position.Y / World.TILESIZE + 1);
-            int endX = startX + (Window.ClientBounds.Width / World.TILESIZE - 1);
-            int endY = startY + (Window.ClientBounds.Height / World.TILESIZE - 1);
-            _spriteBatch.Begin();
+            int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE);
+            int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE);
+
+            int tilesX = (int)Math.Ceiling((Window.ClientBounds.Width / renderScale) / World.TILESIZE);
+            int tilesY = (int)Math.Ceiling((Window.ClientBounds.Height / renderScale) / World.TILESIZE);
+
+            int endX = startX + tilesX - 1;
+            int endY = startY + tilesY - 1;
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
 
             for (int x = startX; x < endX; x++)
             {
@@ -82,7 +127,6 @@ namespace Tiled
                     {
                         continue;
                     }
-
                     RenderWall(x, y);
                     RenderTile(x, y);
                 }
@@ -93,16 +137,34 @@ namespace Tiled
 
         public void RenderTile(int x, int y)
         {
+            if(!World.IsValidTile(x, y))
+            {
+                return;
+            }
+
             Tile tileData = TileID.GetTile(World.tiles[x, y]);
             Rectangle frame = World.GetTileFrame(x, y, tileData);
-            _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, Color.White);
+
+            Color finalColor = Color.White;
+            finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
+            finalColor.A = 255;
+            _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, finalColor);
         }
 
         public void RenderWall(int x, int y)
         {
+            if (!World.IsValidWall(x, y))
+            {
+                return;
+            }
+
             Wall wallData = WallID.GetWall(World.walls[x, y]);
             Rectangle frame = World.GetWallFrame(x, y, wallData);
-            _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, Color.Gray);
+
+            Color finalColor = Color.Gray;
+            finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
+            finalColor.A = 255;
+            _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, finalColor);
         }
     }
 }

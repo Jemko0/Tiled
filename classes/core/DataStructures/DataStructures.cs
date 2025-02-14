@@ -8,9 +8,11 @@ namespace Tiled.DataStructures
         public bool render;
         public Texture2D sprite;
         public bool useFrames;
+        public uint light;
         public TileNeighbors ignoreNeighbors;
         public int frameSize;
         public int framePadding;
+        public uint blockLight;
     }
 
     public struct TileNeighbors
@@ -57,5 +59,12 @@ namespace Tiled.DataStructures
     {
         Air = 0,
         Dirt,
+    }
+
+    public enum MouseButtonState
+    {
+        Left,
+        Middle,
+        Right,
     }
 }

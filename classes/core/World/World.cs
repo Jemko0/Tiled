@@ -1,30 +1,25 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Runtime.CompilerServices;
 using Tiled.DataStructures;
 
 namespace Tiled
 {
-    
     public class World
     {
         public static int maxTilesX = 256;
         public static int maxTilesY = 256;
 
-        bool renderWorld = true;
+        public static bool renderWorld = true;
         public const int TILESIZE = 16;
+        public static Rectangle invalidFrame = new Rectangle(-1, -1, -1, -1);
         public static ETileType[,] tiles;
         public static EWallType[,] walls;
         public static Rectangle[,] tileFramesCached;
         public static Rectangle[,] wallFramesCached;
-
-        public event EventHandler<EventArgs> DrawOrderChanged;
-        public event EventHandler<EventArgs> VisibleChanged;
-
-        public int DrawOrder => 0;
-
-        public bool Visible => renderWorld;
+        public static uint[,] lightMap;
+        public float worldTime = 23.0f;
+        public const float timeSpeed = 0.02f;
 
         public World()
         {
@@ -36,21 +31,48 @@ namespace Tiled
             walls = new EWallType[maxTilesX, maxTilesY];
             tileFramesCached = new Rectangle[maxTilesX, maxTilesY];
             wallFramesCached = new Rectangle[maxTilesX, maxTilesY];
-            walls.Initialize();
-            tiles.Initialize();
+            lightMap = new uint[maxTilesX, maxTilesY];
 
             for (int i = 0; i < maxTilesX; i++)
             {
                 for (int j = 0; j < maxTilesY; j++)
                 {
-                    tileFramesCached[i, j] = new Rectangle(-1, -1, -1, -1);
-                    wallFramesCached[i, j] = new Rectangle(-1, -1, -1, -1);
-                    tiles[i, j] = ETileType.Dirt;
-                    walls[i, j] = EWallType.Dirt;
+                    tileFramesCached[i, j] = invalidFrame;
+                    wallFramesCached[i, j] = invalidFrame;
+
+                    if(j < maxTilesY / 2)
+                    {
+                        tiles[i, j] = ETileType.Air;
+                        walls[i, j] = EWallType.Air;
+                    }
+                    else
+                    {
+                        tiles[i, j] = ETileType.Dirt;
+                        walls[i, j] = EWallType.Dirt;
+                    }
+                    
+                    lightMap[i, j] = 0;
                 }
             }
         }
 
+        int lightUpdateCounter = 0;
+        public void UpdateWorld()
+        {
+            worldTime = (worldTime + timeSpeed) % 24.0f;
+            Lighting.SKY_LIGHT_MULT = MathHelper.LerpPrecise(0.0f, 1.0f, Math.Abs(12.0f - worldTime) / 12.0f);
+            lightUpdateCounter++;
+
+            if(lightUpdateCounter >= 180)
+            {
+                lightUpdateCounter = 0;
+                Lighting.QueueGlobalLightUpdate();
+            }
+            
+            System.Diagnostics.Debug.WriteLine("world: " + worldTime + " && " + Lighting.SKY_LIGHT_MULT);
+        }
+
+        #region UTIL_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidIndex(Array a, int i, int j)
         {
@@ -84,9 +106,9 @@ namespace Tiled
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidFrame(Rectangle frame)
         {
-            return frame != new Rectangle(-1, -1, -1, -1);
+            return frame != invalidFrame;
         }
-
+        #endregion
 
         public static Rectangle GetTileFrame(int x, int y, Tile tileData)
         {
@@ -300,6 +322,70 @@ namespace Tiled
             return wallFramesCached[x, y];
         }
     
-    
+        public static void UpdateTileFramesAt(int x, int y)
+        {
+            //ClearTileFrame(x, y);
+
+            ClearTileFrame(x + 1, y);
+            ClearTileFrame(x - 1, y);
+
+            ClearTileFrame(x, y + 1);
+            ClearTileFrame(x, y - 1);
+        }
+
+        public static void UpdateWallFramesAt(int x, int y)
+        {
+            //ClearTileFrame(x, y);
+
+            ClearWallFrame(x + 1, y);
+            ClearWallFrame(x - 1, y);
+
+            ClearWallFrame(x, y + 1);
+            ClearWallFrame(x, y - 1);
+        }
+
+        public static void SetTile(int x, int y, ETileType type)
+        {
+            if(!IsValidIndex(tiles, x, y))
+            { 
+                return;
+            }
+
+            tiles[x, y] = type;
+            UpdateTileFramesAt(x, y);
+            Lighting.QueueLightUpdate(x, y);
+        }
+
+        public static void SetWall(int x, int y, EWallType type)
+        {
+            if (!IsValidIndex(walls, x, y))
+            {
+                return;
+            }
+
+            walls[x, y] = type;
+            UpdateWallFramesAt(x, y);
+            Lighting.QueueLightUpdate(x, y);
+        }
+
+        public static void ClearTileFrame(int x, int y)
+        {
+            if(!IsValidIndex(tileFramesCached, x, y))
+            {
+                return;
+            }
+
+            tileFramesCached[x, y] = invalidFrame;
+        }
+
+        public static void ClearWallFrame(int x, int y)
+        {
+            if (!IsValidIndex(wallFramesCached, x, y))
+            {
+                return;
+            }
+
+            wallFramesCached[x, y] = invalidFrame;
+        }
     }
 }
