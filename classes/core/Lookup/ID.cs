@@ -15,6 +15,10 @@ namespace Tiled.ID
             Tile t = new();
             t.render = true;
             t.sprite = null;
+            t.frameSize = 16;
+            t.useFrames = true;
+            t.framePadding = 2;
+            t.ignoreNeighbors = new TileNeighbors(0, 0, 0, 0);
 
             switch(type)
             {
@@ -23,8 +27,12 @@ namespace Tiled.ID
                     break;
 
                 case ETileType.Dirt:
-                    t.render = true;
-                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/debugTile");
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/dirt");
+                    break;
+
+                case ETileType.Torch:
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/torch");
+                    t.ignoreNeighbors = new TileNeighbors(0, 0, 1, 1);
                     break;
             }
 
@@ -39,6 +47,9 @@ namespace Tiled.ID
             Wall w = new();
             w.render = true;
             w.sprite = null;
+            w.useFrames = true;
+            w.framePadding = 2;
+            w.frameSize = 16;
 
             switch(type)
             {
@@ -47,8 +58,9 @@ namespace Tiled.ID
                     break;
 
                 case EWallType.Dirt:
-                w.render = true;
-                break;
+                    w.render = true;
+                    w.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/dirt");
+                    break;
             }
 
             return w;

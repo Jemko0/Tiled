@@ -11,7 +11,7 @@ namespace Tiled
     {
         public static Rectangle GetTileTransform(int x, int y)
         {
-            return new Rectangle((int)((x * World.renderTileSize) - Program.GetGame().localCamera.position.X), (int)((y * World.renderTileSize) - Program.GetGame().localCamera.position.Y), World.renderTileSize, World.renderTileSize);
+            return new Rectangle((int)((x * World.TILESIZE) - Program.GetGame().localCamera.position.X), (int)((y * World.TILESIZE) - Program.GetGame().localCamera.position.Y), World.TILESIZE, World.TILESIZE);
         }
     }
 }

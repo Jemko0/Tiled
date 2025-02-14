@@ -68,17 +68,17 @@ namespace Tiled
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            int startX = (int)(localCamera.position.X / World.renderTileSize + 1);
-            int startY = (int)(localCamera.position.Y / World.renderTileSize + 1);
-            int endX = startX + (Window.ClientBounds.Width / World.renderTileSize - 1);
-            int endY = startY + (Window.ClientBounds.Height / World.renderTileSize - 1);
+            int startX = (int)(localCamera.position.X / World.TILESIZE + 1);
+            int startY = (int)(localCamera.position.Y / World.TILESIZE + 1);
+            int endX = startX + (Window.ClientBounds.Width / World.TILESIZE - 1);
+            int endY = startY + (Window.ClientBounds.Height / World.TILESIZE - 1);
             _spriteBatch.Begin();
 
             for (int x = startX; x < endX; x++)
             {
                 for (int y = startY; y < endY; y++)
                 {
-                    if(x < 0 || y < 0 || x >= World.tiles.GetLength(0) || y >= World.tiles.GetLength(1))
+                    if(!World.IsValidIndex(World.tiles, x, y))
                     {
                         continue;
                     }
@@ -94,12 +94,15 @@ namespace Tiled
         public void RenderTile(int x, int y)
         {
             Tile tileData = TileID.GetTile(World.tiles[x, y]);
-            _spriteBatch.Draw(tileData.sprite, new Rectangle((x * World.renderTileSize) - (int)localCamera.position.X, (y * World.renderTileSize) - (int)localCamera.position.Y, World.renderTileSize, World.renderTileSize), Color.White);
+            Rectangle frame = World.GetTileFrame(x, y, tileData);
+            _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, Color.White);
         }
 
         public void RenderWall(int x, int y)
         {
             Wall wallData = WallID.GetWall(World.walls[x, y]);
+            Rectangle frame = World.GetWallFrame(x, y, wallData);
+            _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, Color.Gray);
         }
     }
 }
