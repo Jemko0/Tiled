@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Content;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Tiled.UI;
 
@@ -89,5 +90,24 @@ namespace Tiled.DataStructures
         BottomLeft,
         BottomCenter,
         BottomRight
+    }
+
+    public enum ETextJustification
+    {
+        Left,
+        Center,
+        Right,
+    }
+
+    public class ButtonPressArgs
+    {
+        public Point mouseLocation;
+        public MouseButtonState buttonState;
+
+        public ButtonPressArgs(Point ml, MouseButtonState mbtnst)
+        {
+            mouseLocation = ml;
+            buttonState = mbtnst;
+        }
     }
 }

@@ -7,6 +7,10 @@ using Tiled.DataStructures;
 
 namespace Tiled.UI
 {
+
+    /// <summary>
+    /// basic widget, supports children but does not render them. if you want to render children, use <see cref="PanelWidget"/>
+    /// </summary>
     public class Widget : IDisposable
     {
         public bool visible = true;

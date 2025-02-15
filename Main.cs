@@ -7,6 +7,7 @@ using Tiled.DataStructures;
 using Tiled.ID;
 using Tiled.Input;
 using Tiled.UI;
+using Tiled.UI.Font;
 
 namespace Tiled
 {
@@ -35,7 +36,7 @@ namespace Tiled
         protected override void Initialize()
         {
             InputManager.onLeftMousePressed += LMB;
-            InputManager.onRightMousePressed += RMB; ;
+            InputManager.onRightMousePressed += RMB;
             CalcRenderScale();
             Window.ClientSizeChanged += MainWindowResized;
             base.Initialize();
@@ -73,6 +74,8 @@ namespace Tiled
 
         protected override void LoadContent()
         {
+            Fonts.InitFonts();
+
             world = new World();
             world.Init();
             _spriteBatch = new SpriteBatch(GraphicsDevice);

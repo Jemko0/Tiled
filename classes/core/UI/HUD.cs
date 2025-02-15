@@ -37,7 +37,7 @@ namespace Tiled.UI
         }
 
         /// <summary>
-        /// Creates a new widget and adds it to the active widget list, args are usually (ownerHUD, ...other...)
+        /// Creates a new widget and adds it to the active widget list, args are usually (ownerHUD)
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="args"></param>
@@ -54,17 +54,22 @@ namespace Tiled.UI
         internal void Init()
         {
             var vb = CreateWidget<WVerticalBox>(this);
-            vb.SetGeometry(new Vector2(500, 900), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
+            vb.SetGeometry(new Vector2(300, 100), DataStructures.AnchorPosition.Center);
 
-            var ch = CreateWidget<Widget>(this);
-            ch.SetGeometry(new Vector2(100, 100), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
+            for(int i = 0; i < 5; i++)
+            {
+                var b = CreateWidget<WButton>(this);
+                b.SetGeometry(new Vector2(0, 50), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
+                b.AttachToParent(vb, DataStructures.AnchorPosition.TopLeft);
 
-            ch.AttachToParent(vb, DataStructures.AnchorPosition.TopLeft);
+                var t = CreateWidget<WText>(this);
+                t.justification = DataStructures.ETextJustification.Center;
+                t.SetGeometry(new Vector2(0, 100), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
 
-            ch = CreateWidget<Widget>(this);
-            ch.SetGeometry(new Vector2(100, 240), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
-
-            ch.AttachToParent(vb, DataStructures.AnchorPosition.TopLeft);
+                t.AttachToParent(b, DataStructures.AnchorPosition.BottomRight);
+            }
+            
+            
         }
 
         private void GetDPIScale()

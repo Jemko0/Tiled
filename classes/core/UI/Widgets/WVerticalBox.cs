@@ -3,6 +3,9 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Tiled.UI
 {
+    /// <summary>
+    /// Lays children out vertically from top to bottom
+    /// </summary>
     public class WVerticalBox : PanelWidget
     {
         public int innerPadding = 5;
@@ -18,7 +21,7 @@ namespace Tiled.UI
 
             if (childIdx != 0)
             {
-                children[childIdx].SetOffset(new Vector2(0, (children[childIdx - 1].GetSize().Y * childIdx) + (childIdx == 0 ? 0 : innerPadding)));
+                children[childIdx].SetOffset(new Vector2(0, (children[childIdx - 1].GetSize().Y * childIdx) + innerPadding * childIdx));
             }
             
             children[childIdx].ScaleGeometry();
