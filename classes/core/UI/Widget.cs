@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Tiled.DataStructures;
 
 namespace Tiled.UI
@@ -26,7 +27,7 @@ namespace Tiled.UI
 
         protected Widget parent;
         protected List<Widget> children = new List<Widget>();
-
+        public bool disposed;
         public Widget(HUD owner)
         {
             owningHUD = owner;
@@ -77,17 +78,6 @@ namespace Tiled.UI
             ScaleGeometry();
         }
 
-        public void DetachFromParent()
-        {
-            if (parent != null)
-            {
-                parent.children.Remove(this);
-                parent = null;
-
-                CalculateRelativePosition();
-                ScaleGeometry();
-            }
-        }
 
         private void CalculateRelativePosition()
         {
@@ -189,35 +179,32 @@ namespace Tiled.UI
             return scaledGeometry.Contains(Mouse.GetState().X, Mouse.GetState().Y);
         }
 
+        private bool isBeingDestroyed = false;  // Add this flag
+
         public void DestroyWidget()
         {
-            onWidgetDestroyed.Invoke(new WidgetDestroyArgs(this));
+            if (!isBeingDestroyed)
+            {
+                isBeingDestroyed = true;
+                onWidgetDestroyed?.Invoke(new WidgetDestroyArgs(this));
+                Dispose();
+            }
         }
- 
+
         public void Draw(ref SpriteBatch sb)
         {
-            if (!visible)
+            if (!visible || disposed)  // Check disposed state
             {
                 return;
             }
 
             DrawWidget(ref sb);
         }
-
         public virtual void DrawWidget(ref SpriteBatch sb)
         {
             var tex = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
-            tex.SetData(new Color[] {Color.Red});
+            tex.SetData(new Color[] { Color.Red });
             sb.Draw(tex, scaledGeometry, Color.White);
-        }
-
-        //disposing shit
-        private bool disposed = false;
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -226,11 +213,57 @@ namespace Tiled.UI
             {
                 if (disposing)
                 {
-                   
+                    // First, destroy all children before detaching them
+                    if (children != null)
+                    {
+                        // Create a copy of the children list to avoid modification during enumeration
+                        var childrenCopy = children.ToList();
+                        foreach (var child in childrenCopy)
+                        {
+                            child.DestroyWidget();
+                        }
+                    }
+
+                    // Clear event handlers
+                    onWidgetDestroyed = null;
+                    owningHUD = null;
+
+                    // Detach from parent after children are destroyed
+                    DetachFromParent();
+                    parent = null;
+
+                    // Clear the children list
+                    children?.Clear();
+                    children = null;
                 }
 
                 disposed = true;
             }
         }
+
+        public void DetachFromParent()
+        {
+            if (parent != null && !isBeingDestroyed)  // Only recalculate if not being destroyed
+            {
+                parent.children.Remove(this);
+                parent = null;
+
+                CalculateRelativePosition();
+                ScaleGeometry();
+            }
+            else if (parent != null)  // If being destroyed, just remove from parent
+            {
+                parent.children.Remove(this);
+                parent = null;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        // Add a way to check if widget is disposed
+        public bool IsDisposed => disposed;
     }
 }

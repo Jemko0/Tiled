@@ -25,6 +25,11 @@ namespace Tiled.UI
 
             sb.Draw(tex, scaledGeometry, Color.Blue);
             */
+            if(children == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < children.Count; i++)
             {
                 DrawChild(ref sb, i);

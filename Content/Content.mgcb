@@ -20,11 +20,41 @@
 /processorParam:TextureFormat=Compressed
 /build:Fonts/Andy.spritefont
 
+#begin Shaders/SkyShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Shaders/SkyShader.fx
+
+#begin Shaders/SunShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Shaders/SunShader.fx
+
 #begin Shaders/TileShader.fx
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Shaders/TileShader.fx
+
+#begin Shaders/TileShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Shaders/TileShader.fx
+
+#begin Sky/Sun.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Sky/Sun.png
 
 #begin Tiles/debugTile.png
 /importer:TextureImporter

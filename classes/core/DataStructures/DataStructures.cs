@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Tiled.UI;
 
 namespace Tiled.DataStructures
@@ -10,6 +11,7 @@ namespace Tiled.DataStructures
         public bool render;
         public Texture2D sprite;
         public bool useFrames;
+        public bool collision;
         public uint light;
         public TileNeighbors ignoreNeighbors;
         public int frameSize;
@@ -48,6 +50,12 @@ namespace Tiled.DataStructures
         public bool useFrames;
         public int frameSize;
         public int framePadding;
+    }
+
+    public struct EntityDef
+    {
+        public string name;
+        public Vector2 size;
     }
 
     public enum ETileType
@@ -99,6 +107,13 @@ namespace Tiled.DataStructures
         Right,
     }
 
+    public enum EEntityType
+    {
+        None = 0,
+        Entity,
+        Player,
+    }
+
     public class ButtonPressArgs
     {
         public Point mouseLocation;
@@ -108,6 +123,48 @@ namespace Tiled.DataStructures
         {
             mouseLocation = ml;
             buttonState = mbtnst;
+        }
+    }
+
+    public delegate void ActionMappingPress(ActionMappingArgs e);
+    public delegate void ActionMappingRelease(ActionMappingArgs e);
+
+    public class ActionMappingArgs
+    {
+        public Keys key;
+
+        public ActionMappingArgs(Keys key)
+        {
+            this.key = key;
+        }
+    }
+
+    public class ActionMapping
+    {
+        public Keys keyboardKey;
+        public event ActionMappingPress onActionMappingPressed;
+        public event ActionMappingRelease onActionMappingReleased;
+        public ActionMapping(Keys key)
+        {
+            keyboardKey = key;
+        }
+
+        public void InvokePressed(ActionMappingArgs args)
+        {
+            if(onActionMappingPressed == null)
+            {
+                return;
+            }
+            onActionMappingPressed.Invoke(args);
+        }
+
+        public void InvokeReleased(ActionMappingArgs args)
+        {
+            if(onActionMappingReleased == null)
+            {
+                return;
+            }
+            onActionMappingReleased.Invoke(args);
         }
     }
 }

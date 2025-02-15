@@ -33,6 +33,7 @@ namespace Tiled.UI
         {
             if(IsHovered())
             {
+                DestroyWidget();
                 if(onButtonPressed != null)
                 {
                     onButtonPressed.Invoke(new ButtonPressArgs(e.position, e.mouseButton));

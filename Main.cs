@@ -2,8 +2,9 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using Tiled.DataStructures;
+using Tiled.Gameplay;
 using Tiled.ID;
 using Tiled.Input;
 using Tiled.UI;
@@ -13,13 +14,18 @@ namespace Tiled
 {
     public class Main : Game
     {
-        public GraphicsDeviceManager _graphics;
+        private Texture2D skyTex;
+        private Texture2D sunTex;
         private SpriteBatch _spriteBatch;
+        private Effect skyShader;
+
+        public GraphicsDeviceManager _graphics;
         public Camera localCamera;
-        public World world;
-        public Effect tileShader;
         public InputManager localInputManager = new InputManager();
         public HUD localHUD;
+        public static List<Gameplay.Entity> entities;
+        public World world;
+        public Controller localPlayerController;
 
         public static float renderScale = 1.0f;
         public static Point screenCenter;
@@ -35,11 +41,42 @@ namespace Tiled
 
         protected override void Initialize()
         {
+            base.Initialize();
+
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
-            CalcRenderScale();
+            Mappings.InitializeMappings();
+            entities = new List<Entity>();
+            localPlayerController = new Controller();
+
+            Player e = Entity.NewEntity<Player>();
+            e.position.X = 256.0f;
+            localCamera.position.Y = 8912.0f / 3f;
+            e.position.Y = 8912.0f / 3f;
+            e.velocity.X = 5f;
+            e.velocity.Y = 5f;
+            localPlayerController.Possess(e);
+
             Window.ClientSizeChanged += MainWindowResized;
-            base.Initialize();
+            CalcRenderScale();
+        }
+
+        protected override void LoadContent()
+        {
+            Fonts.InitFonts();
+
+            world = new World();
+            world.Init();
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            localCamera = new Camera(this);
+
+            skyTex = new Texture2D(GraphicsDevice, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight);
+            skyShader = Content.Load<Effect>("Shaders/SkyShader");
+
+            sunTex = Content.Load<Texture2D>("Sky/Sun");
+
+            localHUD = new HUD(_spriteBatch, _graphics);
         }
 
         private void RMB(MouseButtonEventArgs e)
@@ -48,9 +85,19 @@ namespace Tiled
             World.SetWall(tile.X, tile.Y, EWallType.Air);
         }
 
-        private void MainWindowResized(object sender, System.EventArgs e)
+        private void MainWindowResized(object sender, EventArgs e)
         {
             CalcRenderScale();
+        }
+
+        public static void RegisterEntity(Gameplay.Entity e)
+        {
+            entities.Add(e);
+        }
+
+        public static void UnregisterEntity(Gameplay.Entity e)
+        {
+            entities.Remove(e);
         }
 
         private void CalcRenderScale()
@@ -71,54 +118,51 @@ namespace Tiled
 
             World.SetTile(tile.X, tile.Y, ETileType.Air);
         }
-
-        protected override void LoadContent()
-        {
-            Fonts.InitFonts();
-
-            world = new World();
-            world.Init();
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-            
-            localCamera = new Camera(this);
-            localCamera.position = new Vector2(0, 8192);
-            //tileShader = Content.Load<Effect>("Shaders/TileShader");
-
-            localHUD = new HUD(_spriteBatch, _graphics);
-        }
-
+        public static float delta;
         protected override void Update(GameTime gameTime)
         {
+            delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
             if(Keyboard.GetState().IsKeyDown(Keys.A))
             {
-                localCamera.position.X -= 5;
+                localCamera.position.X -= 10;
             }
             if (Keyboard.GetState().IsKeyDown(Keys.D))
             {
-                localCamera.position.X += 5;
+                localCamera.position.X += 10;
             }
             if (Keyboard.GetState().IsKeyDown(Keys.W))
             {
-                localCamera.position.Y -= 5;
+                localCamera.position.Y -= 10;
             }
             if (Keyboard.GetState().IsKeyDown(Keys.S))
             {
-                localCamera.position.Y += 5;
+                localCamera.position.Y += 10;
             }
 
             localInputManager.Update();
+            Mappings.Update();
 
             Lighting.Update();
             world.UpdateWorld();
+
+            localPlayerController.Update();
+            
+            foreach(Entity entity in entities)
+            {
+                entity.Update();
+            }
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue * Lighting.SKY_LIGHT_MULT);
+            GraphicsDevice.Clear(Color.Black);
+
+            RenderSky();
+            RenderSun();
 
             int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE);
             int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE);
@@ -143,6 +187,7 @@ namespace Tiled
                 }
             }
 
+            RenderEntities();
             _spriteBatch.End();
 
             localHUD.DrawWidgets();
@@ -178,6 +223,39 @@ namespace Tiled
             finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
             finalColor.A = 255;
             _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, finalColor);
+        }
+    
+        public void RenderSky()
+        {
+            _spriteBatch.Begin(effect: skyShader);
+            skyShader.Parameters["timeLerp"].SetValue(Lighting.SKY_LIGHT_MULT);
+            _spriteBatch.Draw(skyTex, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+            _spriteBatch.End();
+        }
+
+        public void RenderSun()
+        {
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive);
+            Rectangle sunRect = new Rectangle();
+
+            sunRect.Width = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.SKY_LIGHT_MULT, 4.0f));
+            sunRect.Height = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.SKY_LIGHT_MULT, 4.0f));
+
+            sunRect.X = (int)MathHelper.Lerp(-2048.0f, Window.ClientBounds.Width + 128.0f, world.worldTime / 18.0f);
+
+            float progress = sunRect.X / (float)Window.ClientBounds.Width;
+            sunRect.Y = 144 - (int)(Math.Sin(progress * Math.PI) * 144.0f);
+            _spriteBatch.Draw(sunTex, sunRect, Color.White);
+
+            _spriteBatch.End();
+        }
+    
+        public void RenderEntities()
+        {
+            for(int i = 0; i < entities.Count; i++)
+            {
+                entities[i].Draw(ref _spriteBatch);
+            }
         }
     }
 }

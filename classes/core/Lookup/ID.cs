@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,12 +21,14 @@ namespace Tiled.ID
             t.framePadding = 2;
             t.ignoreNeighbors = new TileNeighbors(0, 0, 0, 0);
             t.light = 0;
-            t.blockLight = 2;
+            t.blockLight = 3;
+            t.collision = true;
 
             switch(type)
             {
                 case ETileType.Air:
                     t.render = false;
+                    t.collision = false;
                     t.blockLight = 1;
                     break;
 
@@ -38,6 +41,7 @@ namespace Tiled.ID
                     t.ignoreNeighbors = new TileNeighbors(0, 0, 1, 1);
                     t.blockLight = 0;
                     t.light = 32;
+                    t.collision = false;
                     break;
             }
 
@@ -69,6 +73,34 @@ namespace Tiled.ID
             }
 
             return w;
+        }
+    }
+
+    public class EntityID
+    {
+        public static EntityDef GetEntityInfo(EEntityType type)
+        {
+            EntityDef entity = new EntityDef();
+
+            switch(type)
+            {
+                case EEntityType.None:
+                    entity.name = "None";
+                    entity.size = new Vector2(24.0f, 48.0f);
+                    break;
+
+                case EEntityType.Entity:
+                    entity.name = "default_entity";
+                    entity.size = new Vector2(20.0f, 40.0f);
+                    break;
+
+                case EEntityType.Player:
+                    entity.name = "playername";
+                    entity.size = new Vector2(20.0f, 40.0f);
+                    break;
+            }
+
+            return entity;
         }
     }
 }

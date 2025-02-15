@@ -19,13 +19,13 @@ namespace Tiled
         public static Rectangle[,] tileFramesCached;
         public static Rectangle[,] wallFramesCached;
         public static uint[,] lightMap;
-        public float worldTime = 23.0f;
-        public const float timeSpeed = 0.02f;
+        public float worldTime = 8.0f;
+        public const float timeSpeed = 0.005f;
 
         public World()
         {
         }
-
+        
         public void Init()
         {
             tiles = new ETileType[maxTilesX, maxTilesY];
@@ -60,8 +60,15 @@ namespace Tiled
         int lightUpdateCounter = 0;
         public void UpdateWorld()
         {
-            worldTime = (worldTime + timeSpeed) % 24.0f;
-            Lighting.SKY_LIGHT_MULT = MathHelper.LerpPrecise(0.0f, 1.0f, Math.Abs(12.0f - worldTime) / 12.0f);
+            //HOURS IN DAY
+            const float h = 24.0f;
+
+            //Day Length Exponent (Higher num = night shorter)
+            const float dnExp = 3.0f;
+
+            worldTime = (worldTime + timeSpeed) % h;
+            
+            Lighting.SKY_LIGHT_MULT = Math.Clamp((float)Math.Sin(Math.Pow(worldTime / h, dnExp) * (Math.PI / 0.5f)), 0.0f, 1.0f);
             lightUpdateCounter++;
 
             if(lightUpdateCounter >= 30)
@@ -70,7 +77,7 @@ namespace Tiled
                 Lighting.QueueGlobalLightUpdate();
             }
 
-            System.Diagnostics.Debug.WriteLine("world: " + worldTime + " && " + Lighting.SKY_LIGHT_MULT);
+            System.Diagnostics.Debug.WriteLine("world: " + worldTime + " && " + Lighting.SKY_LIGHT_MULT + " LIGHTVAL: " + Lighting.CalculateSkyLight(1));
         }
 
         #region UTIL_CHECKS

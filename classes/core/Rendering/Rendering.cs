@@ -43,5 +43,26 @@ namespace Tiled
             int y = (int)((screenLocation.Y - Main.screenCenter.Y) / Main.renderScale + Program.GetGame().localCamera.position.Y);
             return new Point(x, y);
         }
+
+        public static Rectangle WorldToScreen(Rectangle worldRect)
+        {
+            // Apply camera offset first
+            float screenX = worldRect.X - Program.GetGame().localCamera.position.X;
+            float screenY = worldRect.Y - Program.GetGame().localCamera.position.Y;
+
+            // Apply scale
+            screenX *= Main.renderScale;
+            screenY *= Main.renderScale;
+
+            // Add screen center after scaling
+            screenX += Main.screenCenter.X;
+            screenY += Main.screenCenter.Y;
+
+            // Scale width and height
+            int scaledW = (int)(worldRect.Width * Main.renderScale);
+            int scaledH = (int)(worldRect.Height * Main.renderScale);
+
+            return new Rectangle((int)screenX, (int)screenY, scaledW, scaledH);
+        }
     }
 }

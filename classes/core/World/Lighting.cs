@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,173 +9,176 @@ using Tiled.ID;
 
 namespace Tiled
 {
-        public class Lighting
+    public class Lighting
+    {
+        public const uint MAX_LIGHT = 32;
+        public const uint MAX_SKY_LIGHT = 32;
+        public static float SKY_LIGHT_MULT = 1.0f;
+        private static readonly object queueLock = new object();
+        private static HashSet<(int x, int y)> lightUpdateQueue = new HashSet<(int x, int y)>();
+        public static bool isPerformingGlobalLightUpdate;
+
+        public static Color skyBaseColor = new Color();
+        public static Color skyHorizonColor = new Color(255, 255, 255, 255);
+
+        // Configuration for chunk processing
+        private const int CHUNK_SIZE = 32;
+        private const int UPDATES_PER_FRAME = 4;
+        private static Queue<(int startX, int startY, int endX, int endY)> chunksToProcess =
+            new Queue<(int startX, int startY, int endX, int endY)>();
+
+        // Task management
+        private static CancellationTokenSource cancellationSource = new CancellationTokenSource();
+        private static Task currentProcessingTask = null;
+
+        public static void QueueLightUpdate(int x, int y)
         {
-            public const uint MAX_LIGHT = 32;
-            public const uint MAX_SKY_LIGHT = 32;
-            public static float SKY_LIGHT_MULT = 1.0f;
-            private static readonly object queueLock = new object();
-            private static HashSet<(int x, int y)> lightUpdateQueue = new HashSet<(int x, int y)>();
-            public static bool isPerformingGlobalLightUpdate;
+            if (!World.IsValidIndex(World.lightMap, x, y)) return;
 
-            // Configuration for chunk processing
-            private const int CHUNK_SIZE = 32;
-            private const int UPDATES_PER_FRAME = 4;
-            private static Queue<(int startX, int startY, int endX, int endY)> chunksToProcess =
-                new Queue<(int startX, int startY, int endX, int endY)>();
-
-            // Task management
-            private static CancellationTokenSource cancellationSource = new CancellationTokenSource();
-            private static Task currentProcessingTask = null;
-
-            public static void QueueLightUpdate(int x, int y)
+            lock (queueLock)
             {
-                if (!World.IsValidIndex(World.lightMap, x, y)) return;
+                lightUpdateQueue.Add((x, y));
 
-                lock (queueLock)
+                // Queue neighbors too since they might need updates
+                if (World.IsValidIndex(World.lightMap, x + 1, y)) lightUpdateQueue.Add((x + 1, y));
+                if (World.IsValidIndex(World.lightMap, x - 1, y)) lightUpdateQueue.Add((x - 1, y));
+                if (World.IsValidIndex(World.lightMap, x, y + 1)) lightUpdateQueue.Add((x, y + 1));
+                if (World.IsValidIndex(World.lightMap, x, y - 1)) lightUpdateQueue.Add((x, y - 1));
+            }
+        }
+
+        public static void QueueGlobalLightUpdate()
+        {
+            // Cancel any existing processing
+            cancellationSource.Cancel();
+            cancellationSource = new CancellationTokenSource();
+
+            lock (queueLock)
+            {
+                isPerformingGlobalLightUpdate = true;
+                chunksToProcess.Clear();
+                lightUpdateQueue.Clear();
+
+                // Divide the world into chunks
+                for (int x = 0; x < World.maxTilesX; x += CHUNK_SIZE)
                 {
-                    lightUpdateQueue.Add((x, y));
-
-                    // Queue neighbors too since they might need updates
-                    if (World.IsValidIndex(World.lightMap, x + 1, y)) lightUpdateQueue.Add((x + 1, y));
-                    if (World.IsValidIndex(World.lightMap, x - 1, y)) lightUpdateQueue.Add((x - 1, y));
-                    if (World.IsValidIndex(World.lightMap, x, y + 1)) lightUpdateQueue.Add((x, y + 1));
-                    if (World.IsValidIndex(World.lightMap, x, y - 1)) lightUpdateQueue.Add((x, y - 1));
+                    for (int y = 0; y < World.maxTilesY; y += CHUNK_SIZE)
+                    {
+                        int endX = Math.Min(x + CHUNK_SIZE, World.maxTilesX);
+                        int endY = Math.Min(y + CHUNK_SIZE, World.maxTilesY);
+                        chunksToProcess.Enqueue((x, y, endX, endY));
+                    }
                 }
             }
 
-            public static void QueueGlobalLightUpdate()
+            // Start processing in background
+            StartBackgroundProcessing();
+        }
+
+        private static void StartBackgroundProcessing()
+        {
+            var token = cancellationSource.Token;
+            currentProcessingTask = Task.Run(async () =>
             {
-                // Cancel any existing processing
-                cancellationSource.Cancel();
-                cancellationSource = new CancellationTokenSource();
-
-                lock (queueLock)
+                try
                 {
-                    isPerformingGlobalLightUpdate = true;
-                    chunksToProcess.Clear();
-                    lightUpdateQueue.Clear();
-
-                    // Divide the world into chunks
-                    for (int x = 0; x < World.maxTilesX; x += CHUNK_SIZE)
+                    while (!token.IsCancellationRequested)
                     {
-                        for (int y = 0; y < World.maxTilesY; y += CHUNK_SIZE)
-                        {
-                            int endX = Math.Min(x + CHUNK_SIZE, World.maxTilesX);
-                            int endY = Math.Min(y + CHUNK_SIZE, World.maxTilesY);
-                            chunksToProcess.Enqueue((x, y, endX, endY));
-                        }
-                    }
-                }
-
-                // Start processing in background
-                StartBackgroundProcessing();
-            }
-
-            private static void StartBackgroundProcessing()
-            {
-                var token = cancellationSource.Token;
-                currentProcessingTask = Task.Run(async () =>
-                {
-                    try
-                    {
-                        while (!token.IsCancellationRequested)
-                        {
-                            bool hasChunks;
-                            lock (queueLock)
-                            {
-                                hasChunks = chunksToProcess.Count > 0;
-                            }
-
-                            if (!hasChunks) break;
-
-                            for (int i = 0; i < UPDATES_PER_FRAME; i++)
-                            {
-                                (int startX, int startY, int endX, int endY) chunk;
-                                lock (queueLock)
-                                {
-                                    if (chunksToProcess.Count == 0) break;
-                                    chunk = chunksToProcess.Dequeue();
-                                }
-                                await ProcessChunkAsync(chunk.startX, chunk.startY, chunk.endX, chunk.endY, token);
-                            }
-
-                            await Task.Delay(1, token);
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Task was cancelled, just exit
-                    }
-                    finally
-                    {
+                        bool hasChunks;
                         lock (queueLock)
                         {
-                            isPerformingGlobalLightUpdate = false;
+                            hasChunks = chunksToProcess.Count > 0;
                         }
-                    }
-                }, token);
-            }
 
-            // Called from your synchronous update method
-            public static void Update()
-            {
-                List<(int x, int y)> updates;
-                lock (queueLock)
-                {
-                    if (lightUpdateQueue.Count == 0) return;
-                    updates = new List<(int x, int y)>(lightUpdateQueue);
-                    lightUpdateQueue.Clear();
-                }
+                        if (!hasChunks) break;
 
-                if (updates.Count > 0)
-                {
-                    Task.Run(() => ProcessLightUpdatesAsync(updates, cancellationSource.Token));
-                }
-            }
-
-            private static async Task ProcessChunkAsync(int startX, int startY, int endX, int endY, CancellationToken token)
-            {
-                for (int x = startX; x < endX; x++)
-                {
-                    for (int y = startY; y < endY; y++)
-                    {
-                        if (token.IsCancellationRequested) return;
-
-                        if (!World.IsValidTileOrWall(x, y))
+                        for (int i = 0; i < UPDATES_PER_FRAME; i++)
                         {
-                            QueueLightUpdate(x, y);
+                            (int startX, int startY, int endX, int endY) chunk;
+                            lock (queueLock)
+                            {
+                                if (chunksToProcess.Count == 0) break;
+                                chunk = chunksToProcess.Dequeue();
+                            }
+                            await ProcessChunkAsync(chunk.startX, chunk.startY, chunk.endX, chunk.endY, token);
                         }
+
+                        await Task.Delay(1, token);
                     }
                 }
-            }
-
-            private static async Task ProcessLightUpdatesAsync(List<(int x, int y)> positions, CancellationToken token)
-            {
-                var propagationQueue = new Queue<(int x, int y)>();
-
-                foreach (var pos in positions)
+                catch (OperationCanceledException)
                 {
-                    if (token.IsCancellationRequested) return;
-
-                    uint oldLight = World.lightMap[pos.x, pos.y];
-                    uint newLight = CalculateLight(pos.x, pos.y);
-
-                    if (oldLight != newLight)
+                    // Task was cancelled, just exit
+                }
+                finally
+                {
+                    lock (queueLock)
                     {
-                        World.lightMap[pos.x, pos.y] = newLight;
-                        propagationQueue.Enqueue(pos);
+                        isPerformingGlobalLightUpdate = false;
                     }
                 }
+            }, token);
+        }
 
-                while (propagationQueue.Count > 0)
+        // Called from your synchronous update method
+        public static void Update()
+        {
+            List<(int x, int y)> updates;
+            lock (queueLock)
+            {
+                if (lightUpdateQueue.Count == 0) return;
+                updates = new List<(int x, int y)>(lightUpdateQueue);
+                lightUpdateQueue.Clear();
+            }
+
+            if (updates.Count > 0)
+            {
+                Task.Run(() => ProcessLightUpdatesAsync(updates, cancellationSource.Token));
+            }
+        }
+
+        private static async Task ProcessChunkAsync(int startX, int startY, int endX, int endY, CancellationToken token)
+        {
+            for (int x = startX; x < endX; x++)
+            {
+                for (int y = startY; y < endY; y++)
                 {
                     if (token.IsCancellationRequested) return;
 
-                    var (x, y) = propagationQueue.Dequeue();
-                    PropagateLight(x, y, propagationQueue);
+                    if (!World.IsValidTileOrWall(x, y))
+                    {
+                        QueueLightUpdate(x, y);
+                    }
                 }
             }
+        }
+
+        private static async Task ProcessLightUpdatesAsync(List<(int x, int y)> positions, CancellationToken token)
+        {
+            var propagationQueue = new Queue<(int x, int y)>();
+
+            foreach (var pos in positions)
+            {
+                if (token.IsCancellationRequested) return;
+
+                uint oldLight = World.lightMap[pos.x, pos.y];
+                uint newLight = CalculateLight(pos.x, pos.y);
+
+                if (oldLight != newLight)
+                {
+                    World.lightMap[pos.x, pos.y] = newLight;
+                    propagationQueue.Enqueue(pos);
+                }
+            }
+
+            while (propagationQueue.Count > 0)
+            {
+                if (token.IsCancellationRequested) return;
+
+                var (x, y) = propagationQueue.Dequeue();
+                PropagateLight(x, y, propagationQueue);
+            }
+        }
 
         private static uint CalculateLight(int x, int y)
         {
@@ -225,7 +229,7 @@ namespace Tiled
             return maxLight;
         }
 
-        private static uint CalculateSkyLight(int y)
+        public static uint CalculateSkyLight(int y)
         {
             return (uint)(MAX_SKY_LIGHT * SKY_LIGHT_MULT);
         }

@@ -6,7 +6,7 @@ using Tiled.UI.Font;
 namespace Tiled.UI
 {
     /// <summary>
-    /// renders text on the screen, does not render children
+    /// renders text on the screen, does not render children, does not support multi-line
     /// </summary>
     public class WText : Widget
     {
