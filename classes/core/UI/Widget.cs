@@ -1,7 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
-
+using System.Collections.Generic;
 using Tiled.DataStructures;
 
 namespace Tiled.UI
@@ -12,9 +13,16 @@ namespace Tiled.UI
         public delegate void WidgetDestroyed(WidgetDestroyArgs e);
         public event WidgetDestroyed onWidgetDestroyed;
         public HUD owningHUD;
-        public Vector2 origin;
-        public Rectangle geometry;
-        public Rectangle scaledGeometry;
+
+        protected Vector2 size;
+        protected Rectangle scaledGeometry;
+        public Vector2 anchorPosition; // Stores position as percentage (0-1) of screen
+        protected AnchorPosition anchor;
+        protected Vector2 offset; // Optional pixel offset from anchor point
+
+        protected Widget parent;
+        protected List<Widget> children = new List<Widget>();
+
         public Widget(HUD owner)
         {
             owningHUD = owner;
@@ -25,37 +33,156 @@ namespace Tiled.UI
 
         }
 
-
-        /// <summary>
-        /// call this to set position, scale. Also handles ORIGIN
-        /// </summary>
-        /// <param name="newGeo"></param>
-        public void SetGeometry(Rectangle newGeo, Vector2? newOrigin = null, bool setOrigin = false)
+        protected Rectangle GetParentBounds()
         {
-            geometry = newGeo;
+            if (parent != null)
+                return parent.scaledGeometry;
 
-            if(setOrigin && newOrigin != null)
+            return new Rectangle(0, 0,
+                (int)(Program.GetGame().Window.ClientBounds.Width),
+                (int)(Program.GetGame().Window.ClientBounds.Height));
+        }
+
+        public void SetOffset(Vector2 newOffset)
+        {
+            offset = newOffset;
+            //ScaleGeometry();
+        }
+
+        public Vector2 GetSize()
+        {
+            return size;
+        }
+
+        public void AttachToParent(Widget parentWidget, AnchorPosition anchorPos, Vector2? pixelOffset = null)
+        {
+            if (parent != null)
             {
-                origin.X = newOrigin.Value.X;
-                origin.Y = newOrigin.Value.Y;
+                parent.children.Remove(this);
             }
-            
+
+            parent = parentWidget;
+            if (parent != null)
+            {
+                parent.children.Add(this);
+            }
+
+            anchor = anchorPos;
+            offset = pixelOffset ?? Vector2.Zero;
+            CalculateRelativePosition();
             ScaleGeometry();
+        }
+
+        public void DetachFromParent()
+        {
+            if (parent != null)
+            {
+                parent.children.Remove(this);
+                parent = null;
+
+                CalculateRelativePosition();
+                ScaleGeometry();
+            }
+        }
+
+        private void CalculateRelativePosition()
+        {
+            Rectangle bounds = GetParentBounds();
+
+            switch (anchor)
+            {
+                case AnchorPosition.TopLeft:
+                    anchorPosition = new Vector2(0, 0);
+                    break;
+                case AnchorPosition.TopCenter:
+                    anchorPosition = new Vector2(0.5f, 0);
+                    break;
+                case AnchorPosition.TopRight:
+                    anchorPosition = new Vector2(1, 0);
+                    break;
+                case AnchorPosition.MiddleLeft:
+                    anchorPosition = new Vector2(0, 0.5f);
+                    break;
+                case AnchorPosition.Center:
+                    anchorPosition = new Vector2(0.5f, 0.5f);
+                    break;
+                case AnchorPosition.MiddleRight:
+                    anchorPosition = new Vector2(1, 0.5f);
+                    break;
+                case AnchorPosition.BottomLeft:
+                    anchorPosition = new Vector2(0, 1);
+                    break;
+                case AnchorPosition.BottomCenter:
+                    anchorPosition = new Vector2(0.5f, 1);
+                    break;
+                case AnchorPosition.BottomRight:
+                    anchorPosition = new Vector2(1, 1);
+                    break;
+            }
         }
 
         public void ScaleGeometry()
         {
-            scaledGeometry.X = (int)origin.X;
-            scaledGeometry.Y = (int)origin.Y;
+            Rectangle bounds = GetParentBounds();
 
-            scaledGeometry.X = (int)(scaledGeometry.X * HUD.DPIScale);
-            scaledGeometry.Y = (int)(scaledGeometry.Y * HUD.DPIScale);
+            // Calculate base position from relative coordinates
+            Vector2 basePosition = new Vector2(
+                bounds.X + (bounds.Width * anchorPosition.X),
+                bounds.Y + (bounds.Height * anchorPosition.Y)
+            );
 
-            scaledGeometry.X += geometry.X;
-            scaledGeometry.Y += geometry.Y;
+            // Apply DPI scaling to the geometry dimensions
+            float scaledWidth = size.X * HUD.DPIScale;
+            float scaledHeight = size.Y * HUD.DPIScale;
 
-            scaledGeometry.Width = (int)(geometry.Width * HUD.DPIScale);
-            scaledGeometry.Height = (int)(geometry.Height * HUD.DPIScale);
+            // Adjust position based on anchor point and widget size
+            float finalX = basePosition.X;
+            float finalY = basePosition.Y;
+
+            // Adjust X position based on horizontal anchor
+            if (anchorPosition.X == 0.5f)
+                finalX -= scaledWidth / 2;
+            else if (anchorPosition.X == 1)
+                finalX -= scaledWidth;
+
+            // Adjust Y position based on vertical anchor
+            if (anchorPosition.Y == 0.5f)
+                finalY -= scaledHeight / 2;
+            else if (anchorPosition.Y == 1)
+                finalY -= scaledHeight;
+
+            // Apply offset
+            finalX += offset.X * HUD.DPIScale;
+            finalY += offset.Y * HUD.DPIScale;
+
+            // Set final scaled geometry
+            scaledGeometry = new Rectangle(
+                (int)finalX,
+                (int)finalY,
+                (int)scaledWidth,
+                (int)scaledHeight
+            );
+
+            // Update all children
+            foreach (var child in children)
+            {
+                child.ScaleGeometry();
+            }
+        }
+
+        public void SetGeometry(Vector2 newSize, AnchorPosition anchorPos, Vector2? pixelOffset = null)
+        {
+            size = newSize;
+            anchor = anchorPos;
+            offset = pixelOffset ?? Vector2.Zero;
+
+            CalculateRelativePosition();
+            ScaleGeometry();
+        }
+
+        public bool IsHovered()
+        {
+            return scaledGeometry.Contains(Mouse.GetState().X, Mouse.GetState().Y);
         }
 
         public void DestroyWidget()

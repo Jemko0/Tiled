@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,7 +45,7 @@ namespace Tiled.UI
         public static T CreateWidget<T>(params object?[]? args) where T : Widget
         {
             T newWidget = (T)Activator.CreateInstance(typeof(T), args);
-            newWidget.onWidgetDestroyed += HUDElementDestroyed; ;
+            newWidget.onWidgetDestroyed += HUDElementDestroyed;
             newWidget.Construct();
             activeWidgets.Add(newWidget);
             return newWidget;
@@ -52,8 +53,18 @@ namespace Tiled.UI
 
         internal void Init()
         {
-            var test = CreateWidget<Widget>(this);
-            test.SetGeometry(new Rectangle(0, 0, 100, 100), new Vector2(Main.screenCenter.X, Main.screenCenter.Y), true);
+            var vb = CreateWidget<WVerticalBox>(this);
+            vb.SetGeometry(new Vector2(500, 900), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
+
+            var ch = CreateWidget<Widget>(this);
+            ch.SetGeometry(new Vector2(100, 100), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
+
+            ch.AttachToParent(vb, DataStructures.AnchorPosition.TopLeft);
+
+            ch = CreateWidget<Widget>(this);
+            ch.SetGeometry(new Vector2(100, 240), DataStructures.AnchorPosition.Center, new Vector2(0, 0));
+
+            ch.AttachToParent(vb, DataStructures.AnchorPosition.TopLeft);
         }
 
         private void GetDPIScale()

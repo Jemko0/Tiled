@@ -77,4 +77,17 @@ namespace Tiled.DataStructures
             destroyedWidget = w;
         }
     }
+
+    public enum AnchorPosition
+    {
+        TopLeft,
+        TopCenter,
+        TopRight,
+        MiddleLeft,
+        Center,
+        MiddleRight,
+        BottomLeft,
+        BottomCenter,
+        BottomRight
+    }
 }
