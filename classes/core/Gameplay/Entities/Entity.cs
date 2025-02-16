@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.ID;
@@ -13,7 +14,7 @@ namespace Tiled.Gameplay
         public Vector2 size;
         public Vector2 velocity;
         public bool canCollide = true;
-
+        public Texture2D entitySprite;
         protected CollisionComponent collision;
 
         public Entity()
@@ -39,6 +40,7 @@ namespace Tiled.Gameplay
         {
             EntityDef e = EntityID.GetEntityInfo(type);
             size = e.size;
+            entitySprite = e.sprite;
         }
 
         public System.Drawing.RectangleF GetRectF()
@@ -75,12 +77,17 @@ namespace Tiled.Gameplay
 
         public virtual void Draw(ref SpriteBatch sb)
         {
-            Texture2D t = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
-            t.SetData(new Color[] { Color.White });
             Color finalColor = Color.White;
-            finalColor *= World.lightMap[(int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)] / Lighting.MAX_LIGHT;
+
+            if(!World.IsValidIndex(World.lightMap, (int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)))
+            {
+                //Debug.Fail("World.lightMap[x, y] failed because one of the indices was outside the bounds of the array!");
+                return;
+            }
+
+            finalColor *= (float)(World.lightMap[(int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)] / (float)Lighting.MAX_LIGHT);
             finalColor.A = 255;
-            sb.Draw(t, Rendering.WorldToScreen(GetRect()), finalColor);
+            sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), finalColor);
         }
 
         public void Dispose()

@@ -13,6 +13,18 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin Entities/EntityDefault.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Entities/EntityDefault.png
+
 #begin Fonts/Andy.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
@@ -31,12 +43,6 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Shaders/SunShader.fx
-
-#begin Shaders/TileShader.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:Shaders/TileShader.fx
 
 #begin Shaders/TileShader.fx
 /importer:EffectImporter

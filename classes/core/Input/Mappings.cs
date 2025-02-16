@@ -44,5 +44,10 @@ namespace Tiled.Input
             actionMappings.Add("move_right", new ActionMapping(Keys.D));
             actionMappings.Add("move_jump", new ActionMapping(Keys.Space));
         }
+
+        public static bool IsMappingHeld(string mapping)
+        {
+            return Keyboard.GetState().GetPressedKeys().Contains(actionMappings[mapping].keyboardKey);
+        }
     }
 }

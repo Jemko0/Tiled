@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Tiled.DataStructures;
@@ -8,10 +10,10 @@ namespace Tiled
 {
     public class World
     {
-        public static int maxTilesX = 1024;
-        public static int maxTilesY = 512;
+        public static int maxTilesX = -1;
+        public static int maxTilesY = -1;
 
-        public static bool renderWorld = true;
+        public static bool renderWorld = false;
         public const int TILESIZE = 16;
         public static Rectangle invalidFrame = new Rectangle(-1, -1, -1, -1);
         public static ETileType[,] tiles;
@@ -22,6 +24,12 @@ namespace Tiled
         public float worldTime = 8.0f;
         public const float timeSpeed = 0.005f;
 
+        public Progress<WorldGenProgress> currentTaskProgress;
+        private static TaskCompletionSource<bool> currentCompletionSource;
+        public static List<WorldGenTask> tasks = new List<WorldGenTask>();
+        public delegate void TaskProgressChanged(object sender, WorldGenProgress e);
+        public event TaskProgressChanged taskProgressChanged;
+        
         public World()
         {
         }
@@ -40,18 +48,6 @@ namespace Tiled
                 {
                     tileFramesCached[i, j] = invalidFrame;
                     wallFramesCached[i, j] = invalidFrame;
-
-                    if(j < maxTilesY / 2)
-                    {
-                        tiles[i, j] = ETileType.Air;
-                        walls[i, j] = EWallType.Air;
-                    }
-                    else
-                    {
-                        tiles[i, j] = ETileType.Dirt;
-                        walls[i, j] = EWallType.Dirt;
-                    }
-                    
                     lightMap[i, j] = 0;
                 }
             }
@@ -71,14 +67,52 @@ namespace Tiled
             Lighting.SKY_LIGHT_MULT = Math.Clamp((float)Math.Sin(Math.Pow(worldTime / h, dnExp) * (Math.PI / 0.5f)), 0.0f, 1.0f);
             lightUpdateCounter++;
 
-            if(lightUpdateCounter >= 30)
+            if(lightUpdateCounter >= 30 && renderWorld)
             {
                 lightUpdateCounter = 0;
                 Lighting.QueueGlobalLightUpdate();
             }
 
-            System.Diagnostics.Debug.WriteLine("world: " + worldTime + " && " + Lighting.SKY_LIGHT_MULT + " LIGHTVAL: " + Lighting.CalculateSkyLight(1));
+            //System.Diagnostics.Debug.WriteLine("world: " + worldTime + " && " + Lighting.SKY_LIGHT_MULT + " LIGHTVAL: " + Lighting.CalculateSkyLight(1));
         }
+
+        public void InitTasks()
+        {
+            tasks.Add(new WGT_TestFillWorld("task"));
+        }
+
+        public async Task RunTasks(WorldGenParams newParams)
+        {
+            maxTilesX = newParams.maxTilesX;
+            maxTilesY = newParams.maxTilesY;
+            Init(); //RE INIT
+
+            foreach (var task in tasks)
+            {
+                currentCompletionSource = new TaskCompletionSource<bool>();
+                currentTaskProgress = new Progress<WorldGenProgress>();
+                currentTaskProgress.ProgressChanged += CurrentTaskProgressChanged;
+
+                var runTask = task.Run(currentTaskProgress, newParams);
+                await Task.WhenAll(runTask, currentCompletionSource.Task);
+            }
+        }
+
+        public static void CompleteCurrent()
+        {
+            if (currentCompletionSource != null && !currentCompletionSource.Task.IsCompleted)
+            {
+                currentCompletionSource.SetResult(true);
+            }
+        }
+
+        private void CurrentTaskProgressChanged(object sender, WorldGenProgress e)
+        {
+            Debug.WriteLine("TASK: " + e.PercentComplete);
+            taskProgressChanged?.Invoke(this, e);
+        }
+
+
 
         #region UTIL_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -120,14 +154,22 @@ namespace Tiled
 
         public static Rectangle GetTileFrame(int x, int y, Tile tileData)
         {
+            if (!tileData.useFrames)
+            {
+                return new Rectangle(0, 0, TILESIZE, TILESIZE);
+            }
+
+            if (tileData.hangingOnWalls)
+            {
+                tileFramesCached[x, y] = GetHangingTileFrame(x, y, tileData);
+                return tileFramesCached[x, y];
+            }
+
             int frameX = 0;
             int frameY = 0;
             int frameSlot = tileData.frameSize + tileData.framePadding;
 
-            if(!tileData.useFrames)
-            {
-                return new Rectangle(0, 0, TILESIZE, TILESIZE);
-            }
+            
 
             if (IsValidFrame(tileFramesCached[x, y]))
             {
@@ -224,6 +266,36 @@ namespace Tiled
             return tileFramesCached[x, y];
         }
 
+        public static Rectangle GetHangingTileFrame(int x, int y, Tile tileData)
+        {
+            int frameX = 0;
+            int frameY = 0;
+            int frameSlot = tileData.frameSize + tileData.framePadding;
+
+            bool r = IsValidTile(x + 1, y) && !tileData.ignoreNeighbors.R;
+            bool l = IsValidTile(x - 1, y) && !tileData.ignoreNeighbors.L;
+            bool b = IsValidTile(x, y + 1) && !tileData.ignoreNeighbors.B;
+
+            if(b)
+            {
+                frameX = 0;
+                frameY = 0;
+            }
+
+            if (r)
+            {
+                frameX = frameSlot ;
+                frameY = 0;
+            }
+
+            if(l)
+            {
+                frameX = frameSlot * 2;
+                frameY = 0;
+            }
+
+            return new Rectangle(frameX, frameY, tileData.frameSize, tileData.frameSize);
+        }
         public static Rectangle GetWallFrame(int x, int y, Wall wallData)
         {
             int frameX = 0;

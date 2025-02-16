@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tiled.UI.UserWidgets;
 
 namespace Tiled.UI
 {
@@ -53,7 +54,10 @@ namespace Tiled.UI
 
         internal void Init()
         {
+            var title = CreateWidget<UWTitle>(this);
+            title.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
 
+            //CreateWidget<UWMessage>(this, "There was an error erroring an error.");
         }
 
         private void GetDPIScale()

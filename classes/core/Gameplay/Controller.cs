@@ -24,31 +24,12 @@ namespace Tiled.Gameplay
         public void Possess(Entity entity)
         {
             controlledEntity = entity;
-            Mappings.actionMappings["move_left"].onActionMappingPressed += MoveLeft;
-            Mappings.actionMappings["move_left"].onActionMappingReleased += LeftRightReleased;
-            Mappings.actionMappings["move_right"].onActionMappingPressed += MoveRight;
-            Mappings.actionMappings["move_right"].onActionMappingReleased += LeftRightReleased;
             Mappings.actionMappings["move_jump"].onActionMappingPressed += PlayerJump;
         }
 
         private void PlayerJump(ActionMappingArgs e)
         {
             ((Player)controlledEntity).Jump();
-        }
-
-        private void MoveRight(ActionMappingArgs e)
-        {
-            inputLR = 1.0f;
-        }
-
-        private void LeftRightReleased(ActionMappingArgs e)
-        {
-            inputLR = 0.0f;
-        }
-
-        private void MoveLeft(ActionMappingArgs e)
-        {
-            inputLR = -1.0f;
         }
 
         public void Unpossess()
@@ -63,6 +44,23 @@ namespace Tiled.Gameplay
                 if(attachToEntity)
                 {
                     Program.GetGame().localCamera.position = controlledEntity.position;
+                }
+
+                inputLR = 0.0f;
+
+                if(Mappings.IsMappingHeld("move_left"))
+                {
+                    inputLR = -1.0f;
+                }
+
+                if (Mappings.IsMappingHeld("move_right"))
+                {
+                    inputLR = 1.0f;
+                }
+
+                if(Mappings.IsMappingHeld("move_left") && Mappings.IsMappingHeld("move_right"))
+                {
+                    inputLR = 0.0f;
                 }
             }
         }

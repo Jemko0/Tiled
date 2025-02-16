@@ -38,7 +38,7 @@ namespace Tiled.ID
 
                 case ETileType.Torch:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/torch");
-                    t.ignoreNeighbors = new TileNeighbors(0, 0, 1, 1);
+                    t.hangingOnWalls = true;
                     t.blockLight = 0;
                     t.light = 32;
                     t.collision = false;
@@ -81,8 +81,9 @@ namespace Tiled.ID
         public static EntityDef GetEntityInfo(EEntityType type)
         {
             EntityDef entity = new EntityDef();
+            entity.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/EntityDefault");
 
-            switch(type)
+            switch (type)
             {
                 case EEntityType.None:
                     entity.name = "None";

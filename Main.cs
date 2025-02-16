@@ -43,22 +43,25 @@ namespace Tiled
         {
             base.Initialize();
 
-            InputManager.onLeftMousePressed += LMB;
-            InputManager.onRightMousePressed += RMB;
             Mappings.InitializeMappings();
             entities = new List<Entity>();
             localPlayerController = new Controller();
 
-            Player e = Entity.NewEntity<Player>();
-            e.position.X = 256.0f;
+            
+
             localCamera.position.Y = 8912.0f / 3f;
-            e.position.Y = 8912.0f / 3f;
-            e.velocity.X = 5f;
-            e.velocity.Y = 5f;
-            localPlayerController.Possess(e);
+            
 
             Window.ClientSizeChanged += MainWindowResized;
             CalcRenderScale();
+        }
+
+        public void CreatePlayer(Vector2 location)
+        {
+            Player e = Entity.NewEntity<Player>();
+            e.position = location;
+            e.Initialize(EEntityType.Player);
+            localPlayerController.Possess(e);
         }
 
         protected override void LoadContent()
@@ -66,7 +69,7 @@ namespace Tiled
             Fonts.InitFonts();
 
             world = new World();
-            world.Init();
+            //world.Init();
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             localCamera = new Camera(this);
@@ -79,11 +82,7 @@ namespace Tiled
             localHUD = new HUD(_spriteBatch, _graphics);
         }
 
-        private void RMB(MouseButtonEventArgs e)
-        {
-            Point tile = Rendering.ScreenToTile(e.position);
-            World.SetWall(tile.X, tile.Y, EWallType.Air);
-        }
+        
 
         private void MainWindowResized(object sender, EventArgs e)
         {
@@ -106,18 +105,6 @@ namespace Tiled
             renderScale = Window.ClientBounds.Height / 1080.0f;
         }
 
-        private void LMB(MouseButtonEventArgs e)
-        {
-            Point tile = Rendering.ScreenToTile(e.position);
-
-            if(Keyboard.GetState().IsKeyDown(Keys.T))
-            {
-                World.SetTile(tile.X, tile.Y, ETileType.Torch);
-                return;
-            }
-
-            World.SetTile(tile.X, tile.Y, ETileType.Air);
-        }
         public static float delta;
         protected override void Update(GameTime gameTime)
         {
@@ -145,7 +132,11 @@ namespace Tiled
             localInputManager.Update();
             Mappings.Update();
 
-            Lighting.Update();
+            if(World.renderWorld)
+            {
+                Lighting.Update();
+            }
+            
             world.UpdateWorld();
 
             localPlayerController.Update();
@@ -160,10 +151,30 @@ namespace Tiled
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
+            
 
             RenderSky();
             RenderSun();
 
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
+
+            RenderWorld();
+            RenderEntities();
+
+            _spriteBatch.End();
+
+            localHUD.DrawWidgets();
+        }
+
+        public void RenderWorld()
+        {
+
+            if(!World.renderWorld)
+            {
+                return;
+            }
+
+            
             int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE);
             int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE);
 
@@ -172,13 +183,12 @@ namespace Tiled
 
             int endX = startX + tilesX - 1;
             int endY = startY + tilesY - 1;
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
 
             for (int x = startX; x < endX; x++)
             {
                 for (int y = startY; y < endY; y++)
                 {
-                    if(!World.IsValidIndex(World.tiles, x, y))
+                    if (!World.IsValidIndex(World.tiles, x, y))
                     {
                         continue;
                     }
@@ -187,10 +197,6 @@ namespace Tiled
                 }
             }
 
-            RenderEntities();
-            _spriteBatch.End();
-
-            localHUD.DrawWidgets();
         }
 
         public void RenderTile(int x, int y)

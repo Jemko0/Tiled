@@ -12,6 +12,7 @@ namespace Tiled.DataStructures
         public Texture2D sprite;
         public bool useFrames;
         public bool collision;
+        public bool hangingOnWalls;
         public uint light;
         public TileNeighbors ignoreNeighbors;
         public int frameSize;
@@ -55,6 +56,7 @@ namespace Tiled.DataStructures
     public struct EntityDef
     {
         public string name;
+        public Texture2D sprite;
         public Vector2 size;
     }
 

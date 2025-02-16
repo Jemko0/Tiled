@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Tiled.DataStructures;
 
@@ -40,6 +41,8 @@ namespace Tiled.UI
 
         protected Rectangle GetParentBounds()
         {
+            Debug.Assert(parent != this);
+
             if (parent != null)
                 return parent.scaledGeometry;
 
@@ -59,8 +62,11 @@ namespace Tiled.UI
             return size;
         }
 
-        public void AttachToParent(Widget parentWidget, AnchorPosition anchorPos, Vector2? pixelOffset = null)
+        public void AttachToParent(Widget parentWidget, AnchorPosition? anchorPos = AnchorPosition.TopLeft, Vector2? pixelOffset = null)
         {
+
+            Debug.Assert(parentWidget != this);
+
             if (parent != null)
             {
                 parent.children.Remove(this);
@@ -72,7 +78,10 @@ namespace Tiled.UI
                 parent.children.Add(this);
             }
 
-            anchor = anchorPos;
+            if (anchorPos != null)
+            {
+                anchor = (AnchorPosition)anchorPos;
+            }
             offset = pixelOffset ?? Vector2.Zero;
             CalculateRelativePosition();
             ScaleGeometry();
@@ -117,6 +126,8 @@ namespace Tiled.UI
 
         public void ScaleGeometry()
         {
+            if(isBeingDestroyed) return;
+
             Rectangle bounds = GetParentBounds();
 
             // Calculate base position from relative coordinates
@@ -157,6 +168,11 @@ namespace Tiled.UI
                 (int)scaledHeight
             );
 
+            if(children == null)
+            {
+                return;
+            }
+
             // Update all children
             foreach (var child in children)
             {
@@ -164,10 +180,14 @@ namespace Tiled.UI
             }
         }
 
-        public void SetGeometry(Vector2 newSize, AnchorPosition anchorPos, Vector2? pixelOffset = null)
+        public void SetGeometry(Vector2 newSize, AnchorPosition? anchorPos, Vector2? pixelOffset = null)
         {
             size = newSize;
-            anchor = anchorPos;
+            if (anchorPos != null)
+            {
+                anchor = (AnchorPosition)anchorPos;
+            }
+            
             offset = pixelOffset ?? Vector2.Zero;
 
             CalculateRelativePosition();
@@ -176,7 +196,8 @@ namespace Tiled.UI
 
         public bool IsHovered()
         {
-            return scaledGeometry.Contains(Mouse.GetState().X, Mouse.GetState().Y);
+            
+            return !isBeingDestroyed && scaledGeometry.Contains(Mouse.GetState().X, Mouse.GetState().Y);
         }
 
         private bool isBeingDestroyed = false;  // Add this flag
