@@ -64,6 +64,9 @@ namespace Tiled.DataStructures
     {
         Air = 0,
         Dirt,
+        Grass,
+        Stone,
+        Plank,
         Torch,
     }
 

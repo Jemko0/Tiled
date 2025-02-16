@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Tiled.DataStructures;
 using Tiled.ID;
 
 namespace Tiled

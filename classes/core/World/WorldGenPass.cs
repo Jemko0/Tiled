@@ -86,6 +86,8 @@ namespace Tiled
                 FastNoiseLite noise = new FastNoiseLite();
                 int baseSurfaceHeight = wparams.maxTilesY / 2;
 
+                World.cavernsLayerHeight = wparams.maxTilesY - wparams.maxTilesY / 8;
+
                 const int CHUNK_SIZE = 100;
                 for (int chunkStart = 0; chunkStart < wparams.maxTilesX; chunkStart += CHUNK_SIZE)
                 {
@@ -98,11 +100,29 @@ namespace Tiled
                             break;
 
                         int surfaceTileY = CalcSurface(x, wparams, noise, baseSurfaceHeight);
+                        int rockHeight = surfaceTileY + 80;
                         World.surfaceHeights[x] = surfaceTileY;
 
                         for (int y = surfaceTileY; y < wparams.maxTilesY; y++)
                         {
-                            World.tiles[x, y] = ETileType.Dirt;
+                            ETileType placeType = ETileType.Air;
+                            if(y == surfaceTileY)
+                            {
+                                placeType = ETileType.Grass;
+                            }
+                            else
+                            {
+                                if(y > rockHeight)
+                                {
+                                    placeType = ETileType.Stone;
+                                }
+                                else
+                                {
+                                    placeType = ETileType.Dirt;
+                                }
+                            }
+                            World.walls[x, y] = EWallType.Dirt;
+                            World.tiles[x, y] = placeType;
                         }
                     }
 

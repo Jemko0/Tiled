@@ -23,7 +23,7 @@ namespace Tiled.ID
             t.light = 0;
             t.blockLight = 3;
             t.collision = true;
-
+            
             switch(type)
             {
                 case ETileType.Air:
@@ -34,6 +34,18 @@ namespace Tiled.ID
 
                 case ETileType.Dirt:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/dirt");
+                    break;
+
+                case ETileType.Grass:
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/grass");
+                    break;
+
+                case ETileType.Stone:
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/stone");
+                    break;
+
+                case ETileType.Plank:
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/plank");
                     break;
 
                 case ETileType.Torch:
@@ -59,8 +71,8 @@ namespace Tiled.ID
             w.useFrames = true;
             w.framePadding = 2;
             w.frameSize = 16;
-
-            switch(type)
+            
+            switch (type)
             {
                 case EWallType.Air:
                     w.render = false;

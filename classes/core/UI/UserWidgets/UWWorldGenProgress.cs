@@ -59,7 +59,7 @@ namespace Tiled.UI.UserWidgets
                     var newParams = new WorldGenParams()
                     {
                         maxTilesX = 5000,
-                        maxTilesY = 5000,
+                        maxTilesY = 1000,
                         seed = 0,
                     };
 

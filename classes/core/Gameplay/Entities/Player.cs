@@ -1,11 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.Input;
@@ -67,6 +62,18 @@ namespace Tiled.Gameplay
             }
 
             MovementUpdate();
+        }
+
+        public override Rectangle? GetFrame()
+        {
+            frameSlotSizeX = 24;
+            frameSlotSizeY = 48;
+
+            if(velocity.Y == 0)
+            {
+                return new Rectangle(frameSlotSizeX * 0, frameSlotSizeY * 1, frameSlotSizeX, frameSlotSizeY);
+            }
+            return new Rectangle(frameSlotSizeX * 0, frameSlotSizeY * 0, frameSlotSizeX, frameSlotSizeY);
         }
 
         private void LMB(MouseButtonEventArgs e)

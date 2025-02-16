@@ -10,7 +10,7 @@ namespace Tiled.Gameplay
 {
     public class Controller
     {
-        public bool attachToEntity = false;
+        public bool attachToEntity = true;
         public float inputLR;
         public float inputUD;
 

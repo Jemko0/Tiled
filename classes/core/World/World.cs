@@ -35,7 +35,9 @@ namespace Tiled
         public event TaskProgressChanged taskProgressChanged;
 
         public static int[] surfaceHeights;
-        
+        public static int cavesLayerHeight = 0;
+        public static int cavernsLayerHeight = 0;
+
         public World()
         {
         }
@@ -62,7 +64,7 @@ namespace Tiled
         int lightUpdateCounter = 0;
         public void UpdateWorld()
         {
-            timeSpeedMultiplier = Main.inTitle ? 128.0f : 1.0f;
+            timeSpeedMultiplier = Main.inTitle ? 128.0f : 2.0f;
 
             //HOURS IN DAY
             const float h = 24.0f;
@@ -75,7 +77,7 @@ namespace Tiled
             Lighting.SKY_LIGHT_MULT = Math.Clamp((float)Math.Sin(Math.Pow(worldTime / h, dnExp) * (Math.PI / 0.5f)), 0.0f, 1.0f);
             lightUpdateCounter++;
 
-            if(lightUpdateCounter >= 30 && renderWorld)
+            if(lightUpdateCounter >= 30 && renderWorld && !Lighting.isPerformingGlobalLightUpdate)
             {
                 lightUpdateCounter = 0;
                 Lighting.QueueGlobalLightUpdate();

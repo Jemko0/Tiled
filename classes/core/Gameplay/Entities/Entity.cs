@@ -16,7 +16,10 @@ namespace Tiled.Gameplay
         public bool canCollide = true;
         public Texture2D entitySprite;
         protected CollisionComponent collision;
+        protected int frameSlotSizeX = 32;
+        protected int frameSlotSizeY = 48;
 
+        public bool facingLeft;
         public Entity()
         {
             collision = new CollisionComponent(this);
@@ -59,9 +62,20 @@ namespace Tiled.Gameplay
 
         }
 
+        /// <summary>
+        /// default update handles facing left/right
+        /// </summary>
         public virtual void Update()
         {
-            
+            if(velocity.X != 0.0f)
+            {
+                facingLeft = velocity.X < 0.0f;
+            }
+        }
+
+        public virtual Rectangle? GetFrame()
+        {
+            return null;
         }
 
         public virtual void MovementUpdate()
@@ -82,13 +96,16 @@ namespace Tiled.Gameplay
 
             if(!World.IsValidIndex(World.lightMap, (int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)))
             {
-                //Debug.Fail("World.lightMap[x, y] failed because one of the indices was outside the bounds of the array!");
-                return;
+                finalColor = Color.Black;
+                goto draw;
             }
 
             finalColor *= (float)(World.lightMap[(int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)] / (float)Lighting.MAX_LIGHT);
             finalColor.A = 255;
-            sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), finalColor);
+
+            draw:
+            SpriteEffects flip = facingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+            sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), GetFrame(), finalColor, 0.0f, new Vector2(0, 0), flip, 0u);
         }
 
         public void Dispose()
