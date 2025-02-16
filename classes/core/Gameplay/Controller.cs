@@ -10,7 +10,7 @@ namespace Tiled.Gameplay
 {
     public class Controller
     {
-        public bool attachToEntity = true;
+        public bool attachToEntity = false;
         public float inputLR;
         public float inputUD;
 
@@ -24,12 +24,6 @@ namespace Tiled.Gameplay
         public void Possess(Entity entity)
         {
             controlledEntity = entity;
-            Mappings.actionMappings["move_jump"].onActionMappingPressed += PlayerJump;
-        }
-
-        private void PlayerJump(ActionMappingArgs e)
-        {
-            ((Player)controlledEntity).Jump();
         }
 
         public void Unpossess()

@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Tiled.DataStructures;
+using Tiled.UI;
+using Tiled.UI.UserWidgets;
 
 namespace Tiled
 {
@@ -22,13 +24,17 @@ namespace Tiled
         public static Rectangle[,] wallFramesCached;
         public static uint[,] lightMap;
         public float worldTime = 8.0f;
-        public const float timeSpeed = 0.005f;
+        public const float timeSpeed = 0.0002f;
+        public float timeSpeedMultiplier = 1.0f;
+        public const float gravity = 0.43f;
 
         public Progress<WorldGenProgress> currentTaskProgress;
         private static TaskCompletionSource<bool> currentCompletionSource;
         public static List<WorldGenTask> tasks = new List<WorldGenTask>();
         public delegate void TaskProgressChanged(object sender, WorldGenProgress e);
         public event TaskProgressChanged taskProgressChanged;
+
+        public static int[] surfaceHeights;
         
         public World()
         {
@@ -41,7 +47,7 @@ namespace Tiled
             tileFramesCached = new Rectangle[maxTilesX, maxTilesY];
             wallFramesCached = new Rectangle[maxTilesX, maxTilesY];
             lightMap = new uint[maxTilesX, maxTilesY];
-
+            surfaceHeights = new int[maxTilesX];
             for (int i = 0; i < maxTilesX; i++)
             {
                 for (int j = 0; j < maxTilesY; j++)
@@ -56,13 +62,15 @@ namespace Tiled
         int lightUpdateCounter = 0;
         public void UpdateWorld()
         {
+            timeSpeedMultiplier = Main.inTitle ? 128.0f : 1.0f;
+
             //HOURS IN DAY
             const float h = 24.0f;
 
             //Day Length Exponent (Higher num = night shorter)
-            const float dnExp = 3.0f;
+            const float dnExp = 2.0f;
 
-            worldTime = (worldTime + timeSpeed) % h;
+            worldTime = (worldTime + (timeSpeed * timeSpeedMultiplier)) % h;
             
             Lighting.SKY_LIGHT_MULT = Math.Clamp((float)Math.Sin(Math.Pow(worldTime / h, dnExp) * (Math.PI / 0.5f)), 0.0f, 1.0f);
             lightUpdateCounter++;
@@ -78,23 +86,24 @@ namespace Tiled
 
         public void InitTasks()
         {
-            tasks.Add(new WGT_TestFillWorld("task"));
+            tasks.Add(new WGT_Terrain("Terrain"));
         }
 
         public async Task RunTasks(WorldGenParams newParams)
         {
             maxTilesX = newParams.maxTilesX;
             maxTilesY = newParams.maxTilesY;
-            Init(); //RE INIT
+            Init(); // RE INIT
 
             foreach (var task in tasks)
             {
-                currentCompletionSource = new TaskCompletionSource<bool>();
                 currentTaskProgress = new Progress<WorldGenProgress>();
                 currentTaskProgress.ProgressChanged += CurrentTaskProgressChanged;
 
+                // Important: We need to await the actual task execution
                 var runTask = task.Run(currentTaskProgress, newParams);
-                await Task.WhenAll(runTask, currentCompletionSource.Task);
+                await runTask; // Wait for the actual task to complete
+
             }
         }
 
@@ -110,6 +119,24 @@ namespace Tiled
         {
             Debug.WriteLine("TASK: " + e.PercentComplete);
             taskProgressChanged?.Invoke(this, e);
+        }
+
+        public bool LoadWorld(bool fromFile, string? filePath = null)
+        {
+            if(fromFile)
+            {
+                if(filePath == null)
+                {
+                    UWMessage msg = HUD.CreateWidget<UWMessage>(Program.GetGame().localHUD, "ERROR \n LoadWorld(bool, string?) filePath was null! \n Game will close");
+                    msg.SetGeometry(new Vector2(720, 480), AnchorPosition.Center);
+                    return false;
+                }
+            }
+            else
+            {
+                worldTime = 8.0f;
+            }
+            return true;
         }
 
 

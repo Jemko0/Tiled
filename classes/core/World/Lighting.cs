@@ -24,8 +24,7 @@ namespace Tiled
         // Configuration for chunk processing
         private const int CHUNK_SIZE = 32;
         private const int UPDATES_PER_FRAME = 4;
-        private static Queue<(int startX, int startY, int endX, int endY)> chunksToProcess =
-            new Queue<(int startX, int startY, int endX, int endY)>();
+        private static Queue<(int startX, int startY, int endX, int endY)> chunksToProcess = new Queue<(int startX, int startY, int endX, int endY)>();
 
         // Task management
         private static CancellationTokenSource cancellationSource = new CancellationTokenSource();
@@ -106,7 +105,7 @@ namespace Tiled
                         await Task.Delay(1, token);
                     }
                 }
-                catch (OperationCanceledException)
+                catch (TaskCanceledException)
                 {
                     // Task was cancelled, just exit
                 }

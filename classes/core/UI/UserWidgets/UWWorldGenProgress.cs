@@ -42,32 +42,52 @@ namespace Tiled.UI.UserWidgets
             StartWorldGeneration();
         }
 
-        private async void StartWorldGeneration()
+        // Synchronous entry point
+        public void StartWorldGeneration()
         {
-            TaskCompletionSource<bool> _genTaskCompletionSource = new TaskCompletionSource<bool>();
+            TaskCompletionSource<bool> _genTaskCompletionSource;
             Task _genTask;
 
-            _genTask = Task.Run((Func<Task>)(async () =>
+            // Create a task completion source to track the overall process
+            _genTaskCompletionSource = new TaskCompletionSource<bool>();
+
+            // Start the async operation on a background thread
+            _genTask = Task.Run(async () =>
             {
-                var newParams = new WorldGenParams()
+                try
                 {
-                    maxTilesX = 5000,
-                    maxTilesY = 5000,
-                    seed = 0,
-                };
+                    var newParams = new WorldGenParams()
+                    {
+                        maxTilesX = 5000,
+                        maxTilesY = 5000,
+                        seed = 0,
+                    };
 
-                Program.GetGame().world.InitTasks();
-                Program.GetGame().world.taskProgressChanged += WGenProgressChanged;
+                    var game = Program.GetGame();
+                    game.world.InitTasks();
+                    game.world.taskProgressChanged += WGenProgressChanged;
+                    World.renderWorld = false;
 
-                World.renderWorld = false;
-                await Program.GetGame().world.RunTasks(newParams);
-                
-                Program.GetGame().CreatePlayer(new Vector2(newParams.maxTilesX / 2, 0));
-                World.renderWorld = true;
-                DestroyWidget();
-            }));
+                    // Wait for the world generation to complete
+                    await game.world.RunTasks(newParams);
 
-            //CODE HERE DOES NOT WAIT FOR Task.Run() TO FINISH
+                    // Only proceed if world generation was successful
+                    if (game.world.LoadWorld(false))
+                    {
+                        game.CreatePlayer(new Vector2(newParams.maxTilesX / 2, 0));
+                        World.renderWorld = true;
+                        Main.inTitle = false;
+                    }
+
+                    DestroyWidget();
+                    _genTaskCompletionSource.SetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    _genTaskCompletionSource.SetException(ex);
+                    throw;
+                }
+            });
         }
 
         private void WGenProgressChanged(object sender, WorldGenProgress e)

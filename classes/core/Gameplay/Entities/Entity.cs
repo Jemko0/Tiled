@@ -27,6 +27,7 @@ namespace Tiled.Gameplay
             T newEntity = (T)Activator.CreateInstance(typeof(T), args);
             newEntity.Initialize(EEntityType.None);
             Main.RegisterEntity(newEntity);
+            newEntity.Begin();
             return newEntity;
         }
 

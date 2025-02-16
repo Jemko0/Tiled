@@ -1,8 +1,11 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Tiled.DataStructures;
 
 namespace Tiled
 {
@@ -65,6 +68,86 @@ namespace Tiled
             }
 
             World.CompleteCurrent();
+        }
+    }
+
+    public class WGT_Terrain : WorldGenTask
+    {
+        public WGT_Terrain(string identifier) : base(identifier)
+        {
+        }
+
+        public override async Task Run(IProgress<WorldGenProgress> progress, WorldGenParams wparams)
+        {
+            using var cts = new CancellationTokenSource();
+
+            await Task.Run(() =>
+            {
+                FastNoiseLite noise = new FastNoiseLite();
+                int baseSurfaceHeight = wparams.maxTilesY / 2;
+
+                const int CHUNK_SIZE = 100;
+                for (int chunkStart = 0; chunkStart < wparams.maxTilesX; chunkStart += CHUNK_SIZE)
+                {
+                    int chunkEnd = Math.Min(chunkStart + CHUNK_SIZE, wparams.maxTilesX);
+
+                    // Process each chunk
+                    for (int x = chunkStart; x < chunkEnd; x++)
+                    {
+                        if (cts.Token.IsCancellationRequested)
+                            break;
+
+                        int surfaceTileY = CalcSurface(x, wparams, noise, baseSurfaceHeight);
+                        World.surfaceHeights[x] = surfaceTileY;
+
+                        for (int y = surfaceTileY; y < wparams.maxTilesY; y++)
+                        {
+                            World.tiles[x, y] = ETileType.Dirt;
+                        }
+                    }
+
+                    // Report progress after each chunk
+                    float percentComplete = (float)chunkEnd / wparams.maxTilesX;
+                    progress?.Report(new WorldGenProgress
+                    {
+                        CurrentTask = "Terrain",
+                        PercentComplete = percentComplete
+                    });
+                }
+
+                World.CompleteCurrent();
+            }, cts.Token);
+        }
+
+        private int CalcSurface(int x, WorldGenParams wparams, FastNoiseLite noise, int baseSurface)
+        {
+            //noise1
+            noise.SetSeed(wparams.seed);
+            noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+            noise.SetFractalType(FastNoiseLite.FractalType.FBm);
+            noise.SetFractalOctaves(3);
+            noise.SetFractalLacunarity(1.819654321f);
+            noise.SetFrequency(0.01345f);
+            float noise1 = (noise.GetNoise(x, 0)) * 15.11f;
+
+            noise.SetSeed(wparams.seed + 41 * 3);
+            noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+            noise.SetFractalType(FastNoiseLite.FractalType.Ridged);
+            noise.SetFractalOctaves(2);
+            noise.SetFractalLacunarity(1.314614361f);
+            noise.SetFrequency(0.02345f);
+            float noise2 = (noise.GetNoise(x, 0)) * 4f;
+
+            noise.SetSeed(wparams.seed + 31 * 3);
+            noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2S);
+            noise.SetFractalType(FastNoiseLite.FractalType.FBm);
+            noise.SetFractalOctaves(1);
+            noise.SetFractalLacunarity(1.1f);
+            noise.SetFrequency(0.0075f);
+            float pv = (noise.GetNoise(x, 0)) * 15.0f;
+
+            float finalVal = (noise1 - noise2) - pv;
+            return baseSurface + (int)finalVal;
         }
     }
 }
