@@ -31,7 +31,7 @@ namespace Tiled
         public static Point screenCenter;
 
         public static bool inTitle = true;
-
+        public static Texture2D undergroundBackgroundTexture;
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -44,7 +44,7 @@ namespace Tiled
         protected override void Initialize()
         {
             base.Initialize();
-            TargetElapsedTime = TimeSpan.FromMilliseconds(33);
+            TargetElapsedTime = TimeSpan.FromMilliseconds(16);
             Mappings.InitializeMappings();
             entities = new List<Entity>();
             localPlayerController = new Controller();
@@ -80,7 +80,7 @@ namespace Tiled
             skyShader = Content.Load<Effect>("Shaders/SkyShader");
 
             sunTex = Content.Load<Texture2D>("Sky/Sun");
-
+            undergroundBackgroundTexture = Content.Load<Texture2D>("UndergroundBackgrounds/DefaultUndergroundBackground");
             localHUD = new HUD(_spriteBatch, _graphics);
         }
 
@@ -162,15 +162,26 @@ namespace Tiled
 
             RenderSky();
             RenderSun();
+            
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
 
+            RenderBackground();
             RenderWorld();
             RenderEntities();
 
+            
             _spriteBatch.End();
 
             localHUD.DrawWidgets();
+        }
+
+        public void RenderBackground()
+        {
+            if(localCamera.position.Y >  World.averageSurfaceHeight * World.TILESIZE)
+            {
+                _spriteBatch.Draw(undergroundBackgroundTexture, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), new Rectangle((int)localCamera.position.X, (int)localCamera.position.Y, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+            }
         }
 
         public void RenderWorld()
