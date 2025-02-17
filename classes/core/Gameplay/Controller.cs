@@ -10,7 +10,8 @@ namespace Tiled.Gameplay
 {
     public class Controller
     {
-        public bool attachToEntity = true;
+        public bool ignoreInput = false;
+        public bool attachToEntity = false;
         public float inputLR;
         public float inputUD;
 
@@ -18,9 +19,8 @@ namespace Tiled.Gameplay
         {
 
         }
-
+#nullable enable
         public Entity? controlledEntity;
-
         public void Possess(Entity entity)
         {
             controlledEntity = entity;
@@ -40,22 +40,31 @@ namespace Tiled.Gameplay
                     Program.GetGame().localCamera.position = controlledEntity.position;
                 }
 
+                if(ignoreInput)
+                {
+                    return;
+                }
+                GetInput();
+            }
+        }
+
+        public void GetInput()
+        {
+            inputLR = 0.0f;
+
+            if(Mappings.IsMappingHeld("move_left"))
+            {
+                inputLR = -1.0f;
+            }
+
+            if (Mappings.IsMappingHeld("move_right"))
+            {
+                inputLR = 1.0f;
+            }
+
+            if(Mappings.IsMappingHeld("move_left") && Mappings.IsMappingHeld("move_right"))
+            {
                 inputLR = 0.0f;
-
-                if(Mappings.IsMappingHeld("move_left"))
-                {
-                    inputLR = -1.0f;
-                }
-
-                if (Mappings.IsMappingHeld("move_right"))
-                {
-                    inputLR = 1.0f;
-                }
-
-                if(Mappings.IsMappingHeld("move_left") && Mappings.IsMappingHeld("move_right"))
-                {
-                    inputLR = 0.0f;
-                }
             }
         }
     }

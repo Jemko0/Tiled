@@ -228,7 +228,11 @@ namespace Tiled
 
         public static uint CalculateSkyLight(int y)
         {
-            return (uint)(MAX_SKY_LIGHT * SKY_LIGHT_MULT);
+            if(y < World.averageSurfaceHeight + 80)
+            {
+                return (uint)(MAX_SKY_LIGHT * SKY_LIGHT_MULT);
+            }
+            return 0;
         }
 
         private static void PropagateLight(int x, int y, Queue<(int x, int y)> propagationQueue)

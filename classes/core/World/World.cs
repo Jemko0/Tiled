@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Tiled.DataStructures;
+using Tiled.ID;
 using Tiled.UI;
 using Tiled.UI.UserWidgets;
 
@@ -37,6 +38,7 @@ namespace Tiled
         public static int[] surfaceHeights;
         public static int cavesLayerHeight = 0;
         public static int cavernsLayerHeight = 0;
+        public static int averageSurfaceHeight = 0;
 
         public World()
         {
@@ -159,6 +161,11 @@ namespace Tiled
             return tiles[x, y] != ETileType.Air;
         }
 
+        public static bool IsValidForTileFrame(int x, int y)
+        {
+            return IsValidTile(x, y) && TileID.GetTile(tiles[x, y]).useFrames;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidWall(int x, int y)
         {
@@ -205,10 +212,10 @@ namespace Tiled
                 return tileFramesCached[x, y];
             }
 
-            bool r = IsValidTile(x + 1, y) && !tileData.ignoreNeighbors.R;
-            bool l = IsValidTile(x - 1, y) && !tileData.ignoreNeighbors.L;
-            bool t = IsValidTile(x, y - 1) && !tileData.ignoreNeighbors.T;
-            bool b = IsValidTile(x, y + 1) && !tileData.ignoreNeighbors.B;
+            bool r = IsValidForTileFrame(x + 1, y) && !tileData.ignoreNeighbors.R;
+            bool l = IsValidForTileFrame(x - 1, y) && !tileData.ignoreNeighbors.L;
+            bool t = IsValidForTileFrame(x, y - 1) && !tileData.ignoreNeighbors.T;
+            bool b = IsValidForTileFrame(x, y + 1) && !tileData.ignoreNeighbors.B;
 
             var tuple = (r, l, t, b);
 
@@ -301,9 +308,9 @@ namespace Tiled
             int frameY = 0;
             int frameSlot = tileData.frameSize + tileData.framePadding;
 
-            bool r = IsValidTile(x + 1, y) && !tileData.ignoreNeighbors.R;
-            bool l = IsValidTile(x - 1, y) && !tileData.ignoreNeighbors.L;
-            bool b = IsValidTile(x, y + 1) && !tileData.ignoreNeighbors.B;
+            bool r = IsValidForTileFrame(x + 1, y) && !tileData.ignoreNeighbors.R;
+            bool l = IsValidForTileFrame(x - 1, y) && !tileData.ignoreNeighbors.L;
+            bool b = IsValidForTileFrame(x, y + 1) && !tileData.ignoreNeighbors.B;
 
             if(b)
             {

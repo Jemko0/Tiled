@@ -10,13 +10,34 @@ namespace Tiled.DataStructures
     {
         public bool render;
         public Texture2D sprite;
+
+        /// <summary>
+        /// if false, will ignore tile frames, and also will be ignored by other tiles
+        /// </summary>
         public bool useFrames;
+ 
         public bool collision;
+
+        /// <summary>
+        /// determines if this tile only hangs on walls, like torches
+        /// </summary>
         public bool hangingOnWalls;
+
+        /// <summary>
+        /// strength of light that the tile emits by itself
+        /// </summary>
         public uint light;
+
+        /// <summary>
+        /// used for neighbor checking in tileFrames
+        /// </summary>
         public TileNeighbors ignoreNeighbors;
         public int frameSize;
         public int framePadding;
+
+        /// <summary>
+        /// how much light does this tile block? (default = 3)
+        /// </summary>
         public uint blockLight;
     }
 

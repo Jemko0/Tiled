@@ -11,6 +11,9 @@ sampler TextureSampler : register(s0);
 
 //light multiplier
 float timeLerp = 0.0f;
+int surface = 0;
+float cameraY = 0.0f;
+const uint tileSize = 16;
 
 struct VertexShaderOutput
 {
@@ -26,7 +29,10 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 
     skyBaseColor.r += red * timeLerp;
     float4 skyHorizonColor = saturate(skyBaseColor * 2.0f);
-    return lerp(skyBaseColor, skyHorizonColor, pow(input.TextureCoordinates.y, 2));
+	
+	//float mul = input.TextureCoordinates.y - ((surface - cameraY) / 144.0f);
+	float mul = 1.0f;
+    return lerp(skyBaseColor, skyHorizonColor, pow(input.TextureCoordinates.y, 2)) * mul;
 }
 
 technique SpriteDrawing

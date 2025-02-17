@@ -135,6 +135,8 @@ namespace Tiled
                     });
                 }
 
+                World.averageSurfaceHeight = (int)World.surfaceHeights.Average();
+
                 World.CompleteCurrent();
             }, cts.Token);
         }

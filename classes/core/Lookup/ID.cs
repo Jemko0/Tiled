@@ -11,8 +11,14 @@ namespace Tiled.ID
 {
     public class TileID
     {
+        public static Dictionary<ETileType, Tile> cachedGet = new Dictionary<ETileType, Tile>();
         public static Tile GetTile(ETileType type)
         {
+            if (cachedGet.ContainsKey(type))
+            {
+                return cachedGet[type];
+            }
+
             Tile t = new();
             t.render = true;
             t.sprite = null;
@@ -57,6 +63,7 @@ namespace Tiled.ID
                     break;
             }
 
+            cachedGet[type] = t;
             return t;
         }
     }
@@ -109,7 +116,7 @@ namespace Tiled.ID
 
                 case EEntityType.Player:
                     entity.name = "playername";
-                    entity.size = new Vector2(20.0f, 40.0f);
+                    entity.size = new Vector2(10.0f, 40.0f);
                     break;
             }
 

@@ -44,7 +44,7 @@ namespace Tiled
         protected override void Initialize()
         {
             base.Initialize();
-
+            TargetElapsedTime = TimeSpan.FromMilliseconds(33);
             Mappings.InitializeMappings();
             entities = new List<Entity>();
             localPlayerController = new Controller();
@@ -217,7 +217,7 @@ namespace Tiled
             Rectangle frame = World.GetTileFrame(x, y, tileData);
 
             Color finalColor = Color.White;
-            finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
+            finalColor *= (float)World.lightMap[x, y] / Lighting.MAX_LIGHT;
             finalColor.A = 255;
             _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, finalColor);
         }
@@ -242,6 +242,8 @@ namespace Tiled
         {
             _spriteBatch.Begin(effect: skyShader);
             skyShader.Parameters["timeLerp"].SetValue(Lighting.SKY_LIGHT_MULT);
+            //skyShader.Parameters["surface"]?.SetValue((int)(World.surfaceHeights[0] * (float)World.TILESIZE));
+            //skyShader.Parameters["cameraY"].SetValue(localCamera.position.Y);
             _spriteBatch.Draw(skyTex, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
             _spriteBatch.End();
         }
