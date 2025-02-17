@@ -41,6 +41,39 @@ namespace Tiled.DataStructures
         public uint blockLight;
     }
 
+    public struct Item
+    {
+        public string name;
+        public Texture2D sprite;
+        public Vector2 size;
+        public ushort maxStack;
+        public float useTime;
+        public float pickaxePower;
+        public float axePower;
+        public EItemSwingAnimationType swingAnimationType;
+    }
+
+    public struct ContainerItem
+    {
+        public EItemType type;
+        public ushort stack;
+
+        public static ContainerItem empty => new ContainerItem();
+    }
+
+    public enum EItemType
+    {
+        None,
+        Base,
+        BasePickaxe
+    }
+
+    public enum EItemSwingAnimationType
+    {
+        None,
+        Swing,
+    }
+
     public struct TileNeighbors
     {
         public bool R;

@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
 using Tiled.ID;
@@ -60,7 +61,7 @@ namespace Tiled
 
         public void CreatePlayer(Vector2 location)
         {
-            Player e = Entity.NewEntity<Player>();
+            EPlayer e = Entity.NewEntity<EPlayer>();
             e.position = location;
             e.Initialize(EEntityType.Player);
             localPlayerController.Possess(e);
@@ -148,7 +149,7 @@ namespace Tiled
 
             localPlayerController.Update();
             
-            foreach(Entity entity in entities)
+            foreach(Entity entity in entities.ToList())
             {
                 entity.Update();
             }
@@ -180,7 +181,7 @@ namespace Tiled
         {
             if(localCamera.position.Y >  World.averageSurfaceHeight * World.TILESIZE)
             {
-                _spriteBatch.Draw(undergroundBackgroundTexture, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), new Rectangle((int)localCamera.position.X, (int)localCamera.position.Y, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+                _spriteBatch.Draw(undergroundBackgroundTexture, new Rectangle(0, 1920 + World.averageSurfaceHeight * World.TILESIZE - (int)localCamera.position.Y, Window.ClientBounds.Width, Window.ClientBounds.Height), new Rectangle((int)localCamera.position.X, (int)localCamera.position.Y, (int)(Window.ClientBounds.Width / renderScale), (int)(Window.ClientBounds.Height / renderScale)), Color.White);
             }
         }
 

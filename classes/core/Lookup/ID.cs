@@ -116,11 +116,41 @@ namespace Tiled.ID
 
                 case EEntityType.Player:
                     entity.name = "playername";
-                    entity.size = new Vector2(10.0f, 40.0f);
+                    entity.size = new Vector2(20.0f, 40.0f);
                     break;
             }
 
             return entity;
+        }
+    }
+
+    public class ItemID
+    {
+        public static Item GetItem(EItemType type)
+        {
+            Item i = new Item();
+            i.name = "Default Item";
+            i.size = new Vector2(24, 24);
+            i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/item");
+            i.pickaxePower = 0.0f;
+            i.axePower = 0.0f;
+            i.maxStack = 99;
+            i.swingAnimationType = EItemSwingAnimationType.None;
+
+            switch(type)
+            {
+                case EItemType.Base:
+                    i.name = "Base";
+                    i.size = new Vector2(16, 16);
+                    break;
+
+                case EItemType.BasePickaxe:
+                    i.name = "Base Pickaxe";
+                    i.size = new Vector2(16, 16);
+                    break;
+            }
+
+            return i;
         }
     }
 }

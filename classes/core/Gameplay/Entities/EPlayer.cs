@@ -3,18 +3,19 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using Tiled.Collision;
 using Tiled.DataStructures;
+using Tiled.Gameplay.Items;
 using Tiled.Input;
 
 namespace Tiled.Gameplay
 {
-    public class Player : Entity
+    public class EPlayer : Entity
     {
         public float accel = 0.75f;
         public float maxWalkSpeed = 4.0f;
         public float jumpPower = 6f;
 
         int jumpCounter = 0;
-        public Player()
+        public EPlayer()
         {
             collision = new CollisionComponent(this);
             InputManager.onLeftMousePressed += LMB;
@@ -88,6 +89,20 @@ namespace Tiled.Gameplay
             if (Keyboard.GetState().IsKeyDown(Keys.T))
             {
                 World.SetTile(tile.X, tile.Y, ETileType.Torch);
+                return;
+            }
+
+            if (Keyboard.GetState().IsKeyDown(Keys.F))
+            {
+                World.SetTile(tile.X, tile.Y, ETileType.Dirt);
+                return;
+            }
+
+            if (Keyboard.GetState().IsKeyDown(Keys.I))
+            {
+                var i = EItem.CreateItem(EItemType.Base);
+                i.position = position;
+                i.velocity = new Vector2(10.0f * direction, -5.0f);
                 return;
             }
 

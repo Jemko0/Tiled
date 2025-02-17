@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using System.Threading;
 using System.Threading.Tasks;
 using Tiled.ID;
+using System.Linq;
 
 namespace Tiled
 {
@@ -233,6 +234,27 @@ namespace Tiled
                 return (uint)(MAX_SKY_LIGHT * SKY_LIGHT_MULT);
             }
             return 0;
+        }
+
+        public static float GetInterpLight(float x, float y)
+        {
+            
+            int centerX = (int)x;
+            int centerY = (int)y;
+
+            float[] neighbors = new float[4]
+            {
+                World.IsValidIndex(World.lightMap, centerX + 1, centerY)? World.lightMap[centerX + 1, centerY] : 0.0f,
+                World.IsValidIndex(World.lightMap, centerX - 1, centerY)? World.lightMap[centerX - 1, centerY] : 0.0f,
+                World.IsValidIndex(World.lightMap, centerX, centerY - 1)? World.lightMap[centerX, centerY - 1] : 0.0f,
+                World.IsValidIndex(World.lightMap, centerX, centerY + 1)? World.lightMap[centerX, centerY + 1] : 0.0f,
+            };
+
+            //average the neighbor array
+            float sum = neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3];
+            float avg = sum / 4.0f;
+
+            return avg;
         }
 
         private static void PropagateLight(int x, int y, Queue<(int x, int y)> propagationQueue)

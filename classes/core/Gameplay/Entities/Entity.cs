@@ -20,7 +20,13 @@ namespace Tiled.Gameplay
         protected int frameSlotSizeY = 48;
 
         public bool facingLeft;
+        public int direction;
         public Entity()
+        {
+            RegisterCollisionComponent();
+        }
+
+        public void RegisterCollisionComponent()
         {
             collision = new CollisionComponent(this);
         }
@@ -40,19 +46,23 @@ namespace Tiled.Gameplay
             Dispose();
         }
 
-        public void Initialize(EEntityType type)
+        /// <summary>
+        /// handles sprite and hitbox, ONLY OVERRIDE IF YOU KNOW WHAT YOU ARE DOING
+        /// </summary>
+        /// <param name="type"></param>
+        public virtual void Initialize(EEntityType type)
         {
             EntityDef e = EntityID.GetEntityInfo(type);
             size = e.size;
             entitySprite = e.sprite;
         }
 
-        public System.Drawing.RectangleF GetRectF()
+        public virtual System.Drawing.RectangleF GetRectF()
         {
             return new System.Drawing.RectangleF(position.X, position.Y, size.X, size.Y);
         }
 
-        public Rectangle GetRect()
+        public virtual Rectangle GetRect()
         {
             return new Rectangle((int)position.X, (int)position.Y, (int)size.X, (int)size.Y);
         }
@@ -70,6 +80,7 @@ namespace Tiled.Gameplay
             if(velocity.X != 0.0f)
             {
                 facingLeft = velocity.X < 0.0f;
+                direction = facingLeft ? 1 : -1;
             }
         }
 

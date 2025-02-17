@@ -13,6 +13,11 @@ namespace Tiled.Collision
 
         public CollisionComponent(Entity entity)
         {
+            SetEntity(entity);
+        }
+
+        public void SetEntity(Entity entity)
+        {
             this.entity = entity;
         }
 
@@ -100,6 +105,18 @@ namespace Tiled.Collision
             }
 
             entity.position.Y += moveY;
+        }
+
+        public Entity? GetCollidingEntity()
+        {
+            for (int i = 0; i < Main.entities.Count; i++)
+            {
+                if (entity.GetRectF().IntersectsWith(Main.entities[i].GetRectF()))
+                {
+                    return Main.entities[i];
+                }
+            }
+            return null;
         }
 
         private bool CastRay(Vector2 start, Vector2 direction, float length, out float hitDistance)
