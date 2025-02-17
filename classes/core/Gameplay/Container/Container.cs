@@ -38,23 +38,23 @@ namespace Tiled.Gameplay.Container
                     //overflow
                     int slotsNeeded = (int)Math.Ceiling(item.stack / (float)containerSize);
                     int[] overflowSlots = new int[slotsNeeded];
+
                     for(int i = 0; i < slotsNeeded; i++)
                     {
                         overflowSlots[i] = FindFreeSlot(overflowSlots);
-                        overflowSlots[i] = i;
                     }
 
-                    for(int i = 0; i < overflowSlots.Length; i++)
+                    for(int j = 0; j < overflowSlots.Length; j++)
                     {
-                        if(overflowSlots[i] != overflowSlots.Length - 1)
+                        if(overflowSlots[j] != overflowSlots.Length - 1)
                         {
-                            items[overflowSlots[i]].type = item.type;
-                            items[overflowSlots[i]].stack = itemMaxStack;
+                            items[overflowSlots[j]].type = item.type;
+                            items[overflowSlots[j]].stack = itemMaxStack;
                         }
                         else
                         {
-                            items[overflowSlots[i]].type = item.type;
-                            items[overflowSlots[i]].stack = (ushort)(item.stack % itemMaxStack);
+                            items[overflowSlots[j]].type = item.type;
+                            items[overflowSlots[j]].stack = (ushort)(item.stack % itemMaxStack);
                         }
                     }
                 }
