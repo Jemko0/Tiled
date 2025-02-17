@@ -48,7 +48,8 @@ namespace Tiled.Gameplay.Container
                     {
                         if(overflowSlots[i] != overflowSlots.Length - 1)
                         {
-                            items[overflowSlots[i]] = item;
+                            items[overflowSlots[i]].type = item.type;
+                            items[overflowSlots[i]].stack = itemMaxStack;
                         }
                         else
                         {
