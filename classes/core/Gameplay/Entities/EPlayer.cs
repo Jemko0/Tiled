@@ -48,6 +48,9 @@ namespace Tiled.Gameplay
             inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.TopLeft, new(25, 25));
             inventoryUI.SetContainer(ref inventory);
             inventoryUI.UpdateSlots();
+
+            inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
+            inventory.items[1] = new ContainerItem(EItemType.DirtBlock, 999);
         }
 
         private void SetSlot(ActionMappingArgs e)
