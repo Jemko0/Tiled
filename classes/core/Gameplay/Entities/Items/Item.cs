@@ -145,6 +145,11 @@ namespace Tiled.Gameplay.Items
 
         public void UseWithEntity(object entity)
         {
+            if(Item.consumable)
+            {
+                ((EPlayer)entity).inventory.Remove(type, 1);
+            }
+            
             behavior?.UseWithEntity(this, entity);
         }
 

@@ -34,6 +34,7 @@ namespace Tiled
 
         public static bool inTitle = true;
         public static Texture2D undergroundBackgroundTexture;
+        public static Texture2D tileBreakTexture;
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -88,6 +89,7 @@ namespace Tiled
 
             sunTex = Content.Load<Texture2D>("Sky/Sun");
             undergroundBackgroundTexture = Content.Load<Texture2D>("UndergroundBackgrounds/DefaultUndergroundBackground");
+            tileBreakTexture = Content.Load<Texture2D>("TileBreakage/breakCombined");
             localHUD = new HUD(_spriteBatch, _graphics);
         }
 
@@ -235,7 +237,14 @@ namespace Tiled
             Color finalColor = Color.White;
             finalColor *= (float)World.lightMap[x, y] / Lighting.MAX_LIGHT;
             finalColor.A = 255;
+            
             _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, finalColor);
+
+            Rectangle? breakFrame = BreakTextureID.GetTextureFrame(World.tileBreak[x, y], tileData.hardness);
+            if (breakFrame != null)
+            {
+                _spriteBatch.Draw(tileBreakTexture, Rendering.GetTileTransform(x, y), breakFrame, finalColor);
+            }
         }
 
         public void RenderWall(int x, int y)

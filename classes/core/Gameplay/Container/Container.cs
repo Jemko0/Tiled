@@ -105,15 +105,24 @@ namespace Tiled.Inventory
         public void ClearSlot(int index)
         {
             items[index] = ContainerItem.empty;
+            items[index].stack = 0;
         }
 
         public int FindItem(EItemType type)
         {
             for (int i = 0; i < items.Length; i++)
             {
-                if(items[i].type == type && items[i].stack < ItemID.GetItem(items[i].type).maxStack)
+                ushort max = ItemID.GetItem(items[i].type).maxStack;
+                if (items[i].type == type)
                 {
-                    return i;
+                    if(items[i].stack <= max)
+                    {
+                        return i;
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
             }
             return -1;

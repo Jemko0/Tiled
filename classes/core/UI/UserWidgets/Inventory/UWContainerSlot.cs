@@ -36,6 +36,7 @@ namespace Tiled.UI.UserWidgets
             {
                 return;
             }
+            amtText.text = container.items[slotID].stack > 0 ? container.items[slotID].stack.ToString() : "";
 
             if (container.items[slotID].type == DataStructures.EItemType.None)
             {
@@ -44,7 +45,7 @@ namespace Tiled.UI.UserWidgets
 
             Texture2D itemIcon = ItemID.GetItem(container.items[slotID].type).sprite;
             sb.Draw(itemIcon, scaledGeometry, null, Color.White, 0, new(), SpriteEffects.None, 0.9f);
-            amtText.text = container.items[slotID].stack.ToString();
+            
 
             base.DrawWidget(ref sb);
         }

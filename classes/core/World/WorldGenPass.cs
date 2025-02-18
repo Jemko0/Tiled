@@ -55,7 +55,7 @@ namespace Tiled
                 {
                     if(y > 80)
                     {
-                        World.tiles[x, y] = DataStructures.ETileType.Dirt;
+                        World.tiles[x, y] = DataStructures.ETileType.Stone;
                         World.walls[x, y] = DataStructures.EWallType.Dirt;
                     }
                 }
@@ -118,7 +118,7 @@ namespace Tiled
                                 }
                                 else
                                 {
-                                    placeType = ETileType.Dirt;
+                                    placeType = ETileType.Stone;
                                 }
                             }
                             //World.walls[x, y] = EWallType.Dirt;

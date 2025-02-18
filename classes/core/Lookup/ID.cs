@@ -30,6 +30,9 @@ namespace Tiled.ID
             t.ignoreNeighbors = new TileNeighbors(0, 0, 0, 0);
             t.light = 0;
             t.blockLight = 3;
+            t.hardness = 10;
+            t.minPick = 1;
+            t.minAxe = 1;
             t.collision = true;
             
             switch(type)
@@ -42,14 +45,18 @@ namespace Tiled.ID
 
                 case ETileType.Dirt:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/dirt");
+                    t.hardness = 4;
+                    t.itemDrop = EItemType.DirtBlock;
                     break;
 
                 case ETileType.Grass:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/grass");
+                    t.itemDrop = EItemType.DirtBlock;
                     break;
 
                 case ETileType.Stone:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/stone");
+                    t.hardness = 32;
                     break;
 
                 case ETileType.Plank:
@@ -128,14 +135,20 @@ namespace Tiled.ID
 
     public class ItemID
     {
+        public static Dictionary<EItemType, Item> cachedGet = new Dictionary<EItemType, Item>();
         public static Item GetItem(EItemType type)
         {
+            if (cachedGet.ContainsKey(type))
+            {
+                return cachedGet[type];
+            }
+
             Item i = new Item();
             i.name = "Default Item";
             i.size = new Vector2(24, 24);
             i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/item");
-            i.pickaxePower = 0.0f;
-            i.axePower = 0.0f;
+            i.pickaxePower = 0;
+            i.axePower = 0;
             i.maxStack = 99;
             i.swingAnimationType = EItemSwingAnimationType.Swing;
             i.autoReuse = true;
@@ -158,13 +171,61 @@ namespace Tiled.ID
                     i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/basePickaxe");
                     i.useTime = 0.8f;
                     i.maxStack = 1;
-                    i.pickaxePower = 0.25f;
+                    i.pickaxePower = 4;
                     i.size = new Vector2(24, 24);
                     i.behaviourType = typeof(PickaxeBehaviour);
                     break;
+
+                case EItemType.DirtBlock:
+                    i.name = "Dirt";
+                    i.consumable = true;
+                    i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/dirtBlock");
+                    i.useTime = 0.2f;
+                    i.maxStack = 999;
+                    i.size = new Vector2(16, 16);
+                    i.behaviourType = typeof(PlaceTileBehaviour);
+                    i.placeTile = ETileType.Dirt;
+                    break;
             }
 
+            cachedGet[type] = i;
             return i;
+        }
+    }
+
+    public class BreakTextureID
+    {
+        public static Rectangle? GetTextureFrame(sbyte tileHealth, sbyte hardness)
+        {
+
+            if(tileHealth == -128)
+            {
+                return null;
+            }
+
+            float breakage = (float)tileHealth / hardness;
+            
+            if(breakage < 0.25f)
+            {
+                return new Rectangle(186, 0, 62, 62);
+            }
+
+            if (breakage < 0.5f)
+            {
+                return new Rectangle(124, 0, 62, 62);
+            }
+
+            if (breakage < 0.75f)
+            {
+                return new Rectangle(62, 0, 62, 62);
+            }
+
+            if (breakage < 1f)
+            {
+                return new Rectangle(0, 0, 62, 62);
+            }
+
+            return null;
         }
     }
 }

@@ -3,7 +3,7 @@ using Tiled.DataStructures;
 
 namespace Tiled.Gameplay.Items.ItemBehaviours
 {
-    public class PickaxeBehaviour : IItemBehaviour
+    public class PlaceTileBehaviour : IItemBehaviour
     {
         public void Use(EItem item)
         {
@@ -11,7 +11,10 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
 
         public void UseOnTile(EItem item, int x, int y)
         {
-            World.BreakTile(x, y, item.Item.pickaxePower, 0);
+            if(!World.HasDirectNeighbors(x, y))
+            {
+                World.SetTile(x, y, item.Item.placeTile);
+            }
         }
 
         public void UseWithEntity(EItem item, object entity)

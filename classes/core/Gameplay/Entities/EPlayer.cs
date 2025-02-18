@@ -150,7 +150,7 @@ namespace Tiled.Gameplay
 
         public void SwingItem(int slot, Point tile)
         {
-            if(!canUseItems)
+            if(!canUseItems || inventory.items[slot].type == EItemType.None)
             {
                 return;
             }

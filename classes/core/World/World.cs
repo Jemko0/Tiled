@@ -1,10 +1,12 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Tiled.DataStructures;
+using Tiled.Gameplay.Items;
 using Tiled.ID;
 using Tiled.UI;
 using Tiled.UI.UserWidgets;
@@ -39,7 +41,7 @@ namespace Tiled
         public static int cavesLayerHeight = 0;
         public static int cavernsLayerHeight = 0;
         public static int averageSurfaceHeight = 0;
-
+        public static sbyte[,] tileBreak;
         public World()
         {
         }
@@ -52,6 +54,8 @@ namespace Tiled
             wallFramesCached = new Rectangle[maxTilesX, maxTilesY];
             lightMap = new uint[maxTilesX, maxTilesY];
             surfaceHeights = new int[maxTilesX];
+            tileBreak = new sbyte[maxTilesX, maxTilesY];
+
             for (int i = 0; i < maxTilesX; i++)
             {
                 for (int j = 0; j < maxTilesY; j++)
@@ -59,6 +63,7 @@ namespace Tiled
                     tileFramesCached[i, j] = invalidFrame;
                     wallFramesCached[i, j] = invalidFrame;
                     lightMap[i, j] = 0;
+                    tileBreak[i, j] = -128;
                 }
             }
         }
@@ -185,6 +190,16 @@ namespace Tiled
         public static bool IsValidFrame(Rectangle frame)
         {
             return frame != invalidFrame;
+        }
+
+        public static bool HasDirectNeighbors(int x, int y)
+        {
+            bool r = IsValidTile(x + 1, y);
+            bool l = IsValidTile(x - 1, y);
+            bool t = IsValidTile(x, y - 1);
+            bool b = IsValidTile(x, y + 1);
+
+            return !(r || l || t || b);
         }
         #endregion
 
@@ -470,6 +485,43 @@ namespace Tiled
             tiles[x, y] = type;
             UpdateTileFramesAt(x, y);
             Lighting.QueueLightUpdate(x, y);
+        }
+
+        public static void BreakTile(int x, int y, sbyte pickPower, sbyte axePower)
+        {
+            Tile tileData = TileID.GetTile(tiles[x, y]);
+            if (pickPower > tileData.minPick || axePower > tileData.minAxe)
+            {
+                if (tileBreak[x, y] == -128)
+                {
+                    tileBreak[x, y] = (sbyte)(TileID.GetTile(tiles[x, y]).hardness - (pickPower + axePower));
+                    goto c;
+                }
+
+                tileBreak[x, y] = (sbyte)(tileBreak[x, y] - (pickPower + axePower));
+
+                c:
+                if (tileBreak[x, y] < 0)
+                {
+                    DestroyTile(x, y);
+                    tileBreak[x, y] = -128;
+                }
+            }
+            
+        }
+
+        public static void DestroyTile(int x, int y)
+        {
+            Tile t = TileID.GetTile(tiles[x, y]);
+            SetTile(x, y, ETileType.Air);
+
+            if (t.itemDrop == EItemType.None)
+            {
+                return;
+            }
+
+            var item = EItem.CreateItem(t.itemDrop);
+            item.position = new Vector2(x * TILESIZE, y * TILESIZE);
         }
 
         public static void SetWall(int x, int y, EWallType type)

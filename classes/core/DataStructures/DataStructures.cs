@@ -41,6 +41,11 @@ namespace Tiled.DataStructures
         /// how much light does this tile block? (default = 3)
         /// </summary>
         public uint blockLight;
+
+        public sbyte hardness;
+        public EItemType itemDrop;
+        public sbyte minPick;
+        public sbyte minAxe;
     }
 
     public struct Item
@@ -50,9 +55,11 @@ namespace Tiled.DataStructures
         public Vector2 size;
         public ushort maxStack;
         public float useTime;
-        public float pickaxePower;
-        public float axePower;
+        public bool consumable;
+        public sbyte pickaxePower;
+        public sbyte axePower;
         public bool autoReuse;
+        public ETileType placeTile;
         public Type behaviourType;
         public EItemSwingAnimationType swingAnimationType;
     }
@@ -79,7 +86,8 @@ namespace Tiled.DataStructures
     {
         None,
         Base,
-        BasePickaxe
+        BasePickaxe,
+        DirtBlock
     }
 
     public enum EItemSwingAnimationType
