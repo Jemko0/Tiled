@@ -10,6 +10,7 @@ using Tiled.ID;
 using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
+using Tiled.UI.UserWidgets;
 
 namespace Tiled
 {
@@ -65,6 +66,11 @@ namespace Tiled
             e.position = location;
             e.Initialize(EEntityType.Player);
             localPlayerController.Possess(e);
+        }
+
+        public EPlayer GetLocalPlayer()
+        {
+            return ((EPlayer)Program.GetGame().localPlayerController.controlledEntity);
         }
 
         protected override void LoadContent()
@@ -160,7 +166,6 @@ namespace Tiled
         {
             GraphicsDevice.Clear(Color.Black);
             
-
             RenderSky();
             RenderSun();
             
@@ -171,7 +176,6 @@ namespace Tiled
             RenderWorld();
             RenderEntities();
 
-            
             _spriteBatch.End();
 
             localHUD.DrawWidgets();

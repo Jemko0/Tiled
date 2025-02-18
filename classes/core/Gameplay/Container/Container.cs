@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Linq;
 using Tiled.DataStructures;
+using Tiled.Gameplay;
+using Tiled.Gameplay.Items;
 using Tiled.ID;
 
-namespace Tiled.Gameplay.Container
+namespace Tiled.Inventory
 {
     public class Container
     {
         public int containerSize = 49;
         public ContainerItem[] items;
-
+        public Entity? entityCarrier;
         public Container(int size)
         {
             containerSize = size;
@@ -23,11 +25,35 @@ namespace Tiled.Gameplay.Container
                 return false;
             }
 
+            if(WillContainerBeFull(item))
+            {
+                int lastAvailableSlot = FindItem(item.type);
+                
+                if (lastAvailableSlot != -1)
+                {
+                    ushort itemMaxStack = ItemID.GetItem(items[lastAvailableSlot].type).maxStack;
+                    ushort remainder = (ushort)((items[lastAvailableSlot].stack + item.stack) % itemMaxStack);
+                    items[lastAvailableSlot].stack = itemMaxStack;
+
+                    if (entityCarrier != null)
+                    {
+                        var i = EItem.CreateItem(item.type);
+                        i.position = entityCarrier.position;
+                        i.count = remainder;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+                return true;
+            }
+
             int foundSlot = FindItem(item.type);
 
             if(foundSlot != -1)
             {
-                ushort totalStack = items[foundSlot].stack = item.stack;
+                ushort totalStack = (ushort)(items[foundSlot].stack + item.stack);
                 ushort itemMaxStack = ItemID.GetItem(items[foundSlot].type).maxStack;
                 if (totalStack <= itemMaxStack)
                 {
@@ -36,27 +62,17 @@ namespace Tiled.Gameplay.Container
                 else
                 {
                     //overflow
-                    int slotsNeeded = (int)Math.Ceiling(item.stack / (float)containerSize);
-                    int[] overflowSlots = new int[slotsNeeded];
+                    int fullSlot = foundSlot;
+                    items[fullSlot].stack = itemMaxStack;
 
-                    for(int i = 0; i < slotsNeeded; i++)
+                    int freeSlot = FindItem(item.type);
+                    if(freeSlot == -1)
                     {
-                        overflowSlots[i] = FindFreeSlot(overflowSlots);
+                        freeSlot = FindFreeSlot(fullSlot);
                     }
 
-                    for(int j = 0; j < overflowSlots.Length; j++)
-                    {
-                        if(overflowSlots[j] != overflowSlots.Length - 1)
-                        {
-                            items[overflowSlots[j]].type = item.type;
-                            items[overflowSlots[j]].stack = itemMaxStack;
-                        }
-                        else
-                        {
-                            items[overflowSlots[j]].type = item.type;
-                            items[overflowSlots[j]].stack = (ushort)(item.stack % itemMaxStack);
-                        }
-                    }
+                    items[freeSlot].type = item.type;
+                    items[freeSlot].stack += (ushort)(totalStack - itemMaxStack);
                 }
             }
             else
@@ -95,7 +111,7 @@ namespace Tiled.Gameplay.Container
         {
             for (int i = 0; i < items.Length; i++)
             {
-                if(items[i].type == type)
+                if(items[i].type == type && items[i].stack < ItemID.GetItem(items[i].type).maxStack)
                 {
                     return i;
                 }
@@ -120,13 +136,21 @@ namespace Tiled.Gameplay.Container
             return -1;
         }
 
-        public int FindFreeSlot(int[]? excludeIndices)
+        public int FindFreeSlot(int[]? excludeIndices, EItemType? type = null)
         {
             for (int i = 0; i < items.Length; i++)
             {
                 if (excludeIndices.Contains(i))
                 {
                     continue;
+                }
+                
+                if(type != null)
+                {
+                    if(items[i].type == type && items[i].stack <= ItemID.GetItem(items[i].type).maxStack)
+                    {
+                        return i;
+                    }
                 }
 
                 if (items[i].type == EItemType.None)
@@ -142,6 +166,18 @@ namespace Tiled.Gameplay.Container
             for (int i = 0; i < items.Length; i++)
             {
                 if(items[i].stack <= ItemID.GetItem(items[i].type).maxStack)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public bool WillContainerBeFull(ContainerItem item)
+        {
+            for (int i = 0; i < items.Length; i++)
+            {
+                if ((item.type == items[i].type || items[i].type == EItemType.None) && items[i].stack + item.stack <= ItemID.GetItem(items[i].type).maxStack)
                 {
                     return false;
                 }

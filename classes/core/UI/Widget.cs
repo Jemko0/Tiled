@@ -9,7 +9,6 @@ using Tiled.DataStructures;
 
 namespace Tiled.UI
 {
-
     /// <summary>
     /// basic widget, supports children but does not render them. if you want to render children, use <see cref="PanelWidget"/>
     /// </summary>
@@ -19,7 +18,7 @@ namespace Tiled.UI
         public delegate void WidgetDestroyed(WidgetDestroyArgs e);
         public event WidgetDestroyed onWidgetDestroyed;
         public HUD owningHUD;
-
+        public float layerDepth;
         protected Vector2 size;
         protected Rectangle scaledGeometry;
         public Vector2 anchorPosition; // Stores position as percentage (0-1) of screen
@@ -223,9 +222,14 @@ namespace Tiled.UI
         }
         public virtual void DrawWidget(ref SpriteBatch sb)
         {
+            DrawBounds(ref sb);
+        }
+
+        public void DrawBounds(ref SpriteBatch sb)
+        {
             var tex = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
             tex.SetData(new Color[] { Color.Red });
-            sb.Draw(tex, scaledGeometry, Color.White);
+            sb.Draw(tex, scaledGeometry, null, Color.White, 0.0f, new(), SpriteEffects.None, layerDepth);
         }
 
         protected virtual void Dispose(bool disposing)

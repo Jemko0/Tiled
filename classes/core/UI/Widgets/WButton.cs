@@ -42,7 +42,7 @@ namespace Tiled.UI
 
         public override void DrawWidget(ref SpriteBatch sb)
         {
-            sb.Draw(IsHovered()? buttonHoveredTexture : buttonTexture, scaledGeometry, Color.LightSkyBlue);
+            sb.Draw(IsHovered()? buttonHoveredTexture : buttonTexture, scaledGeometry, null, Color.LightSkyBlue, 0.0f, new(), SpriteEffects.None, layerDepth);
             base.DrawWidget(ref sb);
         }
 

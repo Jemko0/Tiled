@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tiled.DataStructures;
+using Tiled.Gameplay.Items;
+using Tiled.Gameplay.Items.ItemBehaviours;
 
 namespace Tiled.ID
 {
@@ -135,10 +137,17 @@ namespace Tiled.ID
             i.pickaxePower = 0.0f;
             i.axePower = 0.0f;
             i.maxStack = 99;
-            i.swingAnimationType = EItemSwingAnimationType.None;
+            i.swingAnimationType = EItemSwingAnimationType.Swing;
+            i.autoReuse = true;
+            i.useTime = 1.0f;
+            i.behaviourType = typeof(DefaultItemBehaviour);  // Default behavior
 
-            switch(type)
+            switch (type)
             {
+                case EItemType.None:
+                    i.name = "None";
+                    i.size = new Vector2(16, 16);
+                    break;
                 case EItemType.Base:
                     i.name = "Base";
                     i.size = new Vector2(16, 16);
@@ -146,7 +155,12 @@ namespace Tiled.ID
 
                 case EItemType.BasePickaxe:
                     i.name = "Base Pickaxe";
-                    i.size = new Vector2(16, 16);
+                    i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/basePickaxe");
+                    i.useTime = 0.8f;
+                    i.maxStack = 1;
+                    i.pickaxePower = 0.25f;
+                    i.size = new Vector2(24, 24);
+                    i.behaviourType = typeof(PickaxeBehaviour);
                     break;
             }
 

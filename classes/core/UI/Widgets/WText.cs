@@ -33,7 +33,7 @@ namespace Tiled.UI
                     x = scaledGeometry.X + scaledGeometry.Width - Fonts.Andy_24pt.MeasureString(text).Length() * HUD.DPIScale;
                     break;
             }
-            sb.DrawString(Fonts.Andy_24pt, text, new Vector2(x, scaledGeometry.Y + (scaledGeometry.Height / 2) - ((Fonts.Andy_24pt.LineSpacing / 2) * HUD.DPIScale)), Color.White, 0.0f, new Vector2(0, 0), HUD.DPIScale, SpriteEffects.None, 0U);
+            sb.DrawString(Fonts.Andy_24pt, text, new Vector2(x, scaledGeometry.Y + (scaledGeometry.Height / 2) - ((Fonts.Andy_24pt.LineSpacing / 2) * HUD.DPIScale)), Color.White, 0.0f, new Vector2(0, 0), HUD.DPIScale, SpriteEffects.None, layerDepth);
         }
     }
 }

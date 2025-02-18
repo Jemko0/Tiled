@@ -43,6 +43,11 @@ namespace Tiled.Input
             actionMappings.Add("move_left", new ActionMapping(Keys.A));
             actionMappings.Add("move_right", new ActionMapping(Keys.D));
             actionMappings.Add("move_jump", new ActionMapping(Keys.Space));
+            actionMappings.Add("inv_1", new ActionMapping(Keys.D1));
+            actionMappings.Add("inv_2", new ActionMapping(Keys.D2));
+            actionMappings.Add("inv_3", new ActionMapping(Keys.D3));
+            actionMappings.Add("inv_4", new ActionMapping(Keys.D4));
+            actionMappings.Add("inv_5", new ActionMapping(Keys.D5));
         }
 
         public static bool IsMappingHeld(string mapping)

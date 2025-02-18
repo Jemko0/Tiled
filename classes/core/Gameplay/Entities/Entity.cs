@@ -18,6 +18,8 @@ namespace Tiled.Gameplay
         protected CollisionComponent collision;
         protected int frameSlotSizeX = 32;
         protected int frameSlotSizeY = 48;
+        protected float rotation = 0.0f;
+        protected Vector2 rotOrigin = new(0, 0);
 
         public bool facingLeft;
         public int direction;
@@ -80,7 +82,7 @@ namespace Tiled.Gameplay
             if(velocity.X != 0.0f)
             {
                 facingLeft = velocity.X < 0.0f;
-                direction = facingLeft ? 1 : -1;
+                direction = facingLeft ? -1 : 1;
             }
         }
 
@@ -116,7 +118,7 @@ namespace Tiled.Gameplay
 
             draw:
             SpriteEffects flip = facingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), GetFrame(), finalColor, 0.0f, new Vector2(0, 0), flip, 0u);
+            sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), GetFrame(), finalColor, rotation, rotOrigin, flip, 0u);
         }
 
         public void Dispose()

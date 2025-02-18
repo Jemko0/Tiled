@@ -5,6 +5,10 @@ using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items;
 using Tiled.Input;
+using Tiled.Inventory;
+using Tiled.UI.UserWidgets;
+using Tiled.UI;
+using Tiled.ID;
 
 namespace Tiled.Gameplay
 {
@@ -13,13 +17,14 @@ namespace Tiled.Gameplay
         public float accel = 0.75f;
         public float maxWalkSpeed = 4.0f;
         public float jumpPower = 6f;
-
+        public Container inventory;
         int jumpCounter = 0;
+        public int selectedSlot = 0;
+        public bool canUseItems = true;
+        UWContainerWidget inventoryUI;
         public EPlayer()
         {
             collision = new CollisionComponent(this);
-            InputManager.onLeftMousePressed += LMB;
-            InputManager.onRightMousePressed += RMB;
         }
 
         public override void Begin()
@@ -27,6 +32,48 @@ namespace Tiled.Gameplay
             base.Begin();
             Mappings.actionMappings["move_jump"].onActionMappingPressed += JumpPressed;
             Mappings.actionMappings["move_jump"].onActionMappingReleased += JumpReleased;
+            Mappings.actionMappings["inv_1"].onActionMappingPressed += SetSlot;
+            Mappings.actionMappings["inv_2"].onActionMappingPressed += SetSlot;
+            Mappings.actionMappings["inv_3"].onActionMappingPressed += SetSlot;
+            Mappings.actionMappings["inv_4"].onActionMappingPressed += SetSlot;
+            Mappings.actionMappings["inv_5"].onActionMappingPressed += SetSlot;
+
+            InputManager.onLeftMousePressed += LMB;
+            InputManager.onRightMousePressed += RMB;
+
+            inventory = new Container(5);
+            inventory.entityCarrier = this;
+
+            inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
+            inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.TopLeft, new(25, 25));
+            inventoryUI.SetContainer(ref inventory);
+            inventoryUI.UpdateSlots();
+        }
+
+        private void SetSlot(ActionMappingArgs e)
+        {
+            switch (e.key)
+            {
+                case Keys.D1:
+                    selectedSlot = 0;
+                    return;
+
+                case Keys.D2:
+                    selectedSlot = 1;
+                    return;
+
+                case Keys.D3:
+                    selectedSlot = 2;
+                    return;
+
+                case Keys.D4:
+                    selectedSlot = 3;
+                    return;
+
+                case Keys.D5:
+                    selectedSlot = 4;
+                    return;
+            }
         }
 
         private void JumpReleased(ActionMappingArgs e)
@@ -39,6 +86,18 @@ namespace Tiled.Gameplay
             if(collision.IsOnGround())
             {
                 jumpCounter = 0;
+            }
+
+            if(Keyboard.GetState().IsKeyDown(Keys.P))
+            {
+                var i = EItem.CreateItem(EItemType.BasePickaxe);
+                i.position = position;
+            }
+
+            if (Keyboard.GetState().IsKeyDown(Keys.N))
+            {
+                var i = EItem.CreateItem(EItemType.Base);
+                i.position = position;
             }
         }
 
@@ -84,29 +143,36 @@ namespace Tiled.Gameplay
                 return;
             }
 
-            Point tile = Rendering.ScreenToTile(e.position);
+            Point tile = Rendering.ScreenToTile(Mouse.GetState().Position);
 
-            if (Keyboard.GetState().IsKeyDown(Keys.T))
+            SwingItem(selectedSlot, tile);
+        }
+
+        public void SwingItem(int slot, Point tile)
+        {
+            if(!canUseItems)
             {
-                World.SetTile(tile.X, tile.Y, ETileType.Torch);
                 return;
             }
 
-            if (Keyboard.GetState().IsKeyDown(Keys.F))
-            {
-                World.SetTile(tile.X, tile.Y, ETileType.Dirt);
-                return;
-            }
+            canUseItems = false;
+            var swingItem = EItem.CreateItem(inventory.items[selectedSlot].type);
+            swingItem.swingEnded += CurrentSwingItemSwingEnded;
+            swingItem.isSwing = true;
+            swingItem.swingOwner = this;
+            swingItem.Use();
+            swingItem.UseOnTile(tile.X, tile.Y);
+            swingItem.UseWithEntity(this);
+        }
 
-            if (Keyboard.GetState().IsKeyDown(Keys.I))
-            {
-                var i = EItem.CreateItem(EItemType.Base);
-                i.position = position;
-                i.velocity = new Vector2(10.0f * direction, -5.0f);
-                return;
-            }
+        private void CurrentSwingItemSwingEnded(ItemSwingArgs e)
+        {
+            canUseItems = true;
 
-            World.SetTile(tile.X, tile.Y, ETileType.Air);
+            if (Mouse.GetState().LeftButton == ButtonState.Pressed && ItemID.GetItem(e.type).autoReuse)
+            {
+                SwingItem(selectedSlot, Rendering.ScreenToTile(Mouse.GetState().Position));
+            }
         }
 
         private void RMB(MouseButtonEventArgs e)

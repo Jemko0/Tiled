@@ -29,8 +29,10 @@ namespace Tiled.UI.UserWidgets
 
             playBtn = HUD.CreateWidget<WButton>(owningHUD);
             playBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
+            playBtn.layerDepth = 1.0f;
             playBtn.AttachToParent(vb);
             playBtn.onButtonPressed += PlayButtonPressed;
+            
 
             playBtnText = HUD.CreateWidget<WText>(owningHUD);
             playBtnText.text = "Play";
@@ -40,10 +42,11 @@ namespace Tiled.UI.UserWidgets
 
             settingsBtn = HUD.CreateWidget<WButton>(owningHUD);
             settingsBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
+            settingsBtn.layerDepth = 1.0f;
             settingsBtn.AttachToParent(vb);
 
             settingsBtnText = HUD.CreateWidget<WText>(owningHUD);
-            settingsBtnText.text = "Settings";
+            settingsBtnText.text = "123456789";
             settingsBtnText.justification = DataStructures.ETextJustification.Center;
             settingsBtnText.AttachToParent(settingsBtn);
         }

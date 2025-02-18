@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
+using Tiled.Gameplay.Items;
 using Tiled.UI;
 
 namespace Tiled.DataStructures
@@ -50,6 +52,8 @@ namespace Tiled.DataStructures
         public float useTime;
         public float pickaxePower;
         public float axePower;
+        public bool autoReuse;
+        public Type behaviourType;
         public EItemSwingAnimationType swingAnimationType;
     }
 
@@ -57,7 +61,17 @@ namespace Tiled.DataStructures
     {
         public EItemType type;
         public ushort stack;
+        public ContainerItem()
+        {
+            type = EItemType.None;
+            stack = 0;
+        }
 
+        public ContainerItem(EItemType type, ushort stack)
+        {
+            this.type = type;
+            this.stack = stack;
+        }
         public static ContainerItem empty => new ContainerItem();
     }
 
@@ -224,6 +238,15 @@ namespace Tiled.DataStructures
                 return;
             }
             onActionMappingReleased.Invoke(args);
+        }
+    }
+
+    public class ItemSwingArgs
+    {
+        public EItemType type;
+        public ItemSwingArgs(EItemType type)
+        {
+            this.type = type;
         }
     }
 }
