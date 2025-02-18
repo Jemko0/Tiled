@@ -9,6 +9,7 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
         void Use(EItem item);
         void UseOnTile(EItem item, int x, int y);
         void UseWithEntity(EItem item, object entity);
+        public bool CanConsume(EItem item);
     }
 
     public class DefaultItemBehaviour : IItemBehaviour
@@ -16,6 +17,11 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
         public void Use(EItem item) { }
         public void UseOnTile(EItem item, int x, int y) { }
         public void UseWithEntity(EItem item, object entity) { }
+
+        public bool CanConsume(EItem item)
+        {
+            return true;
+        }
     }
 
     public static class ItemBehaviorFactory

@@ -43,9 +43,11 @@ namespace Tiled.UI.UserWidgets
                 return;
             }
 
+            Rectangle padded = scaledGeometry;
+            padded.Inflate(-16, -16);
+
             Texture2D itemIcon = ItemID.GetItem(container.items[slotID].type).sprite;
-            sb.Draw(itemIcon, scaledGeometry, null, Color.White, 0, new(), SpriteEffects.None, 0.9f);
-            
+            sb.Draw(itemIcon, padded, null, Color.White, 0, new(), SpriteEffects.None, 0.9f);
 
             base.DrawWidget(ref sb);
         }

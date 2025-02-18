@@ -11,6 +11,9 @@ namespace Tiled.Collision
         private Entity entity;
         private const float skinWidth = 0.1f;
 
+        public delegate void Hit();
+        public event Hit onHit;
+
         public CollisionComponent(Entity entity)
         {
             SetEntity(entity);
@@ -65,6 +68,7 @@ namespace Tiled.Collision
                 if (collision)
                 {
                     moveX = direction * (Math.Max(0, shortestHit - skinWidth));
+                    onHit?.Invoke();
                     entity.velocity.X = 0;
                 }
             }

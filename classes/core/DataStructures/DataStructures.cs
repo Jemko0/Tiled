@@ -60,8 +60,24 @@ namespace Tiled.DataStructures
         public sbyte axePower;
         public bool autoReuse;
         public ETileType placeTile;
+        public EProjectileType projectile;
         public Type behaviourType;
         public EItemSwingAnimationType swingAnimationType;
+    }
+    
+    public struct Projectile
+    {
+        public string name;
+        public Texture2D sprite;
+        public Vector2 size;
+        public Vector2 initVelocity;
+    }
+
+    public enum EProjectileType
+    {
+        None = 0,
+        Bullet,
+        Bomb,
     }
 
     public struct ContainerItem
@@ -87,7 +103,9 @@ namespace Tiled.DataStructures
         None,
         Base,
         BasePickaxe,
-        DirtBlock
+        DirtBlock,
+        Torch,
+        Bomb,
     }
 
     public enum EItemSwingAnimationType

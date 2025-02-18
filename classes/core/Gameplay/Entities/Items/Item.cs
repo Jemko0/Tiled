@@ -1,14 +1,12 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items.ItemBehaviours;
 using Tiled.ID;
-using Tiled.Interfaces;
 
 namespace Tiled.Gameplay.Items
 {
-    public class EItem : Entity, IUsable
+    public class EItem : Entity
     {
         public Item Item { get; set; }
         public EItemType type;
@@ -143,13 +141,17 @@ namespace Tiled.Gameplay.Items
             }
         }
 
+        /// <summary>
+        /// this is called before UseWithTile(int x, int y)
+        /// </summary>
+        /// <param name="entity"></param>
         public void UseWithEntity(object entity)
         {
-            if(Item.consumable)
+            if (Item.consumable && behavior.CanConsume(this))
             {
-                ((EPlayer)entity).inventory.Remove(type, 1);
+                ((EPlayer)entity).inventory.RemoveFromSlot(((EPlayer)entity).selectedSlot, 1);
             }
-            
+
             behavior?.UseWithEntity(this, entity);
         }
 

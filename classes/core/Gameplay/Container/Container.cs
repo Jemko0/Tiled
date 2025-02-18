@@ -87,13 +87,32 @@ namespace Tiled.Inventory
 
         public bool Remove(EItemType type, ushort amount)
         {
-            int foundSlot = FindItem(type);
+            int foundSlot = FindItemLessOrEqual(type);
 
             if(foundSlot != -1)
             {
                 ushort removeStack = (ushort)(items[foundSlot].stack - amount);
+                items[foundSlot].stack = removeStack;
 
                 if(removeStack < 1)
+                {
+                    ClearSlot(foundSlot);
+                }
+            }
+
+            return true;
+        }
+
+        public bool RemoveFromSlot(int slot, ushort amount)
+        {
+            int foundSlot = slot;
+
+            if (foundSlot != -1)
+            {
+                ushort removeStack = (ushort)(items[foundSlot].stack - amount);
+                items[foundSlot].stack = removeStack;
+
+                if (removeStack < 1)
                 {
                     ClearSlot(foundSlot);
                 }
@@ -115,7 +134,27 @@ namespace Tiled.Inventory
                 ushort max = ItemID.GetItem(items[i].type).maxStack;
                 if (items[i].type == type)
                 {
-                    if(items[i].stack <= max)
+                    if(items[i].stack < max)
+                    {
+                        return i;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+            }
+            return -1;
+        }
+
+        public int FindItemLessOrEqual(EItemType type)
+        {
+            for (int i = 0; i < items.Length; i++)
+            {
+                ushort max = ItemID.GetItem(items[i].type).maxStack;
+                if (items[i].type == type)
+                {
+                    if (items[i].stack <= max)
                     {
                         return i;
                     }

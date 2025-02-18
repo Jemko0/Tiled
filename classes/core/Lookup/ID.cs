@@ -1,12 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tiled.DataStructures;
-using Tiled.Gameplay.Items;
 using Tiled.Gameplay.Items.ItemBehaviours;
 
 namespace Tiled.ID
@@ -66,6 +61,8 @@ namespace Tiled.ID
                 case ETileType.Torch:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/torch");
                     t.hangingOnWalls = true;
+                    t.itemDrop = EItemType.Torch;
+                    t.hardness = 0;
                     t.blockLight = 0;
                     t.light = 32;
                     t.collision = false;
@@ -186,6 +183,26 @@ namespace Tiled.ID
                     i.behaviourType = typeof(PlaceTileBehaviour);
                     i.placeTile = ETileType.Dirt;
                     break;
+
+                case EItemType.Torch:
+                    i.name = "Torch";
+                    i.consumable = true;
+                    i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/torch");
+                    i.useTime = 0.2f;
+                    i.maxStack = 99;
+                    i.size = new Vector2(16, 16);
+                    i.behaviourType = typeof(PlaceTileBehaviour);
+                    i.placeTile = ETileType.Torch;
+                    break;
+
+                case EItemType.Bomb:
+                    i.name = "Bomb";
+                    i.consumable = true;
+                    i.projectile = EProjectileType.Bomb;
+                    i.useTime = 0.5f;
+                    i.behaviourType = typeof(ProjectileThrowBehaviour);
+                    break;
+
             }
 
             cachedGet[type] = i;
@@ -226,6 +243,33 @@ namespace Tiled.ID
             }
 
             return null;
+        }
+    }
+
+    public class ProjectileID
+    {
+        public static Projectile GetProjectile(EProjectileType type)
+        {
+            Projectile p = new Projectile();
+
+            p.name = "projectile";
+            p.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Projectile/BaseProjectile");
+            p.initVelocity = new(5.0f, 5.0f);
+            p.size = new(16, 16);
+
+            switch(type)
+            {
+                case EProjectileType.Bullet:
+                    p.name = "bullet";
+                    p.size = new(16, 16);
+                    break;
+
+                case EProjectileType.Bomb:
+                    p.size = new(48, 48);
+                    break;
+            }
+
+            return p;
         }
     }
 }

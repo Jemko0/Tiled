@@ -56,6 +56,10 @@ namespace Tiled.UI
             //ScaleGeometry();
         }
 
+        public List<Widget> GetChildren()
+        {
+            return children;
+        }
         public Vector2 GetSize()
         {
             return size;

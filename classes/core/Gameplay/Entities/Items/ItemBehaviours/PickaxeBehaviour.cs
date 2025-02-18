@@ -17,5 +17,10 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
         public void UseWithEntity(EItem item, object entity)
         {
         }
+
+        public bool CanConsume(EItem item)
+        {
+            return true;
+        }
     }
 }

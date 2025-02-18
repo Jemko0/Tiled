@@ -51,6 +51,8 @@ namespace Tiled.Gameplay
 
             inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
             inventory.items[1] = new ContainerItem(EItemType.DirtBlock, 999);
+            inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
+            inventory.items[3] = new ContainerItem(EItemType.Bomb, 16);
         }
 
         private void SetSlot(ActionMappingArgs e)
@@ -123,8 +125,10 @@ namespace Tiled.Gameplay
                 Jump();
                 jumpCounter++;
             }
-
+            
             MovementUpdate();
+
+            //inventoryUI.UpdateChildren(ref inventory);
         }
 
         public override Rectangle? GetFrame()
@@ -164,8 +168,8 @@ namespace Tiled.Gameplay
             swingItem.isSwing = true;
             swingItem.swingOwner = this;
             swingItem.Use();
-            swingItem.UseOnTile(tile.X, tile.Y);
             swingItem.UseWithEntity(this);
+            swingItem.UseOnTile(tile.X, tile.Y);
         }
 
         private void CurrentSwingItemSwingEnded(ItemSwingArgs e)

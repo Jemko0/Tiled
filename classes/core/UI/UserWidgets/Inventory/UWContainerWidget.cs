@@ -45,6 +45,15 @@ namespace Tiled.UI.UserWidgets
             }
         }
 
+        public void UpdateChildren(ref Container refcontainer)
+        {
+            container = refcontainer;
+            foreach(var c in horizontalBox.GetChildren())
+            {
+                ((UWContainerSlot)c).container = refcontainer;
+            }
+        }
+
         public override void DrawChild(ref SpriteBatch sb, int childIdx)
         {
             base.DrawChild(ref sb, childIdx);

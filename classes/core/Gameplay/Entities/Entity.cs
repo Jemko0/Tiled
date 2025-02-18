@@ -1,8 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.ID;

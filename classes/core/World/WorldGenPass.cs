@@ -118,7 +118,7 @@ namespace Tiled
                                 }
                                 else
                                 {
-                                    placeType = ETileType.Stone;
+                                    placeType = ETileType.Dirt;
                                 }
                             }
                             //World.walls[x, y] = EWallType.Dirt;

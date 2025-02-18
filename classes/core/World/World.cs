@@ -168,7 +168,7 @@ namespace Tiled
 
         public static bool IsValidForTileFrame(int x, int y)
         {
-            return IsValidTile(x, y) && TileID.GetTile(tiles[x, y]).useFrames;
+            return IsValidTile(x, y) && TileID.GetTile(tiles[x, y]).useFrames && !TileID.GetTile(tiles[x, y]).hangingOnWalls;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -194,13 +194,19 @@ namespace Tiled
 
         public static bool HasDirectNeighbors(int x, int y)
         {
-            bool r = IsValidTile(x + 1, y);
-            bool l = IsValidTile(x - 1, y);
-            bool t = IsValidTile(x, y - 1);
-            bool b = IsValidTile(x, y + 1);
+            bool r = IsValidTile(x + 1, y) && !TileID.GetTile(tiles[x + 1, y]).hangingOnWalls;
+            bool l = IsValidTile(x - 1, y) && !TileID.GetTile(tiles[x - 1, y]).hangingOnWalls;
+            bool t = IsValidTile(x, y - 1) && !TileID.GetTile(tiles[x, y - 1]).hangingOnWalls;
+            bool b = IsValidTile(x, y + 1) && !TileID.GetTile(tiles[x, y + 1]).hangingOnWalls;
 
-            return !(r || l || t || b);
+            return (r || l || t || b);
         }
+
+        public static bool IsValidForTilePlacement(int x, int y)
+        {
+            return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y);
+        }
+
         #endregion
 
         public static Rectangle GetTileFrame(int x, int y, Tile tileData)
@@ -513,15 +519,36 @@ namespace Tiled
         public static void DestroyTile(int x, int y)
         {
             Tile t = TileID.GetTile(tiles[x, y]);
+
+            
+
             SetTile(x, y, ETileType.Air);
+
+            UpdateTile(x, y);
+            UpdateTile(x + 1, y);
+            UpdateTile(x - 1, y);
+            UpdateTile(x, y - 1);
+            UpdateTile(x, y + 1);
 
             if (t.itemDrop == EItemType.None)
             {
                 return;
             }
-
+            
             var item = EItem.CreateItem(t.itemDrop);
+            item.velocity.Y = -5.0f;
             item.position = new Vector2(x * TILESIZE, y * TILESIZE);
+        }
+
+        public static void UpdateTile(int x, int y)
+        {
+            if (tiles[x, y] == ETileType.Torch)
+            {
+                if (!HasDirectNeighbors(x, y))
+                {
+                    DestroyTile(x, y);
+                }
+            }
         }
 
         public static void SetWall(int x, int y, EWallType type)
