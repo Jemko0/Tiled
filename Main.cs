@@ -10,7 +10,7 @@ using Tiled.ID;
 using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
-using Tiled.UI.UserWidgets;
+using Tiled.Networking;
 
 namespace Tiled
 {
@@ -20,6 +20,7 @@ namespace Tiled
         private Texture2D sunTex;
         private SpriteBatch _spriteBatch;
         private Effect skyShader;
+        public TiledClient localClient;
 
         public GraphicsDeviceManager _graphics;
         public Camera localCamera;
@@ -59,6 +60,13 @@ namespace Tiled
 
             Window.ClientSizeChanged += MainWindowResized;
             CalcRenderScale();
+        }
+
+        public void JoinServer(string inputUri)
+        {
+            Program.GetGame().localClient = new TiledClient();
+            localClient.SV_URI = inputUri;
+            localClient.Run();
         }
 
         public void CreatePlayer(Vector2 location)

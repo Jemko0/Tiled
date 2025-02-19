@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tiled.Networking;
 
 namespace Tiled.UI.UserWidgets
 {
@@ -18,11 +19,12 @@ namespace Tiled.UI.UserWidgets
         WButton playBtn;
         WText playBtnText;
 
-        WButton settingsBtn;
-        WText settingsBtnText;
+        WButton multiplayerBtn;
+        WText multiplayerBtnText;
 
         public override void Construct()
         {
+
             vb = HUD.CreateWidget<WVerticalBox>(owningHUD);
             vb.SetGeometry(new Vector2(vbWidth, 256), DataStructures.AnchorPosition.Center);
             vb.AttachToParent(this);
@@ -40,15 +42,21 @@ namespace Tiled.UI.UserWidgets
             playBtnText.AttachToParent(playBtn);
 
 
-            settingsBtn = HUD.CreateWidget<WButton>(owningHUD);
-            settingsBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
-            settingsBtn.layerDepth = 1.0f;
-            settingsBtn.AttachToParent(vb);
+            multiplayerBtn = HUD.CreateWidget<WButton>(owningHUD);
+            multiplayerBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
+            multiplayerBtn.layerDepth = 1.0f;
+            multiplayerBtn.AttachToParent(vb);
+            multiplayerBtn.onButtonPressed += MultiplayerButtonPressed;
 
-            settingsBtnText = HUD.CreateWidget<WText>(owningHUD);
-            settingsBtnText.text = "123456789";
-            settingsBtnText.justification = DataStructures.ETextJustification.Center;
-            settingsBtnText.AttachToParent(settingsBtn);
+            multiplayerBtnText = HUD.CreateWidget<WText>(owningHUD);
+            multiplayerBtnText.text = "Multiplayer";
+            multiplayerBtnText.justification = DataStructures.ETextJustification.Center;
+            multiplayerBtnText.AttachToParent(multiplayerBtn);
+        }
+
+        private void MultiplayerButtonPressed(DataStructures.ButtonPressArgs args)
+        {
+            
         }
 
         private void PlayButtonPressed(DataStructures.ButtonPressArgs args)
