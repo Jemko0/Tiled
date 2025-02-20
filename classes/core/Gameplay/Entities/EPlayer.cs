@@ -20,6 +20,7 @@ namespace Tiled.Gameplay
         public Container inventory;
         int jumpCounter = 0;
         public int selectedSlot = 0;
+        public int clientID = -1;
         public bool canUseItems = true;
         UWContainerWidget inventoryUI;
         public EPlayer()
@@ -30,6 +31,10 @@ namespace Tiled.Gameplay
         public override void Begin()
         {
             base.Begin();
+        }
+
+        public override void Possessed(Controller playerController)
+        {
             Mappings.actionMappings["move_jump"].onActionMappingPressed += JumpPressed;
             Mappings.actionMappings["move_jump"].onActionMappingReleased += JumpReleased;
             Mappings.actionMappings["inv_1"].onActionMappingPressed += SetSlot;
@@ -111,6 +116,13 @@ namespace Tiled.Gameplay
             base.Update();
 
             float inputLR = Program.GetGame().localPlayerController.inputLR;
+
+            //if this player is not the local player
+            if (Program.GetGame().localPlayerController.controlledEntity != this)
+            {
+                MovementUpdate();
+                return;
+            }
 
             velocity.X = Math.Clamp(velocity.X + (accel * inputLR), -maxWalkSpeed, maxWalkSpeed);
 

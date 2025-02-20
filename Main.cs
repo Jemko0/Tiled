@@ -22,6 +22,7 @@ namespace Tiled
         private Effect skyShader;
         public TiledClient localClient;
         public static bool isClient;
+        public static Dictionary<int, EPlayer> cl_playerDictionary = new Dictionary<int, EPlayer>();
 
         public GraphicsDeviceManager _graphics;
         public Camera localCamera;
@@ -33,6 +34,7 @@ namespace Tiled
         public Controller localPlayerController;
 
         public static float renderScale = 1.0f;
+        public static int SERVER_TICKRATE = -1;
         public static Point screenCenter;
 
         public static bool inTitle = true;
@@ -133,7 +135,7 @@ namespace Tiled
         public static float delta;
         protected override void Update(GameTime gameTime)
         {
-            if (!IsActive)
+            if (!IsActive && !isClient)
             {
                 return;
             }
@@ -142,22 +144,26 @@ namespace Tiled
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            if(Keyboard.GetState().IsKeyDown(Keys.A))
+            if(!inTitle)
             {
-                localCamera.position.X -= 50;
+                if (Keyboard.GetState().IsKeyDown(Keys.A))
+                {
+                    localCamera.position.X -= 50;
+                }
+                if (Keyboard.GetState().IsKeyDown(Keys.D))
+                {
+                    localCamera.position.X += 50;
+                }
+                if (Keyboard.GetState().IsKeyDown(Keys.W))
+                {
+                    localCamera.position.Y -= 50;
+                }
+                if (Keyboard.GetState().IsKeyDown(Keys.S))
+                {
+                    localCamera.position.Y += 50;
+                }
             }
-            if (Keyboard.GetState().IsKeyDown(Keys.D))
-            {
-                localCamera.position.X += 50;
-            }
-            if (Keyboard.GetState().IsKeyDown(Keys.W))
-            {
-                localCamera.position.Y -= 50;
-            }
-            if (Keyboard.GetState().IsKeyDown(Keys.S))
-            {
-                localCamera.position.Y += 50;
-            }
+            
 
             localInputManager.Update();
             Mappings.Update();

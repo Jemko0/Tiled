@@ -28,7 +28,7 @@ namespace Tiled
         public static Rectangle[,] wallFramesCached;
         public static uint[,] lightMap;
         public float worldTime = 8.0f;
-        public const float timeSpeed = 0.0002f;
+        public float timeSpeed = 0.0002f;
         public float timeSpeedMultiplier = 1.0f;
         public const float gravity = 0.43f;
 
@@ -123,7 +123,15 @@ namespace Tiled
             //Day Length Exponent (Higher num = night shorter)
             const float dnExp = 2.0f;
 
-            worldTime = (worldTime + (timeSpeed * timeSpeedMultiplier)) % h;
+            if(!Main.isClient)
+            {
+                worldTime = (worldTime + (timeSpeed * timeSpeedMultiplier)) % h;
+            }
+            else
+            {
+                //client doesnt predict time right now
+                //worldTime += timeSpeed / Main.SERVER_TICKRATE;
+            }
             
             Lighting.SKY_LIGHT_MULT = Math.Clamp((float)Math.Sin(Math.Pow(worldTime / h, dnExp) * (Math.PI / 0.5f)), 0.0f, 1.0f);
             lightUpdateCounter++;

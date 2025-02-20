@@ -47,6 +47,15 @@ namespace Tiled.Gameplay
         }
 
         /// <summary>
+        /// use this to setup action mappings etc...
+        /// </summary>
+        /// <param name="playerController"></param>
+        public virtual void Possessed(Controller playerController)
+        {
+            return;
+        }
+
+        /// <summary>
         /// handles sprite and hitbox, ONLY OVERRIDE IF YOU KNOW WHAT YOU ARE DOING
         /// </summary>
         /// <param name="type"></param>

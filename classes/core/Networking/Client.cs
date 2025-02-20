@@ -29,12 +29,16 @@ namespace Tiled.Networking
         private class PacketData
         {
             public int id { get; set; }
+            public int tickrate { get; set; }
             public int seed { get; set; }
-            public int time { get; set; }
             public int maxTilesX { get; set; }
             public int maxTilesY { get; set; }
             public float x { get; set; }
             public float y { get; set; }
+            public float velX { get; set; }
+            public float velY { get; set; }
+
+            public object[] objectArray { get; set; }
         }
 
         public TiledClient()
@@ -62,6 +66,7 @@ namespace Tiled.Networking
         {
             ws = new ClientWebSocket();
             Uri serverUri;
+
             try
             {
                serverUri = new Uri(SV_URI);
@@ -147,6 +152,8 @@ namespace Tiled.Networking
                         break;
 
                     case "world":
+                        Main.SERVER_TICKRATE = packet.data.tickrate;
+
                         var seed = packet.data.seed;
                         
                         Log("Received world seed: " + seed);
@@ -159,15 +166,17 @@ namespace Tiled.Networking
                         Program.GetGame().world.StartWorldGeneration();
 
                         //when we have world, try spawning player
-                        SendPacket("spawn", new { id = PlayerID });
+                        SendPacket("spawnNewClient", new { id = PlayerID });
                         break;
 
                     case "worldTime":
-                        var worldTime = packet.data.time;
+                        var worldTime = packet.data.x;
+                        var worldTimeSpeed = packet.data.y;
                         Program.GetGame().world.worldTime = worldTime;
+                        Program.GetGame().world.timeSpeed = worldTimeSpeed;
                         break;
 
-                    case "spawn":
+                    case "spawnNewClient":
                         Log("player with ID: " + packet.data.id + " wants to spawn on Client");
                         var p = Entity.NewEntity<EPlayer>();
                         p.position.X = packet.data.x;
@@ -178,6 +187,54 @@ namespace Tiled.Networking
                         if (packet.data.id == PlayerID)
                         {
                             Program.GetGame().localPlayerController.Possess(p);
+                            Program.GetGame().localPlayerController.StartMultiplayerUpdate();
+                        }
+                        SendPacket("requestOthers", new { id = PlayerID });
+                        break;
+
+                    case "spawnOthers":
+                        //Log("spawning other players on client");
+                        /*EPlayer newPlayer = Entity.NewEntity<EPlayer>();
+                        newPlayer.clientID = packet.data.id;
+                        newPlayer.position.X = packet.data.x;
+                        Main.cl_playerDictionary.Add(packet.data.id, newPlayer); newPlayer.position.Y = packet.data.y;*/
+
+                        if(packet.data.objectArray == null || packet.data.objectArray.Length < 1)
+                        {
+                            Debug.WriteLine("object array null");
+                            return;
+                        }
+                        Debug.WriteLine("OBJECT ARRAY: " + string.Join('\n', packet.data.objectArray));
+
+                        //Log(packet.data.objectArray[]);
+                        break;
+
+                    case "otherPlayerUpdate":
+
+                        if(!Main.cl_playerDictionary.ContainsKey(packet.data.id))
+                        {
+                            EPlayer newPlayer = Entity.NewEntity<EPlayer>();
+                            newPlayer.clientID = packet.data.id;
+                            newPlayer.position.X = packet.data.x;
+                            newPlayer.position.Y = packet.data.y;
+                            newPlayer.velocity.X = packet.data.velX;
+                            newPlayer.velocity.Y = packet.data.velY;
+                            Main.cl_playerDictionary.Add(packet.data.id, newPlayer);
+                            return;
+                        }
+
+                        Main.cl_playerDictionary[packet.data.id].position.X = packet.data.x;
+                        Main.cl_playerDictionary[packet.data.id].position.Y = packet.data.y;
+
+                        Main.cl_playerDictionary[packet.data.id].velocity.X = packet.data.velX;
+                        Main.cl_playerDictionary[packet.data.id].velocity.Y = packet.data.velY;
+                        break;
+
+                    case "clientDisconnect":
+                        if (Main.cl_playerDictionary.ContainsKey(packet.data.id))
+                        {
+                            Main.cl_playerDictionary[packet.data.id].Destroy();
+                            Main.cl_playerDictionary.Remove(packet.data.id);
                         }
                         break;
                 }
@@ -185,6 +242,7 @@ namespace Tiled.Networking
             catch (Exception ex)
             {
                 Log($"Error processing message: {ex.Message}");
+                OnException?.Invoke(ex.Message);
             }
         }
 

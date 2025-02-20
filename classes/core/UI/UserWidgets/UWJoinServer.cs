@@ -35,6 +35,7 @@ namespace Tiled.UI.UserWidgets
             else
             {
                 HUD.CreateWidget<UWMessage>(owningHUD, "Failed to join server!");
+                DestroyWidget();
             }
         }
 
@@ -43,6 +44,7 @@ namespace Tiled.UI.UserWidgets
             HUD.CreateWidget<UWMessage>(owningHUD, obj);
             Program.GetGame().localClient.DestroySocket();
             Debug.WriteLine("destroyed client socket cause of an exception!");
+            DestroyWidget();
         }
     }
 }
