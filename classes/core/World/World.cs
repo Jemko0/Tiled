@@ -20,6 +20,7 @@ namespace Tiled
 
         public static bool renderWorld = false;
         public const int TILESIZE = 16;
+        public int seed = 0;
         public static Rectangle invalidFrame = new Rectangle(-1, -1, -1, -1);
         public static ETileType[,] tiles;
         public static EWallType[,] walls;
@@ -67,6 +68,49 @@ namespace Tiled
                 }
             }
         }
+
+        public void StartWorldGeneration()
+        {
+            TaskCompletionSource<bool> _genTaskCompletionSource;
+            Task _genTask;
+
+            // Create a task completion source to track the overall process
+            _genTaskCompletionSource = new TaskCompletionSource<bool>();
+
+            // Start the async operation on a background thread
+            _genTask = Task.Run(async () =>
+            {
+                try
+                {
+                    var newParams = new WorldGenParams()
+                    {
+                        maxTilesX = World.maxTilesX,
+                        maxTilesY = World.maxTilesY,
+                        seed = this.seed,
+                    };
+
+                    InitTasks();
+                    renderWorld = false;
+
+                    // Wait for the world generation to complete
+                    await RunTasks(newParams);
+
+                    if (LoadWorld(false) && !Main.isClient)
+                    {
+                        Program.GetGame().CreatePlayer(new Vector2(newParams.maxTilesX / 2, 0));
+                        renderWorld = true;
+                        Main.inTitle = false;
+                    }
+                    _genTaskCompletionSource.SetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    _genTaskCompletionSource.SetException(ex);
+                    throw;
+                }
+            });
+        }
+
 
         int lightUpdateCounter = 0;
         public void UpdateWorld()
@@ -154,6 +198,11 @@ namespace Tiled
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidIndex(Array a, int i, int j)
         {
+            if(a == null)
+            {
+                return false;
+            }
+
             return !(i < 0 || j < 0 || i >= a.GetLength(0) || j >= a.GetLength(1));
         }
 

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System;
 using System.Diagnostics;
+using Tiled.Gameplay;
 
 namespace Tiled.Networking
 {
@@ -17,6 +18,8 @@ namespace Tiled.Networking
         // Event for message logging
         public event Action<string> OnLogMessage;
 
+        public event Action<string> OnException;
+        public event Action<bool> OnJoinResult;
         private class Packet
         {
             public string type { get; set; }
@@ -26,14 +29,19 @@ namespace Tiled.Networking
         private class PacketData
         {
             public int id { get; set; }
+            public int seed { get; set; }
+            public int time { get; set; }
+            public int maxTilesX { get; set; }
+            public int maxTilesY { get; set; }
+            public float x { get; set; }
+            public float y { get; set; }
         }
 
         public TiledClient()
         {
             // Set up default log handler if none provided
+            Main.isClient = true;
             OnLogMessage += (msg) => Debug.WriteLine(msg);
-
-            
         }
 
         public void Run()
@@ -42,10 +50,29 @@ namespace Tiled.Networking
             Task.Run(Client);
         }
 
+        public void DestroySocket()
+        {
+            Main.isClient = false;
+            isRunning = false;
+            ws?.Abort();
+            ws?.Dispose();
+        }
+
         private async Task Client()
         {
             ws = new ClientWebSocket();
-            Uri serverUri = new Uri(SV_URI);
+            Uri serverUri;
+            try
+            {
+               serverUri = new Uri(SV_URI);
+            }
+            catch (Exception ex)
+            {
+                Log($"URI_Error: {ex.Message}");
+                OnException?.Invoke(ex.Message);
+                return;
+            }
+
 
             try
             {
@@ -56,6 +83,7 @@ namespace Tiled.Networking
             catch (Exception ex)
             {
                 Log($"Error: {ex.Message}");
+                OnException?.Invoke(ex.Message);
             }
         }
 
@@ -98,19 +126,59 @@ namespace Tiled.Networking
             try
             {
                 var packet = System.Text.Json.JsonSerializer.Deserialize<Packet>(message);
+                Log($"Received packet: {message}");
 
                 switch (packet.type)
                 {
                     case "player_id":
                         PlayerID = packet.data.id;
+
+                        if(PlayerID == -1)
+                        {
+                            OnJoinResult?.Invoke(false);
+                            return;
+                        }
+
+                        OnJoinResult?.Invoke(true);
                         Log($"Received player ID: {PlayerID}");
 
-                        SendPacket("spawn", new { id = PlayerID });
+                        SendPacket("requestWorld", null);
+                        
+                        break;
 
+                    case "world":
+                        var seed = packet.data.seed;
+                        
+                        Log("Received world seed: " + seed);
+
+                        Program.GetGame().world.seed = seed;
+                        
+                        World.maxTilesX = packet.data.maxTilesX;
+                        World.maxTilesY = packet.data.maxTilesY;
+
+                        Program.GetGame().world.StartWorldGeneration();
+
+                        //when we have world, try spawning player
+                        SendPacket("spawn", new { id = PlayerID });
+                        break;
+
+                    case "worldTime":
+                        var worldTime = packet.data.time;
+                        Program.GetGame().world.worldTime = worldTime;
                         break;
 
                     case "spawn":
                         Log("player with ID: " + packet.data.id + " wants to spawn on Client");
+                        var p = Entity.NewEntity<EPlayer>();
+                        p.position.X = packet.data.x;
+                        p.position.Y = packet.data.y;
+
+                        World.renderWorld = true;
+
+                        if (packet.data.id == PlayerID)
+                        {
+                            Program.GetGame().localPlayerController.Possess(p);
+                        }
                         break;
                 }
             }
@@ -120,6 +188,12 @@ namespace Tiled.Networking
             }
         }
 
+        /// <summary>
+        /// Send a packet to the SERVER (from client)
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public async Task SendPacket(string type, object data)
         {
             var packet = new

@@ -21,6 +21,7 @@ namespace Tiled
         private SpriteBatch _spriteBatch;
         private Effect skyShader;
         public TiledClient localClient;
+        public static bool isClient;
 
         public GraphicsDeviceManager _graphics;
         public Camera localCamera;
@@ -28,6 +29,7 @@ namespace Tiled
         public HUD localHUD;
         public static List<Gameplay.Entity> entities;
         public World world;
+
         public Controller localPlayerController;
 
         public static float renderScale = 1.0f;
@@ -62,9 +64,13 @@ namespace Tiled
             CalcRenderScale();
         }
 
-        public void JoinServer(string inputUri)
+        public void CreateNewClient()
         {
             Program.GetGame().localClient = new TiledClient();
+        }
+
+        public void JoinServer(string inputUri)
+        {
             localClient.SV_URI = inputUri;
             localClient.Run();
         }

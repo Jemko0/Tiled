@@ -1,11 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Tiled.Networking;
 
 namespace Tiled.UI.UserWidgets
 {
@@ -24,7 +18,6 @@ namespace Tiled.UI.UserWidgets
 
         public override void Construct()
         {
-
             vb = HUD.CreateWidget<WVerticalBox>(owningHUD);
             vb.SetGeometry(new Vector2(vbWidth, 256), DataStructures.AnchorPosition.Center);
             vb.AttachToParent(this);
@@ -56,7 +49,9 @@ namespace Tiled.UI.UserWidgets
 
         private void MultiplayerButtonPressed(DataStructures.ButtonPressArgs args)
         {
-            
+            var t = HUD.CreateWidget<UWMultiplayerTab>(owningHUD);
+            t.SetGeometry(new Vector2(256, 0), DataStructures.AnchorPosition.Center);
+            DestroyWidget();
         }
 
         private void PlayButtonPressed(DataStructures.ButtonPressArgs args)

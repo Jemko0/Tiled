@@ -39,56 +39,12 @@ namespace Tiled.UI.UserWidgets
 
             base.Construct();
 
-            StartWorldGeneration();
+            Program.GetGame().world.StartWorldGeneration();
+            Program.GetGame().world.taskProgressChanged += WGenProgressChanged;
+            DestroyWidget();
         }
 
         // Synchronous entry point
-        public void StartWorldGeneration()
-        {
-            TaskCompletionSource<bool> _genTaskCompletionSource;
-            Task _genTask;
-
-            // Create a task completion source to track the overall process
-            _genTaskCompletionSource = new TaskCompletionSource<bool>();
-
-            // Start the async operation on a background thread
-            _genTask = Task.Run(async () =>
-            {
-                try
-                {
-                    var newParams = new WorldGenParams()
-                    {
-                        maxTilesX = 5000,
-                        maxTilesY = 1000,
-                        seed = 0,
-                    };
-
-                    var game = Program.GetGame();
-                    game.world.InitTasks();
-                    game.world.taskProgressChanged += WGenProgressChanged;
-                    World.renderWorld = false;
-
-                    // Wait for the world generation to complete
-                    await game.world.RunTasks(newParams);
-
-                    // Only proceed if world generation was successful
-                    if (game.world.LoadWorld(false))
-                    {
-                        game.CreatePlayer(new Vector2(newParams.maxTilesX / 2, 0));
-                        World.renderWorld = true;
-                        Main.inTitle = false;
-                    }
-
-                    DestroyWidget();
-                    _genTaskCompletionSource.SetResult(true);
-                }
-                catch (Exception ex)
-                {
-                    _genTaskCompletionSource.SetException(ex);
-                    throw;
-                }
-            });
-        }
 
         private void WGenProgressChanged(object sender, WorldGenProgress e)
         {

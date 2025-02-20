@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tiled.DataStructures;
 
 namespace Tiled.UI.UserWidgets
 {
@@ -17,32 +18,37 @@ namespace Tiled.UI.UserWidgets
         }
 
         WText t;
+        WVerticalBox outer;
         WVerticalBox vb;
         Texture2D bgTex;
         WButton okBtn;
         WText okBtnTxt;
+
+        Vector2 boxSize = new Vector2(1000, 960);
         public override void Construct()
         {
-            SetGeometry(new Vector2(720, 480), DataStructures.AnchorPosition.Center);
+            layerDepth = 1.0f;
 
+            SetGeometry(boxSize, DataStructures.AnchorPosition.Center);
             vb = HUD.CreateWidget<WVerticalBox>(owningHUD);
-            vb.SetGeometry(new Vector2(720, 240), DataStructures.AnchorPosition.Center);
+            vb.SetGeometry(boxSize, AnchorPosition.Center);
+            vb.childrenKeepWidth = true;
             vb.AttachToParent(this);
             vb.SetOffset(new Vector2(0, 100f));
 
             t = HUD.CreateWidget<WText>(owningHUD);
-            t.SetGeometry(new Vector2(0, 240), null);
+            t.SetGeometry(new Vector2(180, 240), null);
             t.text = reservedText;
             t.justification = DataStructures.ETextJustification.Center;
             t.AttachToParent(vb);
 
             okBtn = HUD.CreateWidget<WButton>(owningHUD);
-            okBtn.SetGeometry(new Vector2(0, 72), null);
+            okBtn.SetGeometry(new Vector2(180, 72), AnchorPosition.Center);
             okBtn.onButtonPressed += OkBtn_onButtonPressed;
             okBtn.AttachToParent(vb);
 
             okBtnTxt = HUD.CreateWidget<WText>(owningHUD);
-            okBtnTxt.SetGeometry(new Vector2(0, 72), null);
+            okBtnTxt.SetGeometry(new Vector2(180, 72), AnchorPosition.Center);
             okBtnTxt.justification = DataStructures.ETextJustification.Center;
             okBtnTxt.text = "OK";
             okBtnTxt.AttachToParent(okBtn);

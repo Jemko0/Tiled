@@ -79,7 +79,7 @@ namespace Tiled.UI
         
         public void DrawWidgets()
         {
-            spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, SamplerState.AnisotropicWrap);
+            spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, SamplerState.PointClamp);
             foreach (Widget w in activeWidgets.ToList())
             {
                 w.Draw(ref spriteBatch);

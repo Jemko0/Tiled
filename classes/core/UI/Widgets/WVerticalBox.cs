@@ -9,15 +9,17 @@ namespace Tiled.UI
     public class WVerticalBox : PanelWidget
     {
         public int innerPadding = 5;
+        public bool childrenKeepWidth = false;
         public WVerticalBox(HUD owner) : base(owner)
         {
         }
 
         public override void DrawChild(ref SpriteBatch sb, int childIdx)
         {
-            children[childIdx].SetGeometry(new Vector2(GetSize().X, children[childIdx].GetSize().Y), DataStructures.AnchorPosition.TopLeft);
-            children[childIdx].anchorPosition = new Vector2(0, 0);
-            children[childIdx].SetOffset(new Vector2(0, 0));
+            Vector2 size = childrenKeepWidth? children[childIdx].GetSize() : new Vector2(GetSize().X, children[childIdx].GetSize().Y);
+            children[childIdx].SetGeometry(size, DataStructures.AnchorPosition.Center);
+            //children[childIdx].anchorPosition = new Vector2(0, 0);
+            //children[childIdx].SetOffset(new Vector2(0, 0));
 
             if (childIdx != 0)
             {
