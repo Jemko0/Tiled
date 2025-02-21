@@ -4,6 +4,8 @@ using System.Threading;
 using System;
 using System.Diagnostics;
 using Tiled.Gameplay;
+using Tiled.DataStructures;
+using System.Text.Json;
 
 namespace Tiled.Networking
 {
@@ -35,6 +37,7 @@ namespace Tiled.Networking
             public int maxTilesY { get; set; }
             public float x { get; set; }
             public float y { get; set; }
+            public byte tileType { get; set; }
             public float velX { get; set; }
             public float velY { get; set; }
 
@@ -78,7 +81,6 @@ namespace Tiled.Networking
                 return;
             }
 
-
             try
             {
                 await ws.ConnectAsync(serverUri, CancellationToken.None);
@@ -121,6 +123,7 @@ namespace Tiled.Networking
                 catch (Exception ex)
                 {
                     Log($"Error while receiving: {ex.Message}");
+                    OnException?.Invoke(ex.Message);
                     break;
                 }
             }
@@ -166,6 +169,7 @@ namespace Tiled.Networking
                         Program.GetGame().world.StartWorldGeneration();
 
                         //when we have world, try spawning player
+                        SendPacket("requestWorldChanges", new { id = PlayerID });
                         SendPacket("spawnNewClient", new { id = PlayerID });
                         break;
 
@@ -174,6 +178,17 @@ namespace Tiled.Networking
                         var worldTimeSpeed = packet.data.y;
                         Program.GetGame().world.worldTime = worldTime;
                         Program.GetGame().world.timeSpeed = worldTimeSpeed;
+                        break;
+
+                    case "worldChanges":
+                        object[] changes = packet.data.objectArray;
+
+                        for (int i = 0; i < changes.Length; i++)
+                        {
+                            var change = (JsonElement)changes[i];
+                            World.SetTile(change.GetProperty("x").GetInt32(), change.GetProperty("y").GetInt32(), (ETileType)change.GetProperty("tileType").GetByte(), true);
+                        }
+
                         break;
 
                     case "spawnNewClient":
@@ -193,20 +208,6 @@ namespace Tiled.Networking
                         break;
 
                     case "spawnOthers":
-                        //Log("spawning other players on client");
-                        /*EPlayer newPlayer = Entity.NewEntity<EPlayer>();
-                        newPlayer.clientID = packet.data.id;
-                        newPlayer.position.X = packet.data.x;
-                        Main.cl_playerDictionary.Add(packet.data.id, newPlayer); newPlayer.position.Y = packet.data.y;*/
-
-                        if(packet.data.objectArray == null || packet.data.objectArray.Length < 1)
-                        {
-                            Debug.WriteLine("object array null");
-                            return;
-                        }
-                        Debug.WriteLine("OBJECT ARRAY: " + string.Join('\n', packet.data.objectArray));
-
-                        //Log(packet.data.objectArray[]);
                         break;
 
                     case "otherPlayerUpdate":
@@ -228,6 +229,10 @@ namespace Tiled.Networking
 
                         Main.cl_playerDictionary[packet.data.id].velocity.X = packet.data.velX;
                         Main.cl_playerDictionary[packet.data.id].velocity.Y = packet.data.velY;
+                        break;
+
+                    case "newTile":
+                        World.SetTile(packet.data.maxTilesX, packet.data.maxTilesY, (ETileType)packet.data.tileType, true);
                         break;
 
                     case "clientDisconnect":

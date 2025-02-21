@@ -210,6 +210,7 @@ namespace Tiled.UI
             if (!isBeingDestroyed)
             {
                 isBeingDestroyed = true;
+                
                 onWidgetDestroyed?.Invoke(new WidgetDestroyArgs(this));
                 Dispose();
             }

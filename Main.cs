@@ -11,6 +11,8 @@ using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
 using Tiled.Networking;
+using System.Diagnostics;
+using Tiled.UI.UserWidgets;
 
 namespace Tiled
 {
@@ -124,6 +126,23 @@ namespace Tiled
         public static void UnregisterEntity(Gameplay.Entity e)
         {
             entities.Remove(e);
+        }
+
+        public void OnClientException(string obj)
+        {
+
+            foreach (Entity e in entities.ToList())
+            {
+                e.Destroy();
+            }
+
+            foreach(Widget w in HUD.activeWidgets.ToList())
+            {
+                w.DestroyWidget();
+            }
+
+            HUD.CreateWidget<UWMessage>(localHUD, obj);
+            localClient.DestroySocket();
         }
 
         private void CalcRenderScale()

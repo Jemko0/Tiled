@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using Tiled.Events;
 using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.ID;
@@ -128,10 +129,13 @@ namespace Tiled.Gameplay
             sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), GetFrame(), finalColor, rotation, rotOrigin, flip, 0u);
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             position = Vector2.Zero;
             velocity = Vector2.Zero;
+            //entitySprite.Dispose();
+            EventHelper.RemoveAllEventHandlers(this);
+            collision = null;
         }
     }
 }

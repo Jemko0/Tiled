@@ -43,6 +43,7 @@ namespace Tiled
         public static int cavernsLayerHeight = 0;
         public static int averageSurfaceHeight = 0;
         public static sbyte[,] tileBreak;
+        public static bool isGenerating = false;
         public World()
         {
         }
@@ -71,6 +72,7 @@ namespace Tiled
 
         public void StartWorldGeneration()
         {
+            isGenerating = true;
             TaskCompletionSource<bool> _genTaskCompletionSource;
             Task _genTask;
 
@@ -101,6 +103,7 @@ namespace Tiled
                         renderWorld = true;
                         Main.inTitle = false;
                     }
+                    isGenerating = false;
                     _genTaskCompletionSource.SetResult(true);
                 }
                 catch (Exception ex)
@@ -538,7 +541,7 @@ namespace Tiled
             ClearWallFrame(x, y - 1);
         }
 
-        public static void SetTile(int x, int y, ETileType type)
+        public static void SetTile(int x, int y, ETileType type, bool fromServer = false)
         {
             if(!IsValidIndex(tiles, x, y))
             { 
@@ -546,6 +549,18 @@ namespace Tiled
             }
 
             tiles[x, y] = type;
+
+            if (Main.isClient && !isGenerating && !fromServer)
+            {
+                Program.GetGame().localClient.SendPacket("singleTile", new
+                { 
+                    id = Program.GetGame().localClient.PlayerID,
+                    x = x,
+                    y = y,
+                    tileType = (byte)type
+                });
+            }
+
             UpdateTileFramesAt(x, y);
             Lighting.QueueLightUpdate(x, y);
         }
