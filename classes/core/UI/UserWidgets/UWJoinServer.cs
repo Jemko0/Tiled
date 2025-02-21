@@ -22,8 +22,8 @@ namespace Tiled.UI.UserWidgets
             text.text = "Joining Server...";
             text.AttachToParent(this, AnchorPosition.Center);
 
-            Program.GetGame().localClient.OnException += LocalClient_OnException;
-            Program.GetGame().localClient.OnJoinResult += LocalClient_OnJoinResult;
+            //Program.GetGame().localClient.OnException += LocalClient_OnException;
+            //Program.GetGame().localClient.OnJoinResult += LocalClient_OnJoinResult;
         }
 
         private void LocalClient_OnJoinResult(bool obj)
@@ -42,7 +42,7 @@ namespace Tiled.UI.UserWidgets
         private void LocalClient_OnException(string obj)
         {
             HUD.CreateWidget<UWMessage>(owningHUD, obj);
-            Program.GetGame().localClient.DestroySocket();
+            //Program.GetGame().localClient.DestroySocket();
             Debug.WriteLine("destroyed client socket cause of an exception!");
             DestroyWidget();
         }

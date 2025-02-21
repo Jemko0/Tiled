@@ -84,11 +84,8 @@ namespace Tiled.UI
 
         private void JoinPressed(DataStructures.ButtonPressArgs args)
         {
-            if(Program.GetGame().localClient == null)
-            {
-                Program.GetGame().CreateNewClient();
-            }
-            var j =HUD.CreateWidget<UWJoinServer>(owningHUD);
+
+            var j = HUD.CreateWidget<UWJoinServer>(owningHUD);
             j.SetGeometry(new Vector2(1920, 1080), AnchorPosition.Center);
 
             Program.GetGame().JoinServer(txtbox.text);

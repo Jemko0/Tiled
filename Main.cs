@@ -11,6 +11,9 @@ using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
 using Tiled.Networking;
+using Tiled.Networking.Shared;
+using Lidgren.Network;
+using System.Threading;
 
 namespace Tiled
 {
@@ -20,7 +23,6 @@ namespace Tiled
         private Texture2D sunTex;
         private SpriteBatch _spriteBatch;
         private Effect skyShader;
-        public TiledClient localClient;
         public static bool isClient;
         public static Dictionary<int, EPlayer> cl_playerDictionary = new Dictionary<int, EPlayer>();
 
@@ -40,8 +42,6 @@ namespace Tiled
         public static bool inTitle = true;
         public static Texture2D undergroundBackgroundTexture;
         public static Texture2D tileBreakTexture;
-
-        public static GameServer gameServer;
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -64,15 +64,9 @@ namespace Tiled
             CalcRenderScale();
         }
 
-        public void CreateNewClient()
-        {
-            Program.GetGame().localClient = new TiledClient();
-        }
-
         public void JoinServer(string inputUri)
         {
-            localClient.SV_URI = inputUri;
-            localClient.Run();
+            //Program.GetGame().localClient = new WebSocketClient(inputUri, 8888);
         }
 
         public void CreatePlayer(Vector2 location)
@@ -90,7 +84,7 @@ namespace Tiled
 
         protected override void LoadContent()
         {
-#if !SERVER
+#if !TILEDSERVER
             Fonts.InitFonts();
 
             //world.Init();
@@ -107,12 +101,17 @@ namespace Tiled
 
             localHUD = new HUD(_spriteBatch, _graphics);
 #endif
-            world = new World();
 
-#if SERVER
-            gameServer = new GameServer("192.168.0.28", 8888);
-            gameServer.StartServer();
-#endif
+            world = new World();
+            test();
+        }
+
+        private async void test()
+        {
+            TiledServer gameServer = new TiledServer();
+
+            var Tclient = new TiledClient();
+            Tclient.client.Connect(new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }), 12345));
         }
 
         private void MainWindowResized(object sender, EventArgs e)
@@ -139,7 +138,7 @@ namespace Tiled
         public static float delta;
         protected override void Update(GameTime gameTime)
         {
-#if !SERVER
+#if !TILEDSERVER
             if (!IsActive && !isClient)
             {
                 return;
@@ -194,7 +193,7 @@ namespace Tiled
 
         protected override void Draw(GameTime gameTime)
         {
-#if !SERVER
+#if !TILEDSERVER
             GraphicsDevice.Clear(Color.Black);
             
             RenderSky();

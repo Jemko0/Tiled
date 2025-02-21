@@ -38,20 +38,6 @@ namespace Tiled.Gameplay
 
         private void SendClientUpdate(object? sender, ElapsedEventArgs e)
         {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed#
-
-            Program.GetGame().localClient.SendPacket(
-                "clientUpdate", 
-                new 
-                { 
-                    id = Program.GetGame().localClient.PlayerID,
-                    x = controlledEntity.position.X,
-                    y = controlledEntity.position.Y,
-                    velX = (Math.Truncate(100 * controlledEntity.velocity.X) / 100),
-                    velY = (Math.Truncate(100 * controlledEntity.velocity.Y) / 100)
-                });
-
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         }
 
         public void Unpossess()
