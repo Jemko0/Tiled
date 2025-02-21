@@ -4,6 +4,7 @@ using System.Threading;
 using System;
 using System.Diagnostics;
 using Tiled.Gameplay;
+using System.Net.Http.Headers;
 
 namespace Tiled.Networking
 {
@@ -20,26 +21,6 @@ namespace Tiled.Networking
 
         public event Action<string> OnException;
         public event Action<bool> OnJoinResult;
-        private class Packet
-        {
-            public string type { get; set; }
-            public PacketData data { get; set; }
-        }
-
-        private class PacketData
-        {
-            public int id { get; set; }
-            public int tickrate { get; set; }
-            public int seed { get; set; }
-            public int maxTilesX { get; set; }
-            public int maxTilesY { get; set; }
-            public float x { get; set; }
-            public float y { get; set; }
-            public float velX { get; set; }
-            public float velY { get; set; }
-
-            public object[] objectArray { get; set; }
-        }
 
         public TiledClient()
         {
@@ -147,7 +128,7 @@ namespace Tiled.Networking
                         OnJoinResult?.Invoke(true);
                         Log($"Received player ID: {PlayerID}");
 
-                        SendPacket("requestWorld", null);
+                        SendPacket("requestWorld", new {id = PlayerID});
                         
                         break;
 
@@ -261,13 +242,52 @@ namespace Tiled.Networking
             };
 
             string jsonPacket = System.Text.Json.JsonSerializer.Serialize(packet);
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(jsonPacket);
+            byte[] payloadData = System.Text.Encoding.UTF8.GetBytes(jsonPacket);
+
+            // Create WebSocket frame
+            byte[] frame;
+            byte[] length;
+
+            if (payloadData.Length < 126)
+            {
+                frame = new byte[6 + payloadData.Length]; // 2 bytes header + 4 bytes mask + payload
+                frame[1] = (byte)(0x80 | payloadData.Length); // Set masked bit and length
+            }
+            else if (payloadData.Length < 65536)
+            {
+                frame = new byte[8 + payloadData.Length]; // 2 bytes header + 2 bytes extended length + 4 bytes mask + payload
+                frame[1] = (byte)(0x80 | 126); // Set masked bit and 126 to indicate 2-byte length
+                frame[2] = (byte)((payloadData.Length >> 8) & 255);
+                frame[3] = (byte)(payloadData.Length & 255);
+            }
+            else
+            {
+                throw new Exception("Payload too large");
+            }
+
+            // Set FIN and Text frame bits
+            frame[0] = 0x81; // 1000 0001: FIN bit set, opcode = 1 (text)
+
+            // Generate random mask
+            byte[] mask = new byte[4];
+            Random random = new Random();
+            random.NextBytes(mask);
+
+            // Copy mask bytes
+            int maskOffset = frame.Length - (4 + payloadData.Length);
+            Buffer.BlockCopy(mask, 0, frame, maskOffset, 4);
+
+            // Mask and copy payload
+            for (int i = 0; i < payloadData.Length; i++)
+            {
+                frame[maskOffset + 4 + i] = (byte)(payloadData[i] ^ mask[i % 4]);
+            }
 
             if (ws.State == WebSocketState.Open)
             {
                 await ws.SendAsync(
-                    new ArraySegment<byte>(bytes),
-                    WebSocketMessageType.Text,
+                    new ArraySegment<byte>(frame),
+                    WebSocketMessageType.Binary,
                     true,
                     CancellationToken.None
                 );

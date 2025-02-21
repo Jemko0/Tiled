@@ -40,6 +40,8 @@ namespace Tiled
         public static bool inTitle = true;
         public static Texture2D undergroundBackgroundTexture;
         public static Texture2D tileBreakTexture;
+
+        public static GameServer gameServer;
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -56,10 +58,6 @@ namespace Tiled
             Mappings.InitializeMappings();
             entities = new List<Entity>();
             localPlayerController = new Controller();
-
-            
-
-            localCamera.position.Y = 8912.0f / 3f;
             
 
             Window.ClientSizeChanged += MainWindowResized;
@@ -92,9 +90,9 @@ namespace Tiled
 
         protected override void LoadContent()
         {
+#if !SERVER
             Fonts.InitFonts();
 
-            world = new World();
             //world.Init();
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
@@ -106,10 +104,16 @@ namespace Tiled
             sunTex = Content.Load<Texture2D>("Sky/Sun");
             undergroundBackgroundTexture = Content.Load<Texture2D>("UndergroundBackgrounds/DefaultUndergroundBackground");
             tileBreakTexture = Content.Load<Texture2D>("TileBreakage/breakCombined");
-            localHUD = new HUD(_spriteBatch, _graphics);
-        }
 
-        
+            localHUD = new HUD(_spriteBatch, _graphics);
+#endif
+            world = new World();
+
+#if SERVER
+            gameServer = new GameServer("192.168.0.28", 8888);
+            gameServer.StartServer();
+#endif
+        }
 
         private void MainWindowResized(object sender, EventArgs e)
         {
@@ -135,12 +139,12 @@ namespace Tiled
         public static float delta;
         protected override void Update(GameTime gameTime)
         {
+#if !SERVER
             if (!IsActive && !isClient)
             {
                 return;
             }
 
-                delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
@@ -173,11 +177,15 @@ namespace Tiled
                 Lighting.Update();
             }
             
-            world.UpdateWorld();
+            
 
             localPlayerController.Update();
-            
-            foreach(Entity entity in entities.ToList())
+#endif
+            delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            world.UpdateWorld();
+
+            foreach (Entity entity in entities.ToList())
             {
                 entity.Update();
             }
@@ -186,6 +194,7 @@ namespace Tiled
 
         protected override void Draw(GameTime gameTime)
         {
+#if !SERVER
             GraphicsDevice.Clear(Color.Black);
             
             RenderSky();
@@ -201,6 +210,7 @@ namespace Tiled
             _spriteBatch.End();
 
             localHUD.DrawWidgets();
+#endif
         }
 
         public void RenderBackground()
