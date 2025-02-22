@@ -16,14 +16,13 @@ namespace Tiled
         public Thread serverThread;
         public bool running = true;
 
-        
-
         int lastClientID = 0;
         public TiledServer()
         {
             NetPeerConfiguration config = new NetPeerConfiguration("tiled");
-            config.BroadcastAddress = new System.Net.IPAddress(new byte[] { 192, 168, 0, 21 });
-            config.Port = 12345;
+
+            config.Port = 7777;
+
             config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
             config.EnableMessageType(NetIncomingMessageType.Data);
             config.EnableMessageType(NetIncomingMessageType.StatusChanged);
@@ -155,8 +154,8 @@ namespace Tiled
                                     
                                     ClientUpdatePacket multicastUpdatePacket = new ClientUpdatePacket();
                                     multicastUpdatePacket.playerID = clientUpdatePacket.playerID;
-                                    multicastUpdatePacket.position = clientUpdatePacket.position;
-                                    multicastUpdatePacket.velocity = clientUpdatePacket.velocity;
+                                    NetShared.clientIDPairs[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
+                                    NetShared.clientIDPairs[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
 
                                     NetOutgoingMessage multicastUpdateMsg = server.CreateMessage();
                                     multicastUpdateMsg.Write((byte)EPacketType.ReceiveClientUpdate);
@@ -188,6 +187,23 @@ namespace Tiled
                                         }
                                     }
                                     server.FlushSendQueue();
+                                    break;
+
+                                case EPacketType.RequestTileChange:
+                                    TileChangePacket change = new TileChangePacket();
+                                    change.PacketToNetIncomingMessage(msg);
+
+                                    ETileType previousTile = World.tiles[change.x, change.y];
+
+                                    NetOutgoingMessage tileOut = server.CreateMessage();
+
+                                    //set tile for server locally
+                                    World.SetTile(change.x, change.y, change.tileType, true);
+
+                                    //send change to everyone else
+                                    tileOut.Write((byte)EPacketType.ReceiveTileChange);
+                                    change.PacketToNetOutgoingMessage(tileOut);
+                                    server.SendToAll(tileOut, NetDeliveryMethod.ReliableOrdered);
                                     break;
                             }
                             break;

@@ -10,6 +10,8 @@
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <Title>Tiled</Title>
+    <Authors>Jemko</Authors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='TiledServer|AnyCPU'">
@@ -20,8 +22,13 @@
     <None Remove="Icon.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Icon.ico" />
-    <EmbeddedResource Include="Icon.bmp" />
+	  <EmbeddedResource Include="Icon.ico">
+		  <LogicalName>Icon.ico</LogicalName>
+	  </EmbeddedResource>
+
+	  <EmbeddedResource Include="Icon.bmp">
+		  <LogicalName>Icon.bmp</LogicalName>
+	  </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />

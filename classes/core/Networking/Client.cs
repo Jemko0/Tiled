@@ -171,6 +171,14 @@ namespace Tiled
                                         Debug.WriteLine("Client ID not found");
                                     }
                                     break;
+
+
+                                case EPacketType.ReceiveTileChange:
+                                    TileChangePacket change = new TileChangePacket();
+                                    change.PacketToNetIncomingMessage(inc);
+
+                                    World.SetTile(change.x, change.y, change.tileType);
+                                    break;
                             }
                             break;
                         case NetIncomingMessageType.StatusChanged:
@@ -203,6 +211,21 @@ namespace Tiled
                 clientUpdatePacket.PacketToNetOutgoingMessage(clientUpdateMsg);
                 client.SendMessage(clientUpdateMsg, NetDeliveryMethod.Unreliable);
             }
+        }
+
+        public void SendTileSquare(int x, int y, ETileType type)
+        {
+            TileChangePacket tileChangePacket = new TileChangePacket();
+            tileChangePacket.x = x;
+            tileChangePacket.y = y;
+            tileChangePacket.tileType = type;
+
+            NetOutgoingMessage msg = client.CreateMessage();
+
+            msg.Write((byte)EPacketType.RequestTileChange);
+            tileChangePacket.PacketToNetOutgoingMessage(msg);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
     }
 }

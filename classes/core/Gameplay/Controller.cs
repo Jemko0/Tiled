@@ -29,17 +29,6 @@ namespace Tiled.Gameplay
             entity.Possessed(this);
         }
 
-        public void StartMultiplayerUpdate()
-        {
-            Timer timer = new Timer(Main.SERVER_TICKRATE);
-            timer.Elapsed += SendClientUpdate;
-            timer.Start();
-        }
-
-        private void SendClientUpdate(object? sender, ElapsedEventArgs e)
-        {
-        }
-
         public void Unpossess()
         {
             controlledEntity = null;

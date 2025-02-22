@@ -20,7 +20,7 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
         {
             if(World.IsValidForTilePlacement(x, y))
             {
-                World.SetTile(x, y, item.Item.placeTile);
+                World.SetTile(x, y, item.Item.placeTile, false);
             }
         }
 

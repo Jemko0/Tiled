@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Lidgren.Network;
+using Microsoft.VisualBasic;
 using Microsoft.Xna.Framework;
+using Tiled.DataStructures;
 using Tiled.Gameplay;
 
 namespace Tiled.Networking.Shared
@@ -22,6 +24,7 @@ namespace Tiled.Networking.Shared
         RequestWorld,
         RequestClientSpawn,
         RequestOtherClients,
+        RequestTileChange,
 
         //one time receive
         ReceivePlayerID,
@@ -30,6 +33,7 @@ namespace Tiled.Networking.Shared
         ReceiveSpawnClient,
         ReceiveOtherClients,
         ReceiveClientDisconnected,
+        ReceiveTileChange,
 
         //ticking receive
         ReceiveWorldUpdate,
@@ -201,6 +205,7 @@ namespace Tiled.Networking.Shared
             msg.Write(velocity.Y);
         }
     }
+
     public class ClientDisconnectedPacket : Packet
     {
         public int disconnectedPlayerID;
@@ -213,6 +218,27 @@ namespace Tiled.Networking.Shared
         public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
         {
             msg.Write(disconnectedPlayerID);
+        }
+    }
+
+    public class TileChangePacket : Packet
+    {
+        public ETileType tileType;
+        public int x;
+        public int y;
+
+        public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            tileType = (ETileType)msg.ReadByte();
+            x = msg.ReadInt32();
+            y = msg.ReadInt32();
+        }
+
+        public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write((byte)tileType);
+            msg.Write(x);
+            msg.Write(y);
         }
     }
 }

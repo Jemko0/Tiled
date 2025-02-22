@@ -36,7 +36,6 @@ namespace Tiled
         public Controller localPlayerController;
 
         public static float renderScale = 1.0f;
-        public static int SERVER_TICKRATE = -1;
         public static Point screenCenter;
 
         public static bool inTitle = true;
@@ -46,14 +45,19 @@ namespace Tiled
 #if TILEDSERVER
         public static TiledServer server;
 #else
-        public TiledClient localClient;
+        public static TiledClient localClient;
 #endif
 
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            Window.Title = "cool game";
+
+#if TILEDSERVER
+            Window.Title = "Tiled Server";
+#else
+            Window.Title = "Tiled";
+#endif
             IsMouseVisible = true;
             Window.AllowUserResizing = true;
         }

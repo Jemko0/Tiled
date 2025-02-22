@@ -542,7 +542,7 @@ namespace Tiled
             ClearWallFrame(x, y - 1);
         }
 
-        public static void SetTile(int x, int y, ETileType type)
+        public static void SetTile(int x, int y, ETileType type, bool noBroadcast = true)
         {
             if(!IsValidIndex(tiles, x, y))
             { 
@@ -552,6 +552,12 @@ namespace Tiled
             tiles[x, y] = type;
             UpdateTileFramesAt(x, y);
             Lighting.QueueLightUpdate(x, y);
+#if !TILEDSERVER
+            if(!noBroadcast && Main.netMode != ENetMode.Server)
+            {
+                Main.localClient.SendTileSquare(x, y, type);
+            }
+#endif
         }
 
         public static void BreakTile(int x, int y, sbyte pickPower, sbyte axePower)
