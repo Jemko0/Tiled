@@ -8,12 +8,55 @@ using Microsoft.VisualBasic;
 using Microsoft.Xna.Framework;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
+using Tiled.Gameplay.Items;
 
 namespace Tiled.Networking.Shared
 {
+    /// <summary>
+    /// data that server and client share (doesnt mean that the values are the same!)
+    /// </summary>
     public static class NetShared
     {
+        /// <summary>
+        /// PlayerID -> PlayerEntity, good for doing stuff to certain players
+        /// </summary>
         public static Dictionary<int, EPlayer> clientIDPairs = new Dictionary<int, EPlayer>();
+
+        /// <summary>
+        /// net synced array of entities
+        /// </summary>
+        public static Dictionary<int, Entity> netEntitites = new Dictionary<int, Entity>();
+
+        /// <summary>
+        /// reads from the packet and spawns a new entity, client and server run this seperately
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <param name="id"></param>
+        public static void SpawnEntityShared(SpawnEntityPacket packet)
+        {
+            if (packet.isItem)
+            {
+                EItem newItem = EItem.CreateItem(packet.itemType);
+                newItem.netID = packet.entityID;
+                netEntitites.Add(packet.entityID, newItem);
+                newItem.position = packet.position;
+                newItem.velocity = packet.velocity;
+            }
+            else
+            {
+                Entity newEntity = new Entity();
+                newEntity.netID = packet.entityID;
+                netEntitites.Add(packet.entityID, newEntity);
+                newEntity.position = packet.position;
+                newEntity.velocity = packet.velocity;
+            }
+        }
+
+        public static void DestroyEntity(int netID)
+        {
+            netEntitites[netID].LocalDestroy();
+            netEntitites.Remove(netID);
+        }
     }
 
     public enum EPacketType
@@ -25,6 +68,8 @@ namespace Tiled.Networking.Shared
         RequestClientSpawn,
         RequestOtherClients,
         RequestTileChange,
+        RequestSpawnEntity,
+        RequestDestroyEntity,
 
         //one time receive
         ReceivePlayerID,
@@ -34,6 +79,9 @@ namespace Tiled.Networking.Shared
         ReceiveOtherClients,
         ReceiveClientDisconnected,
         ReceiveTileChange,
+        ReceiveSpawnEntity,
+        ReceiveServerUpdateEntity,
+        ReceiveDestroyEntity,
 
         //ticking receive
         ReceiveWorldUpdate,
@@ -53,20 +101,20 @@ namespace Tiled.Networking.Shared
         public abstract void PacketToNetOutgoingMessage(NetOutgoingMessage msg);
     }
 
-    public class PlayerIDPacket : Packet
+    public class IDPacket : Packet
     {
-        public PlayerIDPacket(int playerID)
+        public IDPacket(int ID)
         {
-            this.playerID = playerID;
+            this.ID = ID;
         }
-        public int playerID { get; set; }
+        public int ID { get; set; }
         public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
         {
-            playerID = msg.ReadInt32();
+            ID = msg.ReadInt32();
         }
         public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
         {
-            msg.Write(playerID);
+            msg.Write(ID);
         }
     }
 
@@ -239,6 +287,83 @@ namespace Tiled.Networking.Shared
             msg.Write((byte)tileType);
             msg.Write(x);
             msg.Write(y);
+        }
+    }
+
+    public class SpawnEntityPacket : Packet
+    {
+        //first bit corresponds to if this is an item
+
+        public bool isItem;
+
+        /// <summary>
+        /// SERVER ASSIGNED ENTITY ID
+        /// </summary>
+        public int entityID;
+        public EEntityType entityType;
+        public EItemType itemType;
+        
+        public Vector2 position;
+        public Vector2 velocity;
+
+        public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            isItem = msg.ReadBoolean();
+            entityID = msg.ReadInt32();
+
+            if(isItem)
+            {
+                itemType = (EItemType)msg.ReadByte();
+            }
+            else
+            {
+                entityType = (EEntityType)msg.ReadByte();
+            }
+
+            position = new Vector2(msg.ReadFloat(), msg.ReadFloat());
+            velocity = new Vector2(msg.ReadFloat(), msg.ReadFloat());
+        }
+
+        public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write(isItem);
+            msg.Write(entityID);
+
+            if (isItem)
+            {
+                msg.Write((byte)itemType);
+            }
+            else
+            {
+                msg.Write((byte)entityType);
+            }
+
+            msg.Write(position.X);
+            msg.Write(position.Y);
+            msg.Write(velocity.X);
+            msg.Write(velocity.Y);
+        }
+    }
+
+    public class EntityUpdatePacket : Packet
+    {
+        public int entityID;
+        public Vector2 position;
+        public Vector2 velocity;
+        public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            entityID = msg.ReadInt32();
+            position = new Vector2(msg.ReadFloat(), msg.ReadFloat());
+            velocity = new Vector2(msg.ReadFloat(), msg.ReadFloat());
+        }
+
+        public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write(entityID);
+            msg.Write(position.X);
+            msg.Write(position.Y);
+            msg.Write(velocity.X);
+            msg.Write(velocity.Y);
         }
     }
 }

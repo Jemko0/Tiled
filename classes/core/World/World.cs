@@ -587,9 +587,7 @@ namespace Tiled
         {
             Tile t = TileID.GetTile(tiles[x, y]);
 
-            
-
-            SetTile(x, y, ETileType.Air);
+            SetTile(x, y, ETileType.Air, false);
 
             UpdateTile(x, y);
             UpdateTile(x + 1, y);
@@ -601,10 +599,22 @@ namespace Tiled
             {
                 return;
             }
-            
-            var item = EItem.CreateItem(t.itemDrop);
-            item.velocity.Y = -5.0f;
-            item.position = new Vector2(x * TILESIZE, y * TILESIZE);
+#if TILEDSERVER
+            Main.server.ServerSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
+            return;
+#else
+            if(Main.netMode == ENetMode.Client)
+            {
+                Main.localClient.ClientRequestSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
+            }
+
+            if(Main.netMode == ENetMode.Standalone)
+            {
+                EItem newItem = EItem.CreateItem(t.itemDrop);
+                newItem.position = new(x * TILESIZE, y * TILESIZE);
+                newItem.velocity = new(0.0f, -5.0f);
+            }
+#endif
         }
 
         public static void UpdateTile(int x, int y)

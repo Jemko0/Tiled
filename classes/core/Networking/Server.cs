@@ -6,6 +6,7 @@ using System.Threading;
 using System.Timers;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
+using Tiled.Gameplay.Items;
 using Tiled.Networking.Shared;
 namespace Tiled
 {
@@ -17,6 +18,7 @@ namespace Tiled
         public bool running = true;
 
         int lastClientID = 0;
+        int lastEntityID = int.MinValue;
         public TiledServer()
         {
             NetPeerConfiguration config = new NetPeerConfiguration("tiled");
@@ -89,7 +91,7 @@ namespace Tiled
                             {
                                 case EPacketType.RequestPlayerID:
                                     lastClientID++;
-                                    PlayerIDPacket playerIDPacket = new PlayerIDPacket(lastClientID);
+                                    IDPacket playerIDPacket = new IDPacket(lastClientID);
 
                                     socketToClientID.Add(msg.SenderConnection, lastClientID);
 
@@ -154,8 +156,8 @@ namespace Tiled
                                     
                                     ClientUpdatePacket multicastUpdatePacket = new ClientUpdatePacket();
                                     multicastUpdatePacket.playerID = clientUpdatePacket.playerID;
-                                    NetShared.clientIDPairs[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
-                                    NetShared.clientIDPairs[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
+                                    multicastUpdatePacket.position = NetShared.clientIDPairs[clientUpdatePacket.playerID].position;
+                                    multicastUpdatePacket.velocity = NetShared.clientIDPairs[clientUpdatePacket.playerID].velocity;
 
                                     NetOutgoingMessage multicastUpdateMsg = server.CreateMessage();
                                     multicastUpdateMsg.Write((byte)EPacketType.ReceiveClientUpdate);
@@ -166,10 +168,10 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.RequestOtherClients:
-                                    PlayerIDPacket requestOthersPacket = new PlayerIDPacket(-1);
+                                    IDPacket requestOthersPacket = new IDPacket(-1);
                                     requestOthersPacket.PacketToNetIncomingMessage(msg);
 
-                                    int requestID = requestOthersPacket.playerID;
+                                    int requestID = requestOthersPacket.ID;
 
                                     foreach (KeyValuePair<int, EPlayer> pair in NetShared.clientIDPairs)
                                     {
@@ -205,6 +207,32 @@ namespace Tiled
                                     change.PacketToNetOutgoingMessage(tileOut);
                                     server.SendToAll(tileOut, NetDeliveryMethod.ReliableOrdered);
                                     break;
+
+                                case EPacketType.RequestSpawnEntity:
+                                    SpawnEntityPacket newEntityPacket = new SpawnEntityPacket();
+                                    newEntityPacket.PacketToNetIncomingMessage(msg);
+
+                                    lastEntityID++;
+                                    newEntityPacket.entityID = lastEntityID;
+
+                                    //spawn entity locally/server
+                                    NetShared.SpawnEntityShared(newEntityPacket);
+
+                                    //spawn for everyone else
+                                    NetOutgoingMessage newEntityMsg = server.CreateMessage();
+
+                                    newEntityMsg.Write((byte)EPacketType.ReceiveSpawnEntity);
+                                    newEntityPacket.PacketToNetOutgoingMessage(newEntityMsg);
+
+                                    server.SendToAll(newEntityMsg, NetDeliveryMethod.ReliableOrdered);
+                                    break;
+
+                                case EPacketType.RequestDestroyEntity:
+                                    IDPacket idPacket = new IDPacket(-1);
+                                    idPacket.PacketToNetIncomingMessage(msg);
+
+
+                                    break;
                             }
                             break;
     
@@ -231,7 +259,6 @@ namespace Tiled
                                 server.SendToAll(disconnectOut, NetDeliveryMethod.ReliableOrdered);
                                 server.FlushSendQueue();
                             }
-
                             break;
     
                         case NetIncomingMessageType.DebugMessage:
@@ -254,6 +281,13 @@ namespace Tiled
 
         private void ServerTick(object sender, ElapsedEventArgs e)
         {
+            SendWorldUpdate();
+            SendEntityUpdates();
+            server.FlushSendQueue();
+        }
+
+        private void SendWorldUpdate()
+        {
             WorldUpdatePacket worldUpdatePacket = new WorldUpdatePacket();
             worldUpdatePacket.time = Program.GetGame().world.worldTime;
 
@@ -261,7 +295,45 @@ namespace Tiled
             worldUpdateMsg.Write((byte)EPacketType.ReceiveWorldUpdate);
             worldUpdatePacket.PacketToNetOutgoingMessage(worldUpdateMsg);
             server.SendToAll(worldUpdateMsg, NetDeliveryMethod.Unreliable);
-            server.FlushSendQueue();
+        }
+
+        private void SendEntityUpdates()
+        {
+           foreach(int ID in NetShared.netEntitites.Keys)
+           {
+                EntityUpdatePacket entityUpdatePacket = new EntityUpdatePacket();
+                entityUpdatePacket.entityID = ID;
+                entityUpdatePacket.position = NetShared.netEntitites[ID].position;
+                entityUpdatePacket.velocity = NetShared.netEntitites[ID].velocity;
+
+                NetOutgoingMessage entityUpdateMsg = server.CreateMessage();
+                entityUpdateMsg.Write((byte)EPacketType.ReceiveServerUpdateEntity);
+                entityUpdatePacket.PacketToNetOutgoingMessage(entityUpdateMsg);
+
+                server.SendToAll(entityUpdateMsg, NetDeliveryMethod.Unreliable);
+           }
+        }
+
+        public void ServerSpawnEntity(bool isItem, EEntityType entityType, EItemType itemType, Vector2 position, Vector2 velocity)
+        {
+            SpawnEntityPacket request = new SpawnEntityPacket();
+            request.isItem = isItem;
+            request.entityType = entityType;
+            request.itemType = itemType;
+            request.isItem = isItem;
+            request.position = position;
+            request.velocity = velocity;
+
+            NetOutgoingMessage selfRequest = server.CreateMessage();
+            selfRequest.Write((byte)EPacketType.RequestSpawnEntity);
+            request.PacketToNetOutgoingMessage(selfRequest);
+
+            server.SendUnconnectedToSelf(selfRequest);
+        }
+
+        public void ServerDestroyEntity()
+        {
+
         }
     }
 }

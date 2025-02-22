@@ -1,4 +1,5 @@
 ﻿using Lidgren.Network;
+using Microsoft.Xna.Framework;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -79,10 +80,10 @@ namespace Tiled
                                     Main.netMode = ENetMode.Client;
                                     Main.inTitle = false;
 
-                                    PlayerIDPacket playerIDPacket = new PlayerIDPacket(0);
+                                    IDPacket playerIDPacket = new IDPacket(0);
                                     playerIDPacket.PacketToNetIncomingMessage(inc);
     
-                                    localPlayerID = playerIDPacket.playerID;
+                                    localPlayerID = playerIDPacket.ID;
     
                                     Debug.WriteLine("Player ID: " + localPlayerID);
 
@@ -128,7 +129,7 @@ namespace Tiled
                                         Program.GetGame().localPlayerController.Possess(newPlayer);
 
                                         //if we spawned, request other clients
-                                        PlayerIDPacket requestOthersPacket = new PlayerIDPacket(localPlayerID);
+                                        IDPacket requestOthersPacket = new IDPacket(localPlayerID);
                                         NetOutgoingMessage requestOthers = client.CreateMessage();
 
                                         requestOthers.Write((byte)EPacketType.RequestOtherClients);
@@ -179,8 +180,32 @@ namespace Tiled
 
                                     World.SetTile(change.x, change.y, change.tileType);
                                     break;
+
+                                case EPacketType.ReceiveSpawnEntity:
+                                    SpawnEntityPacket spawnEntityPacket = new SpawnEntityPacket();
+                                    spawnEntityPacket.PacketToNetIncomingMessage(inc);
+
+                                    //spawn entity locally/client
+                                    NetShared.SpawnEntityShared(spawnEntityPacket);
+                                    break;
+
+                                case EPacketType.ReceiveServerUpdateEntity:
+                                    EntityUpdatePacket entityUpdatePacket = new EntityUpdatePacket();
+                                    entityUpdatePacket.PacketToNetIncomingMessage(inc);
+
+                                    NetShared.netEntitites[entityUpdatePacket.entityID].position = entityUpdatePacket.position;
+                                    NetShared.netEntitites[entityUpdatePacket.entityID].velocity = entityUpdatePacket.velocity;
+                                    break;
+
+                                case EPacketType.ReceiveDestroyEntity:
+                                    IDPacket idPacket = new IDPacket(-1);
+                                    idPacket.PacketToNetIncomingMessage(inc);
+                                    
+                                    NetShared.netEntitites[idPacket.ID].LocalDestroy();
+                                    break;
                             }
                             break;
+
                         case NetIncomingMessageType.StatusChanged:
                             break;
                         case NetIncomingMessageType.DebugMessage:
@@ -226,6 +251,23 @@ namespace Tiled
             tileChangePacket.PacketToNetOutgoingMessage(msg);
 
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void ClientRequestSpawnEntity(bool isItem, EEntityType entityType, EItemType itemType, Vector2 position, Vector2 velocity)
+        {
+            SpawnEntityPacket request = new SpawnEntityPacket();
+            request.isItem = isItem;
+            request.entityType = entityType;
+            request.itemType = itemType;
+            request.isItem = isItem;
+            request.position = position;
+            request.velocity = velocity;
+
+            NetOutgoingMessage requestMsg = client.CreateMessage();
+            requestMsg.Write((byte)EPacketType.RequestSpawnEntity);
+            request.PacketToNetOutgoingMessage(requestMsg);
+
+            client.SendMessage(requestMsg, NetDeliveryMethod.ReliableOrdered);
         }
     }
 }

@@ -62,6 +62,10 @@ namespace Tiled.Gameplay.Items
                     SwingItem(swingOwner);
                 }
             }
+
+#if TILEDSERVER
+            velocity.X += 0.2f;
+#endif
         }
 
         public void SwingItem(Entity entity)

@@ -18,6 +18,7 @@ namespace Tiled.Gameplay
         protected int frameSlotSizeY = 48;
         protected float rotation = 0.0f;
         protected Vector2 rotOrigin = new(0, 0);
+        public int netID = -1;
 
         public bool facingLeft;
         public int direction;
@@ -41,6 +42,24 @@ namespace Tiled.Gameplay
         }
 
         public void Destroy()
+        {
+            if (Main.netMode == ENetMode.Standalone)
+            {
+                LocalDestroy();
+            }
+
+            if (Main.netMode == ENetMode.Server)
+            {
+
+            }
+
+            if (Main.netMode == ENetMode.Client)
+            {
+
+            }
+        }
+
+        public void LocalDestroy()
         {
             Main.UnregisterEntity(this);
             Dispose();
