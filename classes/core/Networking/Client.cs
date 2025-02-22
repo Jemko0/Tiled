@@ -1,78 +1,208 @@
 ﻿using Lidgren.Network;
+using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Timers;
+using Tiled;
+using Tiled.DataStructures;
+using Tiled.Gameplay;
 using Tiled.Networking.Shared;
 
-public class TiledClient
+namespace Tiled
 {
-    public NetClient client;
-    public int localPlayerID;
-    public Thread clientThread;
-    public TiledClient()
+
+    public class TiledClient
     {
-        NetPeerConfiguration config = new NetPeerConfiguration("tiled");
-        config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
-        config.EnableMessageType(NetIncomingMessageType.Data);
-        config.EnableMessageType(NetIncomingMessageType.StatusChanged);
-        config.EnableMessageType(NetIncomingMessageType.DebugMessage);
-        config.EnableMessageType(NetIncomingMessageType.WarningMessage);
-        config.EnableMessageType(NetIncomingMessageType.ErrorMessage);
-        client = new NetClient(config);
-        client.Start();
-        Debug.WriteLine("Client started");
-
-        clientThread = new Thread(new ThreadStart(StartClient));
-        clientThread.Start();
-    }
-
-    public void StartClient()
-    {
-        Thread.Sleep(1000);
-        NetOutgoingMessage msg = client.CreateMessage();
-        msg.Write((byte)EPacketType.RequestPlayerID);
-        client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
-        client.FlushSendQueue();
-
-        while (true)
+        public NetClient client;
+        public int localPlayerID = -1;
+        public Thread clientThread;
+        public bool running = true;
+        public TiledClient()
         {
-            NetIncomingMessage inc;
-            while ((inc = client.ReadMessage()) != null)
+            NetPeerConfiguration config = new NetPeerConfiguration("tiled");
+            config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
+            config.EnableMessageType(NetIncomingMessageType.Data);
+            config.EnableMessageType(NetIncomingMessageType.StatusChanged);
+            config.EnableMessageType(NetIncomingMessageType.DebugMessage);
+            config.EnableMessageType(NetIncomingMessageType.WarningMessage);
+            config.EnableMessageType(NetIncomingMessageType.ErrorMessage);
+            client = new NetClient(config);
+            client.Start();
+            Tiled.Program.GetGame().Exiting += TiledClient_Exiting;
+            Debug.WriteLine("Client started");
+        }
+
+        public void ConnectToServer(byte[] ip, int port)
+        {
+            Debug.WriteLine("Connecting to IPEndPoint: " + string.Join('.', ip) + ":" + port);
+            client.Connect(new System.Net.IPEndPoint(new System.Net.IPAddress(ip), port));
+
+            clientThread = new Thread(new ThreadStart(StartClient));
+            clientThread.Name = "Client Thread";
+            clientThread.Start();
+        }
+
+        private void TiledClient_Exiting(object sender, EventArgs e)
+        {
+            running = false;
+        }
+
+        public void StartClient()
+        {
+            Thread.Sleep(1000);
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestPlayerID);
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+            client.FlushSendQueue();
+
+            System.Timers.Timer clientTickTimer = new System.Timers.Timer(41);
+            clientTickTimer.Elapsed += ClientTick;
+
+            while (running)
             {
-                switch (inc.MessageType)
+                NetIncomingMessage inc;
+                while ((inc = client.ReadMessage()) != null)
                 {
-                    case NetIncomingMessageType.ConnectionApproval:
-                        inc.SenderConnection.Approve();
-                        break;
-                    case NetIncomingMessageType.Data:
-                        switch ((EPacketType)inc.ReadByte())
-                        {
-                            case EPacketType.RequestPlayerID:
-                                break;
+                    switch (inc.MessageType)
+                    {
+                        case NetIncomingMessageType.ConnectionApproval:
+                            inc.SenderConnection.Approve();
+                            break;
+                        case NetIncomingMessageType.Data:
+                            switch ((EPacketType)inc.ReadByte())
+                            {
+                                case EPacketType.RequestPlayerID:
+                                    //client should not receive this packet
+                                    break;
+    
+                                case EPacketType.ReceivePlayerID:
+                                    Main.netMode = ENetMode.Client;
+                                    Main.inTitle = false;
 
-                            case EPacketType.ReceivePlayerID:
-                                PlayerIDPacket playerIDPacket = new PlayerIDPacket(0);
-                                playerIDPacket.PacketToNetIncomingMessage(inc);
+                                    PlayerIDPacket playerIDPacket = new PlayerIDPacket(0);
+                                    playerIDPacket.PacketToNetIncomingMessage(inc);
+    
+                                    localPlayerID = playerIDPacket.playerID;
+    
+                                    Debug.WriteLine("Player ID: " + localPlayerID);
 
-                                localPlayerID = playerIDPacket.playerID;
+                                    //request World
+                                    ClientWorldRequestPacket worldRequestPacket = new ClientWorldRequestPacket(localPlayerID);
+                                    NetOutgoingMessage worldRequest = client.CreateMessage();
+                                    worldRequest.Write((byte)EPacketType.RequestWorld);
+                                    worldRequestPacket.PacketToNetOutgoingMessage(worldRequest);
+                                    client.SendMessage(worldRequest, NetDeliveryMethod.ReliableOrdered);
+                                    break;
 
-                                Debug.WriteLine("Player ID: " + localPlayerID);
-                                
-                                break;
-                        }
-                        break;
-                    case NetIncomingMessageType.StatusChanged:
-                        break;
-                    case NetIncomingMessageType.DebugMessage:
-                        Debug.WriteLine(inc.ReadString());
-                        break;
-                    case NetIncomingMessageType.WarningMessage:
-                        break;
-                    case NetIncomingMessageType.ErrorMessage:
-                        break;
+                                case EPacketType.ReceiveWorld:
+
+                                    WorldPacket worldPacket = new WorldPacket();
+                                    worldPacket.PacketToNetIncomingMessage(inc);
+                                    World.maxTilesX = worldPacket.maxTilesX;
+                                    World.maxTilesY = worldPacket.maxTilesY;
+                                    Program.GetGame().world.seed = worldPacket.seed;
+                                    Program.GetGame().world.StartWorldGeneration();
+                                    World.renderWorld = true;
+                                    
+                                    //request spawn
+                                    NetOutgoingMessage spawnRequest = client.CreateMessage();
+                                    spawnRequest.Write((byte)EPacketType.RequestClientSpawn);
+                                    spawnRequest.Write(localPlayerID);
+                                    client.SendMessage(spawnRequest, NetDeliveryMethod.ReliableOrdered);
+
+                                    break;
+    
+                                case EPacketType.ReceiveSpawnClient:
+
+                                    ClientSpawnPacket spawnPacket = new ClientSpawnPacket();
+                                    spawnPacket.PacketToNetIncomingMessage(inc);
+    
+                                    EPlayer newPlayer = Entity.NewEntity<EPlayer>();
+                                    newPlayer.clientID = spawnPacket.playerID;
+                                    newPlayer.position = spawnPacket.position;
+
+                                    NetShared.clientIDPairs.Add(spawnPacket.playerID, newPlayer);
+
+                                    if (localPlayerID == spawnPacket.playerID)
+                                    {
+                                        Program.GetGame().localPlayerController.Possess(newPlayer);
+
+                                        //if we spawned, request other clients
+                                        PlayerIDPacket requestOthersPacket = new PlayerIDPacket(localPlayerID);
+                                        NetOutgoingMessage requestOthers = client.CreateMessage();
+
+                                        requestOthers.Write((byte)EPacketType.RequestOtherClients);
+                                        requestOthersPacket.PacketToNetOutgoingMessage(requestOthers);
+                                        client.SendMessage(requestOthers, NetDeliveryMethod.ReliableOrdered);
+
+                                        clientTickTimer.Start();
+                                    }
+                                    break;
+
+                                case EPacketType.ReceiveClientDisconnected:
+                                    ClientDisconnectedPacket disconnectedPacket = new ClientDisconnectedPacket();
+                                    disconnectedPacket.PacketToNetIncomingMessage(inc);
+
+                                    if (NetShared.clientIDPairs.ContainsKey(disconnectedPacket.disconnectedPlayerID))
+                                    {
+                                        NetShared.clientIDPairs[disconnectedPacket.disconnectedPlayerID].Destroy();
+                                        NetShared.clientIDPairs.Remove(disconnectedPacket.disconnectedPlayerID);
+                                    }
+                                    break;
+
+                                case EPacketType.ReceiveWorldUpdate:
+                                    Debug.WriteLine("received world update");
+                                    WorldUpdatePacket worldUpdatePacket = new WorldUpdatePacket();
+                                    worldUpdatePacket.PacketToNetIncomingMessage(inc);
+                                    Program.GetGame().world.worldTime = worldUpdatePacket.time;
+                                    break;
+
+                                case EPacketType.ReceiveClientUpdate:
+                                    ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
+                                    clientUpdatePacket.PacketToNetIncomingMessage(inc);
+
+                                    if (NetShared.clientIDPairs.ContainsKey(clientUpdatePacket.playerID))
+                                    {
+                                        NetShared.clientIDPairs[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
+                                        NetShared.clientIDPairs[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
+                                    }
+                                    else
+                                    {
+                                        Debug.WriteLine("Client ID not found");
+                                    }
+                                    break;
+                            }
+                            break;
+                        case NetIncomingMessageType.StatusChanged:
+                            break;
+                        case NetIncomingMessageType.DebugMessage:
+                            Debug.WriteLine(inc.ReadString());
+                            break;
+                        case NetIncomingMessageType.WarningMessage:
+                            break;
+                        case NetIncomingMessageType.ErrorMessage:
+                            break;
+                    }
                 }
+            }
+            Debug.WriteLine("Server stopped");
+        }
+
+        private void ClientTick(object sender, ElapsedEventArgs e)
+        {
+            if(localPlayerID != -1)
+            {
+                ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
+                clientUpdatePacket.playerID = localPlayerID;
+                clientUpdatePacket.position = Program.GetGame().localPlayerController.controlledEntity.position;
+                clientUpdatePacket.velocity = Program.GetGame().localPlayerController.controlledEntity.velocity;
+
+                NetOutgoingMessage clientUpdateMsg = client.CreateMessage();
+
+                clientUpdateMsg.Write((byte)EPacketType.ReceiveClientUpdate);
+                clientUpdatePacket.PacketToNetOutgoingMessage(clientUpdateMsg);
+                client.SendMessage(clientUpdateMsg, NetDeliveryMethod.Unreliable);
             }
         }
     }
-
-
 }

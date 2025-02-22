@@ -87,8 +87,9 @@ namespace Tiled.UI
 
             var j = HUD.CreateWidget<UWJoinServer>(owningHUD);
             j.SetGeometry(new Vector2(1920, 1080), AnchorPosition.Center);
-
+#if !TILEDSERVER
             Program.GetGame().JoinServer(txtbox.text);
+#endif
             DestroyWidget();
         }
     }

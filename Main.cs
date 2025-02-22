@@ -23,7 +23,7 @@ namespace Tiled
         private Texture2D sunTex;
         private SpriteBatch _spriteBatch;
         private Effect skyShader;
-        public static bool isClient;
+        public static ENetMode netMode;
         public static Dictionary<int, EPlayer> cl_playerDictionary = new Dictionary<int, EPlayer>();
 
         public GraphicsDeviceManager _graphics;
@@ -42,6 +42,13 @@ namespace Tiled
         public static bool inTitle = true;
         public static Texture2D undergroundBackgroundTexture;
         public static Texture2D tileBreakTexture;
+
+#if TILEDSERVER
+        public static TiledServer server;
+#else
+        public TiledClient localClient;
+#endif
+
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -64,10 +71,19 @@ namespace Tiled
             CalcRenderScale();
         }
 
+#if !TILEDSERVER
         public void JoinServer(string inputUri)
         {
-            //Program.GetGame().localClient = new WebSocketClient(inputUri, 8888);
+            string ipStr = inputUri.Split(':')[0]; 
+            string portStr = inputUri.Split(':')[1];
+
+            byte[] ip = ipStr.Split('.').Select(x => byte.Parse(x)).ToArray();
+            int port = int.Parse(portStr);
+
+            localClient = new TiledClient();
+            localClient.ConnectToServer(ip, port);
         }
+#endif
 
         public void CreatePlayer(Vector2 location)
         {
@@ -84,7 +100,7 @@ namespace Tiled
 
         protected override void LoadContent()
         {
-#if !TILEDSERVER
+
             Fonts.InitFonts();
 
             //world.Init();
@@ -100,19 +116,21 @@ namespace Tiled
             tileBreakTexture = Content.Load<Texture2D>("TileBreakage/breakCombined");
 
             localHUD = new HUD(_spriteBatch, _graphics);
-#endif
-
             world = new World();
-            test();
+#if TILEDSERVER
+            RunServer();
+#endif
         }
 
-        private async void test()
+#if TILEDSERVER
+        private async void RunServer()
         {
-            TiledServer gameServer = new TiledServer();
 
-            var Tclient = new TiledClient();
-            Tclient.client.Connect(new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }), 12345));
+            server = new TiledServer();
+            return;
+
         }
+#endif
 
         private void MainWindowResized(object sender, EventArgs e)
         {
@@ -138,8 +156,7 @@ namespace Tiled
         public static float delta;
         protected override void Update(GameTime gameTime)
         {
-#if !TILEDSERVER
-            if (!IsActive && !isClient)
+            if (!IsActive && netMode == ENetMode.Standalone)
             {
                 return;
             }
@@ -166,8 +183,8 @@ namespace Tiled
                     localCamera.position.Y += 50;
                 }
             }
-            
 
+#if !TILEDSERVER
             localInputManager.Update();
             Mappings.Update();
 
@@ -175,11 +192,10 @@ namespace Tiled
             {
                 Lighting.Update();
             }
-            
-            
 
             localPlayerController.Update();
 #endif
+
             delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             world.UpdateWorld();
@@ -193,7 +209,6 @@ namespace Tiled
 
         protected override void Draw(GameTime gameTime)
         {
-#if !TILEDSERVER
             GraphicsDevice.Clear(Color.Black);
             
             RenderSky();
@@ -209,7 +224,6 @@ namespace Tiled
             _spriteBatch.End();
 
             localHUD.DrawWidgets();
-#endif
         }
 
         public void RenderBackground()

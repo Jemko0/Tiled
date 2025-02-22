@@ -43,6 +43,7 @@ namespace Tiled
         public static int cavernsLayerHeight = 0;
         public static int averageSurfaceHeight = 0;
         public static sbyte[,] tileBreak;
+        public static bool isGenerating = false;
         public World()
         {
         }
@@ -71,6 +72,7 @@ namespace Tiled
 
         public void StartWorldGeneration()
         {
+            isGenerating = true;
             TaskCompletionSource<bool> _genTaskCompletionSource;
             Task _genTask;
 
@@ -84,23 +86,25 @@ namespace Tiled
                 {
                     var newParams = new WorldGenParams()
                     {
-                        maxTilesX = World.maxTilesX,
-                        maxTilesY = World.maxTilesY,
-                        seed = this.seed,
+                        maxTilesX = maxTilesX,
+                        maxTilesY = maxTilesY,
+                        seed = seed,
                     };
 
                     InitTasks();
-                    renderWorld = false;
+                    //renderWorld = false;
 
                     // Wait for the world generation to complete
                     await RunTasks(newParams);
 
-                    if (LoadWorld(false) && !Main.isClient)
+                    if (LoadWorld(false) && Main.netMode == ENetMode.Standalone)
                     {
                         Program.GetGame().CreatePlayer(new Vector2(newParams.maxTilesX / 2, 0));
                         renderWorld = true;
                         Main.inTitle = false;
                     }
+
+                    isGenerating = false;
                     _genTaskCompletionSource.SetResult(true);
                 }
                 catch (Exception ex)
@@ -123,7 +127,7 @@ namespace Tiled
             //Day Length Exponent (Higher num = night shorter)
             const float dnExp = 2.0f;
 
-            if(!Main.isClient)
+            if(Main.netMode != ENetMode.Client)
             {
                 worldTime = (worldTime + (timeSpeed * timeSpeedMultiplier)) % h;
             }

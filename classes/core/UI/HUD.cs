@@ -55,8 +55,16 @@ namespace Tiled.UI
 
         internal void Init()
         {
+#if !TILEDSERVER
             var title = CreateWidget<UWTitle>(this);
             title.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
+#else
+            var text = CreateWidget<WText>(this);
+            text.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
+            text.fontScale = 3.0f;
+            text.justification = DataStructures.ETextJustification.Center;
+            text.text = "SERVER INSTANCE";
+#endif
         }
 
         private void GetDPIScale()

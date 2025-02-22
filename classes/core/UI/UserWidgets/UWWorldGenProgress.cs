@@ -38,6 +38,9 @@ namespace Tiled.UI.UserWidgets
             progressText.AttachToParent(vb);
 
             base.Construct();
+            World.maxTilesX = 1280;
+            World.maxTilesY = 720;
+            Program.GetGame().world.seed = 12345;
 
             Program.GetGame().world.StartWorldGeneration();
             Program.GetGame().world.taskProgressChanged += WGenProgressChanged;

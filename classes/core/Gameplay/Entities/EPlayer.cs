@@ -117,6 +117,8 @@ namespace Tiled.Gameplay
 
             float inputLR = Program.GetGame().localPlayerController.inputLR;
 
+            velocity.Y += World.gravity;
+
             //if this player is not the local player
             if (Program.GetGame().localPlayerController.controlledEntity != this)
             {
@@ -130,8 +132,7 @@ namespace Tiled.Gameplay
             {
                 velocity.X *= 0.8f;
             }
-            velocity.Y += World.gravity;
-
+            
             if(Mappings.IsMappingHeld("move_jump") && jumpCounter < 15)
             {
                 Jump();
@@ -139,8 +140,6 @@ namespace Tiled.Gameplay
             }
             
             MovementUpdate();
-
-            //inventoryUI.UpdateChildren(ref inventory);
         }
 
         public override Rectangle? GetFrame()

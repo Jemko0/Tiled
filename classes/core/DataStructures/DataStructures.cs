@@ -275,4 +275,11 @@ namespace Tiled.DataStructures
             this.type = type;
         }
     }
+
+    public enum ENetMode
+    {
+        Standalone,
+        Server,
+        Client,
+    }
 }
