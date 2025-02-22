@@ -1,5 +1,4 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,6 +20,7 @@ namespace Tiled.Gameplay
         {
 
         }
+
 #nullable enable
         public Entity? controlledEntity;
         public void Possess(Entity entity)
