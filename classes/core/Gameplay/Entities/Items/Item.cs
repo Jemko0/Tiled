@@ -163,6 +163,7 @@ namespace Tiled.Gameplay.Items
         {
             if (Item.consumable && behavior.CanConsume(this))
             {
+                //MAKE SERVER AUTHORATIVE VVV
                 ((EPlayer)entity).inventory.RemoveFromSlot(((EPlayer)entity).selectedSlot, 1);
             }
 
