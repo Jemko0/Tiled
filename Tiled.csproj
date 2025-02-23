@@ -39,7 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Lidgren.Network">
-      <HintPath>..\..\..\..\Downloads\lidgren-network-gen3-master\lidgren-network-gen3-master\Lidgren.Network\bin\Debug\Lidgren.Network.dll</HintPath>
+      <HintPath>lib\LidgrenNetwork\Lidgren.Network.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
