@@ -10,10 +10,6 @@ using Tiled.ID;
 using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
-using Tiled.Networking;
-using Tiled.Networking.Shared;
-using Lidgren.Network;
-using System.Threading;
 
 namespace Tiled
 {
@@ -24,13 +20,12 @@ namespace Tiled
         private SpriteBatch _spriteBatch;
         private Effect skyShader;
         public static ENetMode netMode;
-        public static Dictionary<int, EPlayer> cl_playerDictionary = new Dictionary<int, EPlayer>();
 
         public GraphicsDeviceManager _graphics;
         public Camera localCamera;
         public InputManager localInputManager = new InputManager();
         public HUD localHUD;
-        public static List<Gameplay.Entity> entities;
+        public static List<Entity> entities;
         public World world;
 
         public Controller localPlayerController;
@@ -43,9 +38,9 @@ namespace Tiled
         public static Texture2D tileBreakTexture;
 
 #if TILEDSERVER
-        public static TiledServer server;
+        public static TiledServer netServer;
 #else
-        public static TiledClient localClient;
+        public static TiledClient netClient;
 #endif
 
         public Main()
@@ -84,8 +79,8 @@ namespace Tiled
             byte[] ip = ipStr.Split('.').Select(x => byte.Parse(x)).ToArray();
             int port = int.Parse(portStr);
 
-            localClient = new TiledClient();
-            localClient.ConnectToServer(ip, port);
+            netClient = new TiledClient();
+            netClient.ConnectToServer(ip, port);
         }
 #endif
 
@@ -130,7 +125,7 @@ namespace Tiled
         private async void RunServer()
         {
 
-            server = new TiledServer();
+            netServer = new TiledServer();
             return;
 
         }

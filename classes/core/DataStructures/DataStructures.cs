@@ -282,4 +282,18 @@ namespace Tiled.DataStructures
         Server,
         Client,
     }
+
+    public struct NetWorldChange
+    {
+        public int x;
+        public int y;
+        public ETileType type;
+
+        public NetWorldChange(int x, int y, ETileType type)
+        {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+        }
+    }
 }

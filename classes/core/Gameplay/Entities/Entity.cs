@@ -58,9 +58,9 @@ namespace Tiled.Gameplay
             }
 
 #if TILEDSERVER
-            Main.server.ServerDestroyEntity(netID);
+            Main.netServer.ServerDestroyEntity(netID);
 #else
-            Main.localClient.ClientRequestDestroyEntity(netID);
+            Main.netClient.ClientRequestDestroyEntity(netID);
 #endif
         }
 

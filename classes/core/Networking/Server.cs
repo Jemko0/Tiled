@@ -6,8 +6,8 @@ using System.Threading;
 using System.Timers;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
-using Tiled.Gameplay.Items;
 using Tiled.Networking.Shared;
+
 namespace Tiled
 {
 
@@ -45,6 +45,7 @@ namespace Tiled
         }
 
         public static Dictionary<NetConnection, int> socketToClientID = new Dictionary<NetConnection, int>();
+        public static List<NetWorldChange> worldChanges = new List<NetWorldChange>();
 
         private void TiledServer_Exiting(object sender, System.EventArgs e)
         {
@@ -138,6 +139,24 @@ namespace Tiled
                                     server.FlushSendQueue();
                                     break;
 
+                                case EPacketType.RequestWorldChanges:
+                                    Thread.Sleep(100);
+                                    foreach (NetWorldChange c in worldChanges)
+                                    {
+                                        WorldChangesPacket worldChangesPacket = new WorldChangesPacket();
+                                        worldChangesPacket.x = c.x;
+                                        worldChangesPacket.y = c.y;
+                                        worldChangesPacket.type = (byte)c.type;
+
+                                        NetOutgoingMessage outChange = server.CreateMessage();
+
+                                        outChange.Write((byte)EPacketType.ReceiveWorldChange);
+                                        worldChangesPacket.PacketToNetOutgoingMessage(outChange);
+
+                                        server.SendMessage(outChange, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                                    }
+                                    break;
+
                                 case EPacketType.ReceiveClientUpdate:
 
                                     ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
@@ -201,6 +220,7 @@ namespace Tiled
 
                                     //set tile for server locally
                                     World.SetTile(change.x, change.y, change.tileType, true);
+                                    worldChanges.Add(new NetWorldChange(change.x, change.y, change.tileType));
 
                                     //send change to everyone else
                                     tileOut.Write((byte)EPacketType.ReceiveTileChange);

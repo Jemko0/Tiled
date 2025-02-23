@@ -553,9 +553,9 @@ namespace Tiled
             UpdateTileFramesAt(x, y);
             Lighting.QueueLightUpdate(x, y);
 #if !TILEDSERVER
-            if(!noBroadcast && Main.netMode != ENetMode.Server)
+            if(!noBroadcast && Main.netMode == ENetMode.Client)
             {
-                Main.localClient.SendTileSquare(x, y, type);
+                Main.netClient.SendTileSquare(x, y, type);
             }
 #endif
         }
@@ -600,12 +600,12 @@ namespace Tiled
                 return;
             }
 #if TILEDSERVER
-            Main.server.ServerSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
+            Main.netServer.ServerSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
             return;
 #else
             if(Main.netMode == ENetMode.Client)
             {
-                Main.localClient.ClientRequestSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
+                Main.netClient.ClientRequestSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
             }
 
             if(Main.netMode == ENetMode.Standalone)

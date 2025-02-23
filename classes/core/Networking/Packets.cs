@@ -65,6 +65,7 @@ namespace Tiled.Networking.Shared
         RequestPlayerID,
         RequestServerInfo,
         RequestWorld,
+        RequestWorldChanges,
         RequestClientSpawn,
         RequestOtherClients,
         RequestTileChange,
@@ -75,6 +76,7 @@ namespace Tiled.Networking.Shared
         ReceivePlayerID,
         ReceiveServerInfo,
         ReceiveWorld,
+        ReceiveWorldChange,
         ReceiveSpawnClient,
         ReceiveOtherClients,
         ReceiveClientDisconnected,
@@ -180,7 +182,7 @@ namespace Tiled.Networking.Shared
         public int maxTilesX;
         public int maxTilesY;
 
-        public WorldPacket(int seed, int maxX, int maxY)
+        public WorldPacket(int seed, int maxX, int maxY, List<NetWorldChange> changes)
         {
             this.seed = seed;
             maxTilesX = maxX;
@@ -202,6 +204,26 @@ namespace Tiled.Networking.Shared
             msg.Write(seed);
             msg.Write(maxTilesX);
             msg.Write(maxTilesY);
+        }
+    }
+
+    public class WorldChangesPacket : Packet
+    {
+        public int x;
+        public int y;
+        public byte type;
+        public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            x = msg.ReadInt32();
+            y = msg.ReadInt32();
+            type = msg.ReadByte();
+        }
+
+        public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write(x);
+            msg.Write(y);
+            msg.Write(type);
         }
     }
 

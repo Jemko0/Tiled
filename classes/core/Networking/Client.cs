@@ -105,6 +105,11 @@ namespace Tiled
                                     Program.GetGame().world.StartWorldGeneration();
                                     World.renderWorld = true;
                                     
+                                    //request world changes
+                                    NetOutgoingMessage changeRequest = client.CreateMessage();
+                                    changeRequest.Write((byte)EPacketType.RequestWorldChanges);
+                                    client.SendMessage(changeRequest, NetDeliveryMethod.ReliableOrdered);
+
                                     //request spawn
                                     NetOutgoingMessage spawnRequest = client.CreateMessage();
                                     spawnRequest.Write((byte)EPacketType.RequestClientSpawn);
@@ -202,6 +207,13 @@ namespace Tiled
                                     idPacket.PacketToNetIncomingMessage(inc);
                                     
                                     NetShared.netEntitites[idPacket.ID].LocalDestroy();
+                                    break;
+
+                                case EPacketType.ReceiveWorldChange:
+                                    WorldChangesPacket worldChangesPacket = new WorldChangesPacket();
+                                    worldChangesPacket.PacketToNetIncomingMessage(inc);
+
+                                    World.SetTile(worldChangesPacket.x, worldChangesPacket.y, (ETileType)worldChangesPacket.type);
                                     break;
                             }
                             break;
