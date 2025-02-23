@@ -18,6 +18,12 @@ namespace Tiled
         public int localPlayerID = -1;
         public Thread clientThread;
         public bool running = true;
+
+        public delegate void ClientJoinResult(bool obj);
+        public delegate void ClientException(Exception e);
+        public event ClientJoinResult clientJoined;
+        public event ClientException clientException;
+
         public TiledClient()
         {
             NetPeerConfiguration config = new NetPeerConfiguration("tiled");
@@ -29,7 +35,7 @@ namespace Tiled
             config.EnableMessageType(NetIncomingMessageType.ErrorMessage);
             client = new NetClient(config);
             client.Start();
-            Tiled.Program.GetGame().Exiting += TiledClient_Exiting;
+            Program.GetGame().Exiting += TiledClient_Exiting;
             Debug.WriteLine("Client started");
         }
 
@@ -72,13 +78,11 @@ namespace Tiled
                         case NetIncomingMessageType.Data:
                             switch ((EPacketType)inc.ReadByte())
                             {
-                                case EPacketType.RequestPlayerID:
-                                    //client should not receive this packet
-                                    break;
-    
                                 case EPacketType.ReceivePlayerID:
                                     Main.netMode = ENetMode.Client;
                                     Main.inTitle = false;
+
+                                    clientJoined?.Invoke(true);
 
                                     IDPacket playerIDPacket = new IDPacket(0);
                                     playerIDPacket.PacketToNetIncomingMessage(inc);

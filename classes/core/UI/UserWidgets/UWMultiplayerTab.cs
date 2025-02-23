@@ -82,15 +82,15 @@ namespace Tiled.UI
             DestroyWidget();
         }
 
-        private void JoinPressed(DataStructures.ButtonPressArgs args)
+        private void JoinPressed(ButtonPressArgs args)
         {
-
-            var j = HUD.CreateWidget<UWJoinServer>(owningHUD);
-            j.SetGeometry(new Vector2(1920, 1080), AnchorPosition.Center);
 #if !TILEDSERVER
             Program.GetGame().JoinServer(txtbox.text);
 #endif
             DestroyWidget();
+
+            var j = HUD.CreateWidget<UWJoinServer>(owningHUD);
+            j.SetGeometry(new Vector2(1920, 1080), AnchorPosition.Center);
         }
     }
 }

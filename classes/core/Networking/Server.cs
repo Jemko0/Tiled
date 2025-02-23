@@ -59,9 +59,9 @@ namespace Tiled
             // Generate world
             Program.GetGame().world = new World();
             Program.GetGame().world.worldTime = 8;
-            Program.GetGame().world.seed = 98765;
-            World.maxTilesX = 32;
-            World.maxTilesY = 32;
+            Program.GetGame().world.seed = 35341;
+            World.maxTilesX = 1000;
+            World.maxTilesY = 600;
             Program.GetGame().world.StartWorldGeneration();
             
             while(World.isGenerating)
