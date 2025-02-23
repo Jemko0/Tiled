@@ -71,6 +71,8 @@ namespace Tiled.Networking.Shared
         RequestTileChange,
         RequestSpawnEntity,
         RequestDestroyEntity,
+        RequestInventory,
+        RequestItemPickup,
 
         //one time receive
         ReceivePlayerID,
@@ -84,6 +86,8 @@ namespace Tiled.Networking.Shared
         ReceiveSpawnEntity,
         ReceiveServerUpdateEntity,
         ReceiveDestroyEntity,
+        ReceiveInventory,
+        ReceiveInventoryChange,
 
         //ticking receive
         ReceiveWorldUpdate,
@@ -386,6 +390,34 @@ namespace Tiled.Networking.Shared
             msg.Write(position.Y);
             msg.Write(velocity.X);
             msg.Write(velocity.Y);
+        }
+    }
+
+    public class InventoryPacket : Packet
+    {
+        public int size;
+        public ContainerItem[] items;
+
+        public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            size = msg.ReadInt32();
+            items = new ContainerItem[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                items[i].type = (EItemType)msg.ReadByte();
+                items[i].stack = msg.ReadUInt16();
+            }
+        }
+
+        public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write(size);
+            foreach (var item in items)
+            {
+                msg.Write((byte)item.type);
+                msg.Write(item.stack);
+            }
         }
     }
 }

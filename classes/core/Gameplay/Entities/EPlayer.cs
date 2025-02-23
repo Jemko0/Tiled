@@ -46,18 +46,38 @@ namespace Tiled.Gameplay
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
 
-            inventory = new Container(5);
-            inventory.entityCarrier = this;
+#if !TILEDSERVER
+            if(Main.netMode == ENetMode.Standalone)
+            {
+                inventory = new Container(5);
+                inventory.entityCarrier = this;
 
+                inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
+                inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.TopLeft, new(25, 25));
+                inventoryUI.SetContainer(ref inventory);
+                inventoryUI.UpdateSlots();
+
+                inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
+                inventory.items[1] = new ContainerItem(EItemType.DirtBlock, 999);
+                inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
+                inventory.items[3] = new ContainerItem(EItemType.Bomb, 16);
+            }
+
+            if(Main.netMode == ENetMode.Client)
+            {
+                Main.netClient.RequestInventory();
+            }
+#else
+            
+#endif
+        }
+
+        public void ClientInventoryReceived()
+        {
             inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
             inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.TopLeft, new(25, 25));
             inventoryUI.SetContainer(ref inventory);
             inventoryUI.UpdateSlots();
-
-            inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
-            inventory.items[1] = new ContainerItem(EItemType.DirtBlock, 999);
-            inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
-            inventory.items[3] = new ContainerItem(EItemType.Bomb, 16);
         }
 
         private void SetSlot(ActionMappingArgs e)

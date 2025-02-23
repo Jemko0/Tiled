@@ -6,6 +6,7 @@ using System.Threading;
 using System.Timers;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
+using Tiled.Gameplay.Items;
 using Tiled.Networking.Shared;
 
 namespace Tiled
@@ -106,7 +107,6 @@ namespace Tiled
                                     break;
     
                                 case EPacketType.RequestClientSpawn:
-
                                     ClientSpawnPacket clientSpawnPacket = new ClientSpawnPacket();
                                     clientSpawnPacket.playerID = lastClientID;
                                     clientSpawnPacket.position = new Vector2(128, 64);
@@ -117,6 +117,7 @@ namespace Tiled
 
                                     EPlayer newClient = Entity.NewEntity<EPlayer>();
                                     newClient.clientID = clientSpawnPacket.playerID;
+                                    //newClient.netID = clientSpawnPacket.playerID;
                                     newClient.position = clientSpawnPacket.position;
 
                                     NetShared.clientIDPairs.Add(clientSpawnPacket.playerID, newClient);
@@ -158,7 +159,6 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.ReceiveClientUpdate:
-
                                     ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
                                     clientUpdatePacket.PacketToNetIncomingMessage(msg);
 
@@ -248,7 +248,7 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.RequestDestroyEntity:
-                                    IDPacket idPacket = new IDPacket(-999);
+                                    IDPacket idPacket = new IDPacket(-1);
                                     idPacket.PacketToNetIncomingMessage(msg);
 
                                     NetShared.netEntitites[idPacket.ID].LocalDestroy();
@@ -259,6 +259,46 @@ namespace Tiled
 
                                     server.SendToAll(entityDestroyMsg, NetDeliveryMethod.ReliableOrdered);
                                     break;
+
+                                case EPacketType.RequestInventory:
+                                    int requestInventoryID = socketToClientID[msg.SenderConnection];
+
+                                    int containerSize = 5;
+                                    NetShared.clientIDPairs[requestInventoryID].inventory = new Inventory.Container(containerSize);
+                                    NetShared.clientIDPairs[requestInventoryID].inventory.SetItem(0, new ContainerItem(EItemType.BasePickaxe, 1));
+
+                                    InventoryPacket inventoryPacket = new InventoryPacket();
+                                    inventoryPacket.size = containerSize;
+                                    inventoryPacket.items = NetShared.clientIDPairs[requestInventoryID].inventory.items;
+
+                                    NetOutgoingMessage invMsg = server.CreateMessage();
+                                    invMsg.Write((byte)EPacketType.ReceiveInventory);
+                                    inventoryPacket.PacketToNetOutgoingMessage(invMsg);
+
+                                    server.SendMessage(invMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                                    break;
+
+                                case EPacketType.RequestItemPickup:
+                                    int pickupClientID = socketToClientID[msg.SenderConnection];
+                                    EItem? collidingEntity = NetShared.clientIDPairs[pickupClientID].collision.GetCollidingEntity() as EItem;
+
+                                    if(collidingEntity != null)
+                                    {
+                                        NetShared.clientIDPairs[pickupClientID].inventory.RepAdd(pickupClientID, new ContainerItem(collidingEntity.type, collidingEntity.count));
+                                        ServerDestroyEntity(collidingEntity.netID);
+                                        //let clent know that we updates his inventory fr
+                                        InventoryPacket invChangePacket = new InventoryPacket();
+                                        invChangePacket.size = NetShared.clientIDPairs[pickupClientID].inventory.items.Length;
+                                        invChangePacket.items = NetShared.clientIDPairs[pickupClientID].inventory.items;
+
+                                        NetOutgoingMessage newInventoryMsg = server.CreateMessage();
+                                        newInventoryMsg.Write((byte)EPacketType.ReceiveInventoryChange);
+                                        invChangePacket.PacketToNetOutgoingMessage(newInventoryMsg);
+
+                                        server.SendMessage(newInventoryMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                                    }
+                                    break;
+
                             }
                             break;
     
@@ -362,11 +402,19 @@ namespace Tiled
         public void ServerDestroyEntity(int id)
         {
             IDPacket idPacket = new IDPacket(id);
-            NetOutgoingMessage msg = server.CreateMessage();
-            msg.Write((byte)EPacketType.RequestDestroyEntity);
-            idPacket.PacketToNetOutgoingMessage(msg);
 
-            server.SendUnconnectedToSelf(msg);
+            NetShared.netEntitites[idPacket.ID].LocalDestroy();
+
+            NetOutgoingMessage entityDestroyMsg = server.CreateMessage();
+            entityDestroyMsg.Write((byte)EPacketType.ReceiveDestroyEntity);
+            idPacket.PacketToNetOutgoingMessage(entityDestroyMsg);
+
+            server.SendToAll(entityDestroyMsg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void SendInventoryToClient(int id, ContainerItem[] items)
+        {
+
         }
     }
 }

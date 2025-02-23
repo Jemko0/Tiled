@@ -14,7 +14,7 @@ namespace Tiled.Gameplay
         public Vector2 velocity;
         public bool canCollide = true;
         public Texture2D entitySprite;
-        protected CollisionComponent collision;
+        public CollisionComponent collision;
         protected int frameSlotSizeX = 32;
         protected int frameSlotSizeY = 48;
         protected float rotation = 0.0f;

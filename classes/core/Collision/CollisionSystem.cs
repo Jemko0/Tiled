@@ -115,7 +115,7 @@ namespace Tiled.Collision
         {
             for (int i = 0; i < Main.entities.Count; i++)
             {
-                if (entity.GetRectF().IntersectsWith(Main.entities[i].GetRectF()))
+                if (entity.GetRectF().IntersectsWith(Main.entities[i].GetRectF()) && Main.entities[i] != entity)
                 {
                     return Main.entities[i];
                 }

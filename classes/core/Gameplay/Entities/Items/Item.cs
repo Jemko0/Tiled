@@ -49,10 +49,20 @@ namespace Tiled.Gameplay.Items
 
                 if (IsTouchingLocalPlayer() && canPickUp && !instaPickUpPrevention)
                 {
-                    if (((EPlayer)Program.GetGame().localPlayerController.controlledEntity).inventory.Add(new ContainerItem(type, count)))
+#if !TILEDSERVER
+                    if(Main.netMode == ENetMode.Client)
                     {
-                        Destroy();
+                        Main.netClient.RequestItemPickup();
                     }
+
+                    if(Main.netMode == ENetMode.Standalone)
+                    {
+                        if (((EPlayer)Program.GetGame().localPlayerController.controlledEntity).inventory.Add(new ContainerItem(type, count)))
+                        {
+                            Destroy();
+                        }
+                    }
+#endif
                 }
             }
             else

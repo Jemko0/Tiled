@@ -7,6 +7,7 @@ using System.Timers;
 using Tiled;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
+using Tiled.Inventory;
 using Tiled.Networking.Shared;
 
 namespace Tiled
@@ -227,6 +228,24 @@ namespace Tiled
 
                                     World.SetTile(worldChangesPacket.x, worldChangesPacket.y, (ETileType)worldChangesPacket.type);
                                     break;
+
+                                case EPacketType.ReceiveInventory:
+                                    InventoryPacket inventoryPacket = new InventoryPacket();
+                                    inventoryPacket.PacketToNetIncomingMessage(inc);
+
+                                    Container inv = new Container(inventoryPacket.size);
+                                    inv.items = inventoryPacket.items;
+
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).inventory = inv;
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).ClientInventoryReceived();
+                                    break;
+
+                                case EPacketType.ReceiveInventoryChange:
+                                    InventoryPacket newInventory = new InventoryPacket();
+                                    newInventory.PacketToNetIncomingMessage(inc);
+
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).inventory.items = newInventory.items;
+                                    break;
                             }
                             break;
 
@@ -302,6 +321,22 @@ namespace Tiled
             idPacket.PacketToNetOutgoingMessage(msg);
 
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void RequestInventory()
+        {
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestInventory);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void RequestItemPickup()
+        {
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestItemPickup);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableUnordered);
         }
     }
 }
