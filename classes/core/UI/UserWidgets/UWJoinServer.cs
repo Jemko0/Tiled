@@ -23,7 +23,9 @@ namespace Tiled.UI.UserWidgets
             text.AttachToParent(this, AnchorPosition.Center);
 
             //Program.GetGame().localClient.OnException += LocalClient_OnException;
+#if !TILEDSERVER
             Main.netClient.clientJoined += LocalClient_OnJoinResult;
+#endif
         }
 
         private void LocalClient_OnJoinResult(bool obj)

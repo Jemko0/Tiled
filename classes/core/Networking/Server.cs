@@ -271,8 +271,12 @@ namespace Tiled
                             {
                                 int disconnectedClientID = socketToClientID[msg.SenderConnection];
 
-                                NetShared.clientIDPairs[disconnectedClientID].Destroy();
-                                NetShared.clientIDPairs.Remove(disconnectedClientID);
+                                if(NetShared.clientIDPairs.ContainsKey(disconnectedClientID))
+                                {
+                                    NetShared.clientIDPairs[disconnectedClientID].Destroy();
+                                    NetShared.clientIDPairs.Remove(disconnectedClientID);
+                                }
+                                
                                 socketToClientID.Remove(msg.SenderConnection);
 
                                 ClientDisconnectedPacket disconnectedPacket = new ClientDisconnectedPacket();

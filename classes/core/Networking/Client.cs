@@ -202,8 +202,16 @@ namespace Tiled
                                     EntityUpdatePacket entityUpdatePacket = new EntityUpdatePacket();
                                     entityUpdatePacket.PacketToNetIncomingMessage(inc);
 
-                                    NetShared.netEntitites[entityUpdatePacket.entityID].position = entityUpdatePacket.position;
-                                    NetShared.netEntitites[entityUpdatePacket.entityID].velocity = entityUpdatePacket.velocity;
+                                    if(NetShared.netEntitites.ContainsKey(entityUpdatePacket.entityID))
+                                    {
+                                        NetShared.netEntitites[entityUpdatePacket.entityID].position = entityUpdatePacket.position;
+                                        NetShared.netEntitites[entityUpdatePacket.entityID].velocity = entityUpdatePacket.velocity;
+                                    }
+                                    else
+                                    {
+
+                                    }
+                                    
                                     break;
 
                                 case EPacketType.ReceiveDestroyEntity:
