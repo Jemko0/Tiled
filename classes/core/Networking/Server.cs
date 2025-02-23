@@ -228,10 +228,16 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.RequestDestroyEntity:
-                                    IDPacket idPacket = new IDPacket(-1);
+                                    IDPacket idPacket = new IDPacket(-999);
                                     idPacket.PacketToNetIncomingMessage(msg);
 
+                                    NetShared.netEntitites[idPacket.ID].LocalDestroy();
 
+                                    NetOutgoingMessage entityDestroyMsg = server.CreateMessage();
+                                    entityDestroyMsg.Write((byte)EPacketType.ReceiveDestroyEntity);
+                                    idPacket.PacketToNetOutgoingMessage(entityDestroyMsg);
+
+                                    server.SendToAll(entityDestroyMsg, NetDeliveryMethod.ReliableOrdered);
                                     break;
                             }
                             break;
@@ -272,11 +278,9 @@ namespace Tiled
                             break;
     
                     }
-    
-                    Debug.WriteLine(msg.Data + " / DEL: " + msg.MessageType.ToString());
                 }
             }
-            Debug.WriteLine("Server stopped");
+            Debug.WriteLine("Server stopped.");
         }
 
         private void ServerTick(object sender, ElapsedEventArgs e)
@@ -331,9 +335,14 @@ namespace Tiled
             server.SendUnconnectedToSelf(selfRequest);
         }
 
-        public void ServerDestroyEntity()
+        public void ServerDestroyEntity(int id)
         {
+            IDPacket idPacket = new IDPacket(id);
+            NetOutgoingMessage msg = server.CreateMessage();
+            msg.Write((byte)EPacketType.RequestDestroyEntity);
+            idPacket.PacketToNetOutgoingMessage(msg);
 
+            server.SendUnconnectedToSelf(msg);
         }
     }
 }

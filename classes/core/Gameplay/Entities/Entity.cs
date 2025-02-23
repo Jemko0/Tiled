@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Diagnostics;
 using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.ID;
@@ -46,18 +47,23 @@ namespace Tiled.Gameplay
             if (Main.netMode == ENetMode.Standalone)
             {
                 LocalDestroy();
+                return;
             }
 
-            if (Main.netMode == ENetMode.Server)
+            if(netID == -1)
             {
-
+                Debug.Write("netID was -1, assuming this is a Locally spawned Entity");
+                LocalDestroy();
+                return;
             }
 
-            if (Main.netMode == ENetMode.Client)
-            {
-
-            }
+#if TILEDSERVER
+            Main.server.ServerDestroyEntity(netID);
+#else
+            Main.localClient.ClientRequestDestroyEntity(netID);
+#endif
         }
+
 
         public void LocalDestroy()
         {

@@ -269,5 +269,15 @@ namespace Tiled
 
             client.SendMessage(requestMsg, NetDeliveryMethod.ReliableOrdered);
         }
+
+        public void ClientRequestDestroyEntity(int id)
+        {
+            IDPacket idPacket = new IDPacket(id);
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestDestroyEntity);
+            idPacket.PacketToNetOutgoingMessage(msg);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
     }
 }
