@@ -122,6 +122,7 @@ namespace Tiled.ID
 
                 case EEntityType.Player:
                     entity.name = "playername";
+                    entity.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Player");
                     entity.size = new Vector2(20.0f, 40.0f);
                     break;
             }
@@ -150,6 +151,7 @@ namespace Tiled.ID
             i.swingAnimationType = EItemSwingAnimationType.Swing;
             i.autoReuse = true;
             i.useTime = 1.0f;
+            i.projectileThrowVelocity = new(5, 0);
             i.behaviourType = typeof(DefaultItemBehaviour);  // Default behavior
 
             switch (type)

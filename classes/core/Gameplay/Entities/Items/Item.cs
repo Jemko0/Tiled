@@ -73,9 +73,9 @@ namespace Tiled.Gameplay.Items
                 }
             }
 
-#if TILEDSERVER
+/*#if TILEDSERVER
             velocity.X += 0.2f;
-#endif
+#endif*/
         }
 
         public void SwingItem(Entity entity)
@@ -142,29 +142,24 @@ namespace Tiled.Gameplay.Items
             behavior?.Use(this);
         }
 
-        public void Use(int? tileX = null, int? tileY = null, Entity usingEntity = null)
-        {
-            if(usingEntity != null)
-            {
-                UseWithEntity(usingEntity);
-            }
-
-            if(tileX != null && tileY != null)
-            {
-                UseOnTile((int)tileX, (int)tileY);
-            }
-        }
-
         /// <summary>
         /// this is called before UseWithTile(int x, int y)
         /// </summary>
         /// <param name="entity"></param>
-        public void UseWithEntity(object entity)
+        public void UseWithEntity(object entity, Point tile)
         {
-            if (Item.consumable && behavior.CanConsume(this))
+            if (Item.consumable && behavior.CanConsume(this, tile))
             {
                 //MAKE SERVER AUTHORATIVE VVV
+                if(Main.netMode == ENetMode.Standalone)
+                {
+                    ((EPlayer)entity).inventory.RemoveFromSlot(((EPlayer)entity).selectedSlot, 1);
+                }
+
+#if TILEDSERVER
                 ((EPlayer)entity).inventory.RemoveFromSlot(((EPlayer)entity).selectedSlot, 1);
+                Main.netServer.SendInventoryToClient(((EPlayer)entity).clientID, ((EPlayer)entity).inventory.items);
+#endif
             }
 
             behavior?.UseWithEntity(this, entity);

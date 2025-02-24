@@ -82,28 +82,39 @@ namespace Tiled.Gameplay
 
         private void SetSlot(ActionMappingArgs e)
         {
+            int newSlot = -1;
+
             switch (e.key)
             {
                 case Keys.D1:
-                    selectedSlot = 0;
-                    return;
+                    newSlot = 0;
+                    break;
 
                 case Keys.D2:
-                    selectedSlot = 1;
-                    return;
+                    newSlot = 1;
+                    break;
 
                 case Keys.D3:
-                    selectedSlot = 2;
-                    return;
+                    newSlot = 2;
+                    break;
 
                 case Keys.D4:
-                    selectedSlot = 3;
-                    return;
+                    newSlot = 3;
+                    break;
 
                 case Keys.D5:
-                    selectedSlot = 4;
-                    return;
+                    newSlot = 4;
+                    break;
             }
+
+            selectedSlot = newSlot;
+
+#if !TILEDSERVER
+            if(Main.netMode == ENetMode.Client)
+            {
+                Main.netClient.SetSelectedSlot(newSlot);
+            }
+#endif
         }
 
         private void JumpReleased(ActionMappingArgs e)
@@ -164,14 +175,16 @@ namespace Tiled.Gameplay
 
         public override Rectangle? GetFrame()
         {
-            frameSlotSizeX = 24;
-            frameSlotSizeY = 48;
+            const byte fH = 48;
+            const byte fW = 24;
+            int fI = 0;
+            int walkI = 0;
 
-            if(velocity.Y == 0)
-            {
-                return new Rectangle(frameSlotSizeX * 0, frameSlotSizeY * 1, frameSlotSizeX, frameSlotSizeY);
-            }
-            return new Rectangle(frameSlotSizeX * 0, frameSlotSizeY * 0, frameSlotSizeX, frameSlotSizeY);
+            walkI = Main.runtime % 0.2f > 0.1f? 1 : 2;
+
+            fI = velocity.Y != 0? 0 : (Math.Abs(velocity.X) > 0.01f? walkI : 1);
+
+            return new Rectangle(0, fH * fI, fW, fH);
         }
 
         private void LMB(MouseButtonEventArgs e)
@@ -183,14 +196,45 @@ namespace Tiled.Gameplay
 
             Point tile = Rendering.ScreenToTile(Mouse.GetState().Position);
 
-            SwingItem(selectedSlot, tile);
+            if(Main.netMode == ENetMode.Standalone)
+            {
+                SwingItem(selectedSlot, tile);
+            }
+
+#if !TILEDSERVER
+            RepSwingItem(tile);
+#endif
         }
 
+#if !TILEDSERVER
+        public void RepSwingItem(Point tile)
+        {
+            if (Main.netMode == ENetMode.Client)
+            {
+                Main.netClient.RequestItemSwing(tile);
+                SwingItem(selectedSlot, tile);
+            }
+
+            if(Main.netMode == ENetMode.Standalone)
+            {
+                SwingItem(selectedSlot, Rendering.ScreenToTile(Mouse.GetState().Position));
+            }
+        }
+#endif
+
+        /// <summary>
+        /// in multiplayer instances, the server will execute this
+        /// </summary>
+        /// <param name="slot"></param>
+        /// <param name="tile"></param>
         public void SwingItem(int slot, Point tile)
         {
-            if(!canUseItems || inventory.items[slot].type == EItemType.None)
+            if(Main.netMode != ENetMode.Server)
             {
-                return;
+                if (!canUseItems || inventory.items[slot].type == EItemType.None)
+                {
+                    return;
+                }
             }
 
             canUseItems = false;
@@ -198,19 +242,25 @@ namespace Tiled.Gameplay
             swingItem.swingEnded += CurrentSwingItemSwingEnded;
             swingItem.isSwing = true;
             swingItem.swingOwner = this;
-            swingItem.Use();
-            swingItem.UseWithEntity(this);
-            swingItem.UseOnTile(tile.X, tile.Y);
+
+            if(Main.netMode != ENetMode.Client)
+            {
+                swingItem.Use();
+                swingItem.UseWithEntity(this, tile);
+                swingItem.UseOnTile(tile.X, tile.Y);
+            }
+            
         }
 
         private void CurrentSwingItemSwingEnded(ItemSwingArgs e)
         {
             canUseItems = true;
-
+#if !TILEDSERVER
             if (Mouse.GetState().LeftButton == ButtonState.Pressed && ItemID.GetItem(e.type).autoReuse)
             {
-                SwingItem(selectedSlot, Rendering.ScreenToTile(Mouse.GetState().Position));
+                RepSwingItem(Rendering.ScreenToTile(Mouse.GetState().Position));
             }
+#endif
         }
 
         private void RMB(MouseButtonEventArgs e)

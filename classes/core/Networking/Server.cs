@@ -2,10 +2,13 @@
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Timers;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
+using Tiled.Gameplay.Entities.Projectiles;
 using Tiled.Gameplay.Items;
 using Tiled.Networking.Shared;
 
@@ -17,6 +20,9 @@ namespace Tiled
         public NetServer server;
         public Thread serverThread;
         public bool running = true;
+
+        public delegate void ServerLog(string msg);
+        public event ServerLog onServerLog;
 
         int lastClientID = 0;
         int lastEntityID = int.MinValue;
@@ -55,7 +61,7 @@ namespace Tiled
     
         public void StartServer()
         {
-            Debug.WriteLine("Server started");
+            onServerLog.Invoke("Server Started");
 
             // Generate world
             Program.GetGame().world = new World();
@@ -109,18 +115,19 @@ namespace Tiled
                                 case EPacketType.RequestClientSpawn:
                                     ClientSpawnPacket clientSpawnPacket = new ClientSpawnPacket();
                                     clientSpawnPacket.playerID = lastClientID;
-                                    clientSpawnPacket.position = new Vector2(128, 64);
+                                    clientSpawnPacket.position = new Vector2(1024, 64);
                                     NetOutgoingMessage spawnOutMsg = server.CreateMessage();
                                     
                                     spawnOutMsg.Write((byte)EPacketType.ReceiveSpawnClient);
                                     clientSpawnPacket.PacketToNetOutgoingMessage(spawnOutMsg);
 
                                     EPlayer newClient = Entity.NewEntity<EPlayer>();
+                                    newClient.Initialize(EEntityType.Player);
                                     newClient.clientID = clientSpawnPacket.playerID;
                                     //newClient.netID = clientSpawnPacket.playerID;
                                     newClient.position = clientSpawnPacket.position;
 
-                                    NetShared.clientIDPairs.Add(clientSpawnPacket.playerID, newClient);
+                                    NetShared.clientIDToPlayer.Add(clientSpawnPacket.playerID, newClient);
 
                                     server.SendToAll(spawnOutMsg, NetDeliveryMethod.ReliableOrdered);
                                     server.FlushSendQueue();
@@ -156,27 +163,71 @@ namespace Tiled
 
                                         server.SendMessage(outChange, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
                                     }
+
+
+                                    //SEND CURRENTLY ACTIVE ENTITIES TO NEW CLIENT
+                                    ActiveEntityPacket entityData = new ActiveEntityPacket();
+                                    entityData.arrayLength = NetShared.netEntitites.Count;
+                                    entityData.entities = new NetEntity[entityData.arrayLength];
+
+                                    for (int i = 0; i < entityData.arrayLength; i++)
+                                    {
+                                        NetEntity current = new NetEntity();
+                                        current.netID = NetShared.netEntitites.ElementAt(i).Value.netID;
+
+                                        if(NetShared.netEntitites.ElementAt(i).Value is EItem)
+                                        {
+                                            current.spawnType = ENetEntitySpawnType.Item;
+                                        }
+                                        else if(NetShared.netEntitites.ElementAt(i).Value is EProjectile)
+                                        {
+                                            current.spawnType = ENetEntitySpawnType.Projectile;
+                                        }
+
+                                        switch(current.spawnType)
+                                        {
+                                            case ENetEntitySpawnType.Item:
+                                                current.itemType = (NetShared.netEntitites.ElementAt(i).Value as EItem).type;
+                                                break;
+
+                                            case ENetEntitySpawnType.Entity:
+                                                current.type = NetShared.netEntitites.ElementAt(i).Value.entityType;
+                                                break;
+
+                                            case ENetEntitySpawnType.Projectile:
+                                                current.projectileType = (NetShared.netEntitites.ElementAt(i).Value as EProjectile).type;
+                                                break;
+                                        }
+
+                                        current.position = NetShared.netEntitites.ElementAt(i).Value.position;
+                                        entityData.entities[i] = current;
+                                    }
+
+                                    NetOutgoingMessage entitiesMsg = server.CreateMessage();
+                                    entitiesMsg.Write((byte)EPacketType.ReceiveEntities);
+                                    entityData.PacketToNetOutgoingMessage(entitiesMsg);
+                                    server.SendMessage(entitiesMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
                                     break;
 
                                 case EPacketType.ReceiveClientUpdate:
                                     ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
                                     clientUpdatePacket.PacketToNetIncomingMessage(msg);
 
-                                    if(NetShared.clientIDPairs.ContainsKey(clientUpdatePacket.playerID))
+                                    if(NetShared.clientIDToPlayer.ContainsKey(clientUpdatePacket.playerID))
                                     {
-                                        NetShared.clientIDPairs[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
-                                        NetShared.clientIDPairs[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
+                                        NetShared.clientIDToPlayer[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
+                                        NetShared.clientIDToPlayer[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
                                     }
                                     else
                                     {
-                                        Debug.WriteLine("Client ID not found: " + clientUpdatePacket.playerID);
+                                        onServerLog.Invoke("Client ID not found: " + clientUpdatePacket.playerID);
                                         break;
                                     }
                                     
                                     ClientUpdatePacket multicastUpdatePacket = new ClientUpdatePacket();
                                     multicastUpdatePacket.playerID = clientUpdatePacket.playerID;
-                                    multicastUpdatePacket.position = NetShared.clientIDPairs[clientUpdatePacket.playerID].position;
-                                    multicastUpdatePacket.velocity = NetShared.clientIDPairs[clientUpdatePacket.playerID].velocity;
+                                    multicastUpdatePacket.position = NetShared.clientIDToPlayer[clientUpdatePacket.playerID].position;
+                                    multicastUpdatePacket.velocity = NetShared.clientIDToPlayer[clientUpdatePacket.playerID].velocity;
 
                                     NetOutgoingMessage multicastUpdateMsg = server.CreateMessage();
                                     multicastUpdateMsg.Write((byte)EPacketType.ReceiveClientUpdate);
@@ -192,7 +243,7 @@ namespace Tiled
 
                                     int requestID = requestOthersPacket.ID;
 
-                                    foreach (KeyValuePair<int, EPlayer> pair in NetShared.clientIDPairs)
+                                    foreach (KeyValuePair<int, EPlayer> pair in NetShared.clientIDToPlayer)
                                     {
                                         if (pair.Key != requestID)
                                         {
@@ -216,16 +267,10 @@ namespace Tiled
 
                                     ETileType previousTile = World.tiles[change.x, change.y];
 
-                                    NetOutgoingMessage tileOut = server.CreateMessage();
+                                    
 
-                                    //set tile for server locally
-                                    World.SetTile(change.x, change.y, change.tileType, true);
-                                    worldChanges.Add(new NetWorldChange(change.x, change.y, change.tileType));
-
-                                    //send change to everyone else
-                                    tileOut.Write((byte)EPacketType.ReceiveTileChange);
-                                    change.PacketToNetOutgoingMessage(tileOut);
-                                    server.SendToAll(tileOut, NetDeliveryMethod.ReliableOrdered);
+                                    //send tile
+                                    SendTileSquare(change);
                                     break;
 
                                 case EPacketType.RequestSpawnEntity:
@@ -233,6 +278,11 @@ namespace Tiled
                                     newEntityPacket.PacketToNetIncomingMessage(msg);
 
                                     lastEntityID++;
+                                    if(lastEntityID == -1)
+                                    {
+                                        lastEntityID++;
+                                    }
+
                                     newEntityPacket.entityID = lastEntityID;
 
                                     //spawn entity locally/server
@@ -264,12 +314,14 @@ namespace Tiled
                                     int requestInventoryID = socketToClientID[msg.SenderConnection];
 
                                     int containerSize = 5;
-                                    NetShared.clientIDPairs[requestInventoryID].inventory = new Inventory.Container(containerSize);
-                                    NetShared.clientIDPairs[requestInventoryID].inventory.SetItem(0, new ContainerItem(EItemType.BasePickaxe, 1));
+                                    NetShared.clientIDToPlayer[requestInventoryID].inventory = new Inventory.Container(containerSize);
+                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(0, new ContainerItem(EItemType.BasePickaxe, 1));
+                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(1, new ContainerItem(EItemType.Torch, 7));
+                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(2, new ContainerItem(EItemType.Bomb, 5));
 
                                     InventoryPacket inventoryPacket = new InventoryPacket();
                                     inventoryPacket.size = containerSize;
-                                    inventoryPacket.items = NetShared.clientIDPairs[requestInventoryID].inventory.items;
+                                    inventoryPacket.items = NetShared.clientIDToPlayer[requestInventoryID].inventory.items;
 
                                     NetOutgoingMessage invMsg = server.CreateMessage();
                                     invMsg.Write((byte)EPacketType.ReceiveInventory);
@@ -280,16 +332,17 @@ namespace Tiled
 
                                 case EPacketType.RequestItemPickup:
                                     int pickupClientID = socketToClientID[msg.SenderConnection];
-                                    EItem? collidingEntity = NetShared.clientIDPairs[pickupClientID].collision.GetCollidingEntity() as EItem;
+                                    EItem? collidingEntity = NetShared.clientIDToPlayer[pickupClientID].collision.GetCollidingEntity() as EItem;
 
                                     if(collidingEntity != null)
                                     {
-                                        NetShared.clientIDPairs[pickupClientID].inventory.RepAdd(pickupClientID, new ContainerItem(collidingEntity.type, collidingEntity.count));
+                                        NetShared.clientIDToPlayer[pickupClientID].inventory.RepAdd(pickupClientID, new ContainerItem(collidingEntity.type, collidingEntity.count));
                                         ServerDestroyEntity(collidingEntity.netID);
-                                        //let clent know that we updates his inventory fr
+
+                                        //let clent know that we updated his inventory fr
                                         InventoryPacket invChangePacket = new InventoryPacket();
-                                        invChangePacket.size = NetShared.clientIDPairs[pickupClientID].inventory.items.Length;
-                                        invChangePacket.items = NetShared.clientIDPairs[pickupClientID].inventory.items;
+                                        invChangePacket.size = NetShared.clientIDToPlayer[pickupClientID].inventory.items.Length;
+                                        invChangePacket.items = NetShared.clientIDToPlayer[pickupClientID].inventory.items;
 
                                         NetOutgoingMessage newInventoryMsg = server.CreateMessage();
                                         newInventoryMsg.Write((byte)EPacketType.ReceiveInventoryChange);
@@ -299,22 +352,34 @@ namespace Tiled
                                     }
                                     break;
 
+                                case EPacketType.RequestItemSwing:
+                                    int swingClientID = socketToClientID[msg.SenderConnection];
+                                    Point tile = new Point(msg.ReadInt32(), msg.ReadInt32());
+                                    EPlayer client = NetShared.clientIDToPlayer[swingClientID];
+                                    
+                                    client.SwingItem(client.selectedSlot, tile);
+                                    break;
+
+                                case EPacketType.ReceiveSelectedSlotChange:
+                                    NetShared.clientIDToPlayer[socketToClientID[msg.SenderConnection]].selectedSlot = msg.ReadInt32();
+                                    break;
+
                             }
                             break;
     
                         case NetIncomingMessageType.StatusChanged:
                             NetConnectionStatus status = (NetConnectionStatus)msg.ReadByte();
                             string reason = msg.ReadString();
-                            Debug.WriteLine("Status changed: " + status + " (" + reason + ")");
+                            onServerLog.Invoke("Status changed: " + status + " (" + reason + ")");
 
                             if (status == NetConnectionStatus.Disconnected && reason.Contains("timed out"))
                             {
                                 int disconnectedClientID = socketToClientID[msg.SenderConnection];
 
-                                if(NetShared.clientIDPairs.ContainsKey(disconnectedClientID))
+                                if(NetShared.clientIDToPlayer.ContainsKey(disconnectedClientID))
                                 {
-                                    NetShared.clientIDPairs[disconnectedClientID].Destroy();
-                                    NetShared.clientIDPairs.Remove(disconnectedClientID);
+                                    NetShared.clientIDToPlayer[disconnectedClientID].Destroy();
+                                    NetShared.clientIDToPlayer.Remove(disconnectedClientID);
                                 }
                                 
                                 socketToClientID.Remove(msg.SenderConnection);
@@ -344,7 +409,7 @@ namespace Tiled
                     }
                 }
             }
-            Debug.WriteLine("Server stopped.");
+            onServerLog.Invoke("Server stopped.");
         }
 
         private void ServerTick(object sender, ElapsedEventArgs e)
@@ -382,26 +447,50 @@ namespace Tiled
            }
         }
 
-        public void ServerSpawnEntity(bool isItem, EEntityType entityType, EItemType itemType, Vector2 position, Vector2 velocity)
+        public void ServerSpawnEntity(ENetEntitySpawnType type, EEntityType entityType, EItemType itemType, EProjectileType projectileType, Vector2 position, Vector2 velocity)
         {
             SpawnEntityPacket request = new SpawnEntityPacket();
-            request.isItem = isItem;
+            request.spawnType = type;
             request.entityType = entityType;
             request.itemType = itemType;
-            request.isItem = isItem;
+            request.spawnType = type;
+            request.projectileType = projectileType;
             request.position = position;
             request.velocity = velocity;
 
-            NetOutgoingMessage selfRequest = server.CreateMessage();
-            selfRequest.Write((byte)EPacketType.RequestSpawnEntity);
-            request.PacketToNetOutgoingMessage(selfRequest);
+            NetOutgoingMessage msg = server.CreateMessage();
 
-            server.SendUnconnectedToSelf(selfRequest);
+            lastEntityID++;
+
+            if (lastEntityID == -1)
+            {
+                lastEntityID++;
+            }
+
+            request.entityID = lastEntityID;
+
+            //spawn entity locally/server
+            NetShared.SpawnEntityShared(request);
+
+            //spawn for everyone else
+            NetOutgoingMessage newEntityMsg = server.CreateMessage();
+
+            newEntityMsg.Write((byte)EPacketType.ReceiveSpawnEntity);
+            request.PacketToNetOutgoingMessage(msg);
+            request.PacketToNetOutgoingMessage(newEntityMsg);
+
+            server.SendToAll(newEntityMsg, NetDeliveryMethod.ReliableOrdered);
         }
 
         public void ServerDestroyEntity(int id)
         {
             IDPacket idPacket = new IDPacket(id);
+
+            if(id == -1)
+            {
+                onServerLog.Invoke("tried to destroy entity with ID = -1, ignoring.");
+                return;
+            }
 
             NetShared.netEntitites[idPacket.ID].LocalDestroy();
 
@@ -414,7 +503,66 @@ namespace Tiled
 
         public void SendInventoryToClient(int id, ContainerItem[] items)
         {
+            InventoryPacket inv = new InventoryPacket(items.Length, items);
 
+            NetOutgoingMessage outMsg = server.CreateMessage();
+            outMsg.Write((byte)EPacketType.ReceiveInventoryChange);
+            inv.PacketToNetOutgoingMessage(outMsg);
+
+            NetConnection client = GetClientByID(id);
+            server.SendMessage(outMsg, client, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void SendTileSquare(TileChangePacket change)
+        {
+            NetOutgoingMessage tileOut = server.CreateMessage();
+
+            World.SetTile(change.x, change.y, change.tileType, true);
+            MarkTileChange(new NetWorldChange(change.x, change.y, change.tileType));
+
+            //send change to everyone
+            tileOut.Write((byte)EPacketType.ReceiveTileChange);
+            change.PacketToNetOutgoingMessage(tileOut);
+            server.SendToAll(tileOut, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public static NetConnection GetClientByID(int id)
+        {
+            for(int i = 0; i < socketToClientID.Count; i++)
+            {
+                if(socketToClientID.ElementAt(i).Value == id)
+                {
+                    return socketToClientID.ElementAt(i).Key;
+                }
+            }
+            return null;
+        }
+
+        public void MarkTileChange(int x, int y, ETileType newType)
+        {
+            int existingIndex = -1;
+            for(int i = 0; i < worldChanges.Count; i++)
+            {
+                if(worldChanges[i].x  == x && worldChanges[i].y == y)
+                {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if(existingIndex != -1)
+            {
+                worldChanges[existingIndex] = new NetWorldChange(x, y, newType);
+            }
+            else
+            {
+                worldChanges.Add(new NetWorldChange(x, y, newType));
+            }
+        }
+
+        public void MarkTileChange(NetWorldChange change)
+        {
+            MarkTileChange(change.x, change.y, change.type);
         }
     }
 }

@@ -120,19 +120,19 @@ namespace Tiled
                                     spawnRequest.Write((byte)EPacketType.RequestClientSpawn);
                                     spawnRequest.Write(localPlayerID);
                                     client.SendMessage(spawnRequest, NetDeliveryMethod.ReliableOrdered);
-
                                     break;
     
                                 case EPacketType.ReceiveSpawnClient:
 
                                     ClientSpawnPacket spawnPacket = new ClientSpawnPacket();
                                     spawnPacket.PacketToNetIncomingMessage(inc);
-    
+                                    
                                     EPlayer newPlayer = Entity.NewEntity<EPlayer>();
+                                    newPlayer.Initialize(EEntityType.Player);
                                     newPlayer.clientID = spawnPacket.playerID;
                                     newPlayer.position = spawnPacket.position;
 
-                                    NetShared.clientIDPairs.Add(spawnPacket.playerID, newPlayer);
+                                    NetShared.clientIDToPlayer.Add(spawnPacket.playerID, newPlayer);
 
                                     if (localPlayerID == spawnPacket.playerID)
                                     {
@@ -154,10 +154,10 @@ namespace Tiled
                                     ClientDisconnectedPacket disconnectedPacket = new ClientDisconnectedPacket();
                                     disconnectedPacket.PacketToNetIncomingMessage(inc);
 
-                                    if (NetShared.clientIDPairs.ContainsKey(disconnectedPacket.disconnectedPlayerID))
+                                    if (NetShared.clientIDToPlayer.ContainsKey(disconnectedPacket.disconnectedPlayerID))
                                     {
-                                        NetShared.clientIDPairs[disconnectedPacket.disconnectedPlayerID].Destroy();
-                                        NetShared.clientIDPairs.Remove(disconnectedPacket.disconnectedPlayerID);
+                                        NetShared.clientIDToPlayer[disconnectedPacket.disconnectedPlayerID].Destroy();
+                                        NetShared.clientIDToPlayer.Remove(disconnectedPacket.disconnectedPlayerID);
                                     }
                                     break;
 
@@ -172,10 +172,10 @@ namespace Tiled
                                     ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
                                     clientUpdatePacket.PacketToNetIncomingMessage(inc);
 
-                                    if (NetShared.clientIDPairs.ContainsKey(clientUpdatePacket.playerID))
+                                    if (NetShared.clientIDToPlayer.ContainsKey(clientUpdatePacket.playerID))
                                     {
-                                        NetShared.clientIDPairs[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
-                                        NetShared.clientIDPairs[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
+                                        NetShared.clientIDToPlayer[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
+                                        NetShared.clientIDToPlayer[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
                                     }
                                     else
                                     {
@@ -210,7 +210,7 @@ namespace Tiled
                                     }
                                     else
                                     {
-
+                                        Debug.Write("client id was invalid");
                                     }
                                     
                                     break;
@@ -245,6 +245,24 @@ namespace Tiled
                                     newInventory.PacketToNetIncomingMessage(inc);
 
                                     ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).inventory.items = newInventory.items;
+                                    break;
+
+                                case EPacketType.ReceiveEntities:
+                                    ActiveEntityPacket active = new ActiveEntityPacket();
+                                    active.PacketToNetIncomingMessage(inc);
+
+                                    for(int i = 0; i < active.arrayLength; i++)
+                                    {
+                                        SpawnEntityPacket newEntity = new SpawnEntityPacket();
+                                        newEntity.entityID = active.entities[i].netID;
+                                        newEntity.spawnType = active.entities[i].spawnType;
+                                        newEntity.entityType = active.entities[i].type;
+                                        newEntity.itemType = active.entities[i].itemType;
+                                        newEntity.position = active.entities[i].position;
+                                        newEntity.velocity = new(0, 0);
+
+                                        NetShared.SpawnEntityShared(newEntity);
+                                    }
                                     break;
                             }
                             break;
@@ -296,13 +314,13 @@ namespace Tiled
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
-        public void ClientRequestSpawnEntity(bool isItem, EEntityType entityType, EItemType itemType, Vector2 position, Vector2 velocity)
+        public void ClientRequestSpawnEntity(ENetEntitySpawnType type, EEntityType entityType, EItemType itemType, Vector2 position, Vector2 velocity)
         {
             SpawnEntityPacket request = new SpawnEntityPacket();
-            request.isItem = isItem;
+            request.spawnType = type;
             request.entityType = entityType;
             request.itemType = itemType;
-            request.isItem = isItem;
+            request.spawnType = type;
             request.position = position;
             request.velocity = velocity;
 
@@ -337,6 +355,25 @@ namespace Tiled
             msg.Write((byte)EPacketType.RequestItemPickup);
 
             client.SendMessage(msg, NetDeliveryMethod.ReliableUnordered);
+        }
+
+        public void RequestItemSwing(Point onTile)
+        {
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestItemSwing);
+            msg.Write(onTile.X);
+            msg.Write(onTile.Y);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void SetSelectedSlot(int slot)
+        {
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.ReceiveSelectedSlotChange);
+            msg.Write(slot);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
     }
 }

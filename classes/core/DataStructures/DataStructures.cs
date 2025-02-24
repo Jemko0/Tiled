@@ -1,9 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-using Tiled.Gameplay.Items;
+using Tiled.Networking.Shared;
 using Tiled.UI;
 
 namespace Tiled.DataStructures
@@ -14,7 +13,7 @@ namespace Tiled.DataStructures
         public Texture2D sprite;
 
         /// <summary>
-        /// if false, will ignore tile frames, and also will be ignored by other tiles
+        /// if false, will ignore tile frames, and also will be ignored by other tile frames
         /// </summary>
         public bool useFrames;
  
@@ -42,7 +41,14 @@ namespace Tiled.DataStructures
         /// </summary>
         public uint blockLight;
 
+        /// <summary>
+        /// hardness of block
+        /// </summary>
         public sbyte hardness;
+
+        /// <summary>
+        /// determines what item this block is gonna drop when mined
+        /// </summary>
         public EItemType itemDrop;
         public sbyte minPick;
         public sbyte minAxe;
@@ -63,6 +69,7 @@ namespace Tiled.DataStructures
         public EProjectileType projectile;
         public Type behaviourType;
         public EItemSwingAnimationType swingAnimationType;
+        public Vector2 projectileThrowVelocity;
     }
     
     public struct Projectile
@@ -295,5 +302,15 @@ namespace Tiled.DataStructures
             this.y = y;
             this.type = type;
         }
+    }
+
+    public struct NetEntity
+    {
+        public int netID;
+        public ENetEntitySpawnType spawnType;
+        public EEntityType type;
+        public EItemType itemType;
+        public EProjectileType projectileType;
+        public Vector2 position;
     }
 }

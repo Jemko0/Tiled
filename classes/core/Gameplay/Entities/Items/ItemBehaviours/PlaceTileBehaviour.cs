@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Input;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 using Tiled.DataStructures;
 
@@ -6,9 +7,8 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
 {
     public class PlaceTileBehaviour : IItemBehaviour
     {
-        public bool CanConsume(EItem item)
+        public bool CanConsume(EItem item, Point t)
         {
-            var t = Rendering.ScreenToTile(Mouse.GetState().Position);
             return World.IsValidForTilePlacement(t.X, t.Y);
         }
 

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items;
 using Tiled.ID;
+using Tiled.Networking.Shared;
 using Tiled.UI;
 using Tiled.UI.UserWidgets;
 
@@ -553,16 +554,33 @@ namespace Tiled
             UpdateTileFramesAt(x, y);
             Lighting.QueueLightUpdate(x, y);
 #if !TILEDSERVER
+        /*
             if(!noBroadcast && Main.netMode == ENetMode.Client)
             {
                 Main.netClient.SendTileSquare(x, y, type);
+            }
+        */
+#else
+            if(!noBroadcast)
+            {
+                TileChangePacket t = new TileChangePacket();
+                t.x = x;
+                t.y = y;
+                t.tileType = type;
+                Main.netServer.SendTileSquare(t);
             }
 #endif
         }
 
         public static void BreakTile(int x, int y, sbyte pickPower, sbyte axePower)
         {
+            if(!IsValidTile(x, y))
+            {
+                return;
+            }
+
             Tile tileData = TileID.GetTile(tiles[x, y]);
+
             if (pickPower > tileData.minPick || axePower > tileData.minAxe)
             {
                 if (tileBreak[x, y] == -128)
@@ -573,12 +591,16 @@ namespace Tiled
 
                 tileBreak[x, y] = (sbyte)(tileBreak[x, y] - (pickPower + axePower));
 
+                
+
                 c:
                 if (tileBreak[x, y] < 0)
                 {
                     DestroyTile(x, y);
                     tileBreak[x, y] = -128;
                 }
+
+                Debug.WriteLine("DESTROY TILE: " + "x: " + x + " y: " + y + " breakLevel: " + tileBreak[x, y]);
             }
             
         }
@@ -587,7 +609,23 @@ namespace Tiled
         {
             Tile t = TileID.GetTile(tiles[x, y]);
 
-            SetTile(x, y, ETileType.Air, false);
+#if TILEDSERVER
+            if(Main.netMode == ENetMode.Server)
+            {
+                TileChangePacket newTile = new TileChangePacket();
+                newTile.x = x;
+                newTile.y = y;
+                newTile.tileType = ETileType.Air;
+
+                Main.netServer.SendTileSquare(newTile);
+
+            }
+#endif
+
+            if (Main.netMode != ENetMode.Server)
+            {
+                SetTile(x, y, ETileType.Air, false);
+            }
 
             UpdateTile(x, y);
             UpdateTile(x + 1, y);
@@ -599,15 +637,11 @@ namespace Tiled
             {
                 return;
             }
+
 #if TILEDSERVER
-            Main.netServer.ServerSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
+            Main.netServer.ServerSpawnEntity(ENetEntitySpawnType.Item, (byte)0, t.itemDrop, (byte)0, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
             return;
 #else
-            if(Main.netMode == ENetMode.Client)
-            {
-                Main.netClient.ClientRequestSpawnEntity(true, (byte)0, t.itemDrop, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
-            }
-
             if(Main.netMode == ENetMode.Standalone)
             {
                 EItem newItem = EItem.CreateItem(t.itemDrop);

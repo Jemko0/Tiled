@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using Tiled.DataStructures;
 using Tiled.ID;
 
@@ -9,7 +10,7 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
         void Use(EItem item);
         void UseOnTile(EItem item, int x, int y);
         void UseWithEntity(EItem item, object entity);
-        public bool CanConsume(EItem item);
+        public bool CanConsume(EItem item, Point tile);
     }
 
     public class DefaultItemBehaviour : IItemBehaviour
@@ -18,7 +19,7 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
         public void UseOnTile(EItem item, int x, int y) { }
         public void UseWithEntity(EItem item, object entity) { }
 
-        public bool CanConsume(EItem item)
+        public bool CanConsume(EItem item, Point tile)
         {
             return true;
         }

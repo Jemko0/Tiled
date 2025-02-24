@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using Tiled.DataStructures;
 
 namespace Tiled.Gameplay.Items.ItemBehaviours
@@ -18,7 +19,7 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
         {
         }
 
-        public bool CanConsume(EItem item)
+        public bool CanConsume(EItem item, Point tile)
         {
             return true;
         }

@@ -20,6 +20,7 @@ namespace Tiled.Gameplay
         protected float rotation = 0.0f;
         protected Vector2 rotOrigin = new(0, 0);
         public int netID = -1;
+        public EEntityType entityType;
 
         public bool facingLeft;
         public int direction;
@@ -52,7 +53,7 @@ namespace Tiled.Gameplay
 
             if(netID == -1)
             {
-                Debug.Write("netID was -1, assuming this is a Locally spawned Entity");
+                Debug.WriteLine("netID was -1, assuming this is a Locally spawned Entity");
                 LocalDestroy();
                 return;
             }
@@ -89,6 +90,7 @@ namespace Tiled.Gameplay
             EntityDef e = EntityID.GetEntityInfo(type);
             size = e.size;
             entitySprite = e.sprite;
+            entityType = type;
         }
 
         public virtual System.Drawing.RectangleF GetRectF()

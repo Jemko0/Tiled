@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
@@ -47,12 +48,7 @@ namespace Tiled
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-
-#if TILEDSERVER
-            Window.Title = "Tiled Server";
-#else
             Window.Title = "Tiled";
-#endif
             IsMouseVisible = true;
             Window.AllowUserResizing = true;
         }
@@ -99,7 +95,6 @@ namespace Tiled
 
         protected override void LoadContent()
         {
-
             Fonts.InitFonts();
 
             //world.Init();
@@ -124,10 +119,17 @@ namespace Tiled
 #if TILEDSERVER
         private async void RunServer()
         {
-
             netServer = new TiledServer();
-            return;
+            netServer.onServerLog += NetServer_onServerLog;
 
+            Window.Title = "Tiled Server";
+
+            return;
+        }
+
+        private void NetServer_onServerLog(string msg)
+        {
+            Debug.WriteLine("[SERVER] " + msg);
         }
 #endif
 
@@ -153,6 +155,7 @@ namespace Tiled
         }
 
         public static float delta;
+        public static float runtime;
         protected override void Update(GameTime gameTime)
         {
             if (!IsActive && netMode == ENetMode.Standalone)
@@ -196,6 +199,7 @@ namespace Tiled
 #endif
 
             delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            runtime += delta;
 
             world.UpdateWorld();
 
@@ -248,8 +252,8 @@ namespace Tiled
             int tilesX = (int)Math.Ceiling((Window.ClientBounds.Width / renderScale) / World.TILESIZE);
             int tilesY = (int)Math.Ceiling((Window.ClientBounds.Height / renderScale) / World.TILESIZE);
 
-            int endX = startX + tilesX - 1;
-            int endY = startY + tilesY - 1;
+            int endX = startX + tilesX + 1;
+            int endY = startY + tilesY + 1;
 
             for (int x = startX; x < endX; x++)
             {
