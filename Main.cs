@@ -11,6 +11,7 @@ using Tiled.ID;
 using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
+using Tiled.UI.UserWidgets;
 
 namespace Tiled
 {
@@ -69,14 +70,37 @@ namespace Tiled
 #if !TILEDSERVER
         public void JoinServer(string inputUri)
         {
-            string ipStr = inputUri.Split(':')[0]; 
-            string portStr = inputUri.Split(':')[1];
-
-            byte[] ip = ipStr.Split('.').Select(x => byte.Parse(x)).ToArray();
-            int port = int.Parse(portStr);
-
             netClient = new TiledClient();
-            netClient.ConnectToServer(ip, port);
+            netClient.clientException += NetClient_clientException;
+
+            try
+            {
+                string ipStr = inputUri.Split(':')[0];
+                string portStr = inputUri.Split(':')[1];
+
+                byte[] ip = ipStr.Split('.').Select(x => byte.Parse(x)).ToArray();
+                int port = int.Parse(portStr);
+
+                netClient.ConnectToServer(ip, port);
+            }
+            catch (Exception ex)
+            {
+                netClient.externClientInvokeException(ex);
+            }
+        }
+
+        private void NetClient_clientException(Exception e)
+        {
+            UWMessage m = HUD.CreateWidget<UWMessage>(localHUD, "src: " + e.Source + "\n" + e.Message + "\n inner: " + e.InnerException);
+            m.onWidgetDestroyed += ExceptionMsgDestroyed;
+        }
+
+        private void ExceptionMsgDestroyed(WidgetDestroyArgs e)
+        {
+            localHUD.ClearAllWidgets();
+
+            var t = HUD.CreateWidget<UWTitle>(localHUD);
+            t.SetGeometry(new(1920, 1080), AnchorPosition.Center);
         }
 #endif
 

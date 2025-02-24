@@ -1,4 +1,5 @@
 ﻿using Lidgren.Network;
+using Microsoft.VisualBasic.FileIO;
 using Microsoft.Xna.Framework;
 using System;
 using System.Diagnostics;
@@ -42,12 +43,31 @@ namespace Tiled
 
         public void ConnectToServer(byte[] ip, int port)
         {
-            Debug.WriteLine("Connecting to IPEndPoint: " + string.Join('.', ip) + ":" + port);
-            client.Connect(new System.Net.IPEndPoint(new System.Net.IPAddress(ip), port));
+            try
+            {
+                Debug.WriteLine("Connecting to IPEndPoint: " + string.Join('.', ip) + ":" + port);
+                client.Connect(new System.Net.IPEndPoint(new System.Net.IPAddress(ip), port));
 
-            clientThread = new Thread(new ThreadStart(StartClient));
-            clientThread.Name = "Client Thread";
-            clientThread.Start();
+                Thread:
+                if(client.ConnectionStatus == NetConnectionStatus.Connected)
+                {
+                    clientThread = new Thread(new ThreadStart(StartClient));
+                    clientThread.Name = "Client Thread";
+                    clientThread.Start();
+                    return;
+                }
+
+                goto Thread;
+            }
+            catch (Exception e)
+            {
+                clientException?.Invoke(e);
+            }
+        }
+
+        public void externClientInvokeException(Exception e)
+        {
+            clientException?.Invoke(e);
         }
 
         private void TiledClient_Exiting(object sender, EventArgs e)

@@ -25,7 +25,16 @@ namespace Tiled.UI.UserWidgets
             //Program.GetGame().localClient.OnException += LocalClient_OnException;
 #if !TILEDSERVER
             Main.netClient.clientJoined += LocalClient_OnJoinResult;
+            Main.netClient.clientException += LocalClient_OnException;
 #endif
+        }
+
+        private void LocalClient_OnException(Exception e)
+        {
+            //HUD.CreateWidget<UWMessage>(owningHUD, e.Message);
+            //Program.GetGame().localClient.DestroySocket();
+            Debug.WriteLine("destroyed client socket cause of an exception!");
+            DestroyWidget();
         }
 
         private void LocalClient_OnJoinResult(bool obj)
@@ -39,14 +48,6 @@ namespace Tiled.UI.UserWidgets
                 HUD.CreateWidget<UWMessage>(owningHUD, "Failed to join server!");
                 DestroyWidget();
             }
-        }
-
-        private void LocalClient_OnException(string obj)
-        {
-            HUD.CreateWidget<UWMessage>(owningHUD, obj);
-            //Program.GetGame().localClient.DestroySocket();
-            Debug.WriteLine("destroyed client socket cause of an exception!");
-            DestroyWidget();
         }
     }
 }

@@ -53,6 +53,16 @@ namespace Tiled.UI
             return newWidget;
         }
 
+        public void ClearAllWidgets()
+        {
+            foreach(var widget in activeWidgets)
+            {
+                widget.DestroyWidget();
+            }
+
+            activeWidgets.Clear();
+        }
+
         internal void Init()
         {
 #if !TILEDSERVER
