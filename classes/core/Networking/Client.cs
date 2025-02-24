@@ -47,17 +47,10 @@ namespace Tiled
             {
                 Debug.WriteLine("Connecting to IPEndPoint: " + string.Join('.', ip) + ":" + port);
                 client.Connect(new System.Net.IPEndPoint(new System.Net.IPAddress(ip), port));
-
-                Thread:
-                if(client.ConnectionStatus == NetConnectionStatus.Connected)
-                {
-                    clientThread = new Thread(new ThreadStart(StartClient));
-                    clientThread.Name = "Client Thread";
-                    clientThread.Start();
-                    return;
-                }
-
-                goto Thread;
+                clientThread = new Thread(new ThreadStart(StartClient));
+                clientThread.Name = "Client Thread";
+                clientThread.Start();
+                return;
             }
             catch (Exception e)
             {
@@ -278,6 +271,7 @@ namespace Tiled
                                         newEntity.spawnType = active.entities[i].spawnType;
                                         newEntity.entityType = active.entities[i].type;
                                         newEntity.itemType = active.entities[i].itemType;
+                                        newEntity.projectileType = active.entities[i].projectileType;
                                         newEntity.position = active.entities[i].position;
                                         newEntity.velocity = new(0, 0);
 

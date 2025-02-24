@@ -16,6 +16,7 @@ namespace Tiled.Gameplay.Items
         public bool isSwing;
         public Entity? swingOwner;
         public float age;
+        bool wasPickedUp = false;
 
         public delegate void swingEnd(ItemSwingArgs e);
         public event swingEnd swingEnded;
@@ -50,8 +51,9 @@ namespace Tiled.Gameplay.Items
                 if (IsTouchingLocalPlayer() && canPickUp && !instaPickUpPrevention)
                 {
 #if !TILEDSERVER
-                    if(Main.netMode == ENetMode.Client)
+                    if(Main.netMode == ENetMode.Client && !wasPickedUp)
                     {
+                        wasPickedUp = true;
                         Main.netClient.RequestItemPickup();
                     }
 

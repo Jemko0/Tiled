@@ -1,9 +1,7 @@
 ﻿using Lidgren.Network;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Timers;
 using Tiled.DataStructures;
@@ -148,7 +146,7 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.RequestWorldChanges:
-                                    Thread.Sleep(100);
+                                    Thread.Sleep(1);
                                     foreach (NetWorldChange c in worldChanges)
                                     {
                                         WorldChangesPacket worldChangesPacket = new WorldChangesPacket();
@@ -162,6 +160,7 @@ namespace Tiled
                                         worldChangesPacket.PacketToNetOutgoingMessage(outChange);
 
                                         server.SendMessage(outChange, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                                        server.FlushSendQueue();
                                     }
 
 
@@ -207,6 +206,7 @@ namespace Tiled
                                     entitiesMsg.Write((byte)EPacketType.ReceiveEntities);
                                     entityData.PacketToNetOutgoingMessage(entitiesMsg);
                                     server.SendMessage(entitiesMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                                    server.FlushSendQueue();
                                     break;
 
                                 case EPacketType.ReceiveClientUpdate:
@@ -428,6 +428,7 @@ namespace Tiled
             worldUpdateMsg.Write((byte)EPacketType.ReceiveWorldUpdate);
             worldUpdatePacket.PacketToNetOutgoingMessage(worldUpdateMsg);
             server.SendToAll(worldUpdateMsg, NetDeliveryMethod.Unreliable);
+            server.FlushSendQueue();
         }
 
         private void SendEntityUpdates()
@@ -444,7 +445,8 @@ namespace Tiled
                 entityUpdatePacket.PacketToNetOutgoingMessage(entityUpdateMsg);
 
                 server.SendToAll(entityUpdateMsg, NetDeliveryMethod.Unreliable);
-           }
+                server.FlushSendQueue();
+            }
         }
 
         public void ServerSpawnEntity(ENetEntitySpawnType type, EEntityType entityType, EItemType itemType, EProjectileType projectileType, Vector2 position, Vector2 velocity)
@@ -480,6 +482,7 @@ namespace Tiled
             request.PacketToNetOutgoingMessage(newEntityMsg);
 
             server.SendToAll(newEntityMsg, NetDeliveryMethod.ReliableOrdered);
+            server.FlushSendQueue();
         }
 
         public void ServerDestroyEntity(int id)
@@ -499,6 +502,7 @@ namespace Tiled
             idPacket.PacketToNetOutgoingMessage(entityDestroyMsg);
 
             server.SendToAll(entityDestroyMsg, NetDeliveryMethod.ReliableOrdered);
+            server.FlushSendQueue();
         }
 
         public void SendInventoryToClient(int id, ContainerItem[] items)

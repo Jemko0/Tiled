@@ -261,6 +261,11 @@ namespace Tiled.ID
 
             switch(type)
             {
+                case EProjectileType.None:
+                    p.name = "NoneType";
+                    p.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/EntityDefault");
+                    break;
+
                 case EProjectileType.Bullet:
                     p.name = "bullet";
                     p.size = new(16, 16);
