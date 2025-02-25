@@ -223,7 +223,7 @@ namespace Tiled
                                     }
                                     else
                                     {
-                                        Debug.Write("client id was invalid");
+                                        Debug.WriteLine("client id was invalid");
                                     }
                                     
                                     break;
@@ -235,11 +235,16 @@ namespace Tiled
                                     NetShared.netEntitites[idPacket.ID].LocalDestroy();
                                     break;
 
-                                case EPacketType.ReceiveWorldChange:
+                                case EPacketType.ReceiveWorldChanges:
                                     WorldChangesPacket worldChangesPacket = new WorldChangesPacket();
                                     worldChangesPacket.PacketToNetIncomingMessage(inc);
 
-                                    World.SetTile(worldChangesPacket.x, worldChangesPacket.y, (ETileType)worldChangesPacket.type);
+                                    for (int i = 0; i < worldChangesPacket.length; i++)
+                                    {
+                                        NetWorldChange c = worldChangesPacket.changes[i];
+                                        World.SetTile(c.x, c.y, (ETileType)c.type);
+                                    }
+
                                     break;
 
                                 case EPacketType.ReceiveInventory:

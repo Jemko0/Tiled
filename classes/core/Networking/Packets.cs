@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Lidgren.Network;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
 using Tiled.Gameplay.Entities.Projectiles;
@@ -72,6 +73,7 @@ namespace Tiled.Networking.Shared
         RequestServerInfo,
         RequestWorld,
         RequestWorldChanges,
+        RequestActiveEntities,
         RequestClientSpawn,
         RequestOtherClients,
         RequestTileChange,
@@ -85,7 +87,7 @@ namespace Tiled.Networking.Shared
         ReceivePlayerID,
         ReceiveServerInfo,
         ReceiveWorld,
-        ReceiveWorldChange,
+        ReceiveWorldChanges,
         ReceiveSpawnClient,
         ReceiveOtherClients,
         ReceiveClientDisconnected,
@@ -213,7 +215,7 @@ namespace Tiled.Networking.Shared
         public int maxTilesX;
         public int maxTilesY;
 
-        public WorldPacket(int seed, int maxX, int maxY, List<NetWorldChange> changes)
+        public WorldPacket(int seed, int maxX, int maxY)
         {
             this.seed = seed;
             maxTilesX = maxX;
@@ -240,21 +242,31 @@ namespace Tiled.Networking.Shared
 
     public class WorldChangesPacket : Packet
     {
-        public int x;
-        public int y;
-        public byte type;
+        public int length;
+        public NetWorldChange[] changes;
         public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
         {
-            x = msg.ReadInt32();
-            y = msg.ReadInt32();
-            type = msg.ReadByte();
+            length = msg.ReadInt32();
+            changes = new NetWorldChange[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                changes[i].x = msg.ReadInt32();
+                changes[i].y = msg.ReadInt32();
+                changes[i].type = (ETileType)msg.ReadByte();
+            }
+           
         }
 
         public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
         {
-            msg.Write(x);
-            msg.Write(y);
-            msg.Write(type);
+            msg.Write(length);
+            for (int i = 0; i < changes.Length; i++)
+            {
+                msg.Write(changes[i].x);
+                msg.Write(changes[i].y);
+                msg.Write((byte)changes[i].type);
+            }
         }
     }
 

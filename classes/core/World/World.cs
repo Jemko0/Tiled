@@ -600,7 +600,7 @@ namespace Tiled
                     tileBreak[x, y] = -128;
                 }
 
-                Debug.WriteLine("DESTROY TILE: " + "x: " + x + " y: " + y + " breakLevel: " + tileBreak[x, y]);
+                //Debug.WriteLine("DESTROY TILE: " + "x: " + x + " y: " + y + " breakLevel: " + tileBreak[x, y]);
             }
             
         }

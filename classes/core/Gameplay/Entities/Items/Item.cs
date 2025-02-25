@@ -51,9 +51,8 @@ namespace Tiled.Gameplay.Items
                 if (IsTouchingLocalPlayer() && canPickUp && !instaPickUpPrevention)
                 {
 #if !TILEDSERVER
-                    if(Main.netMode == ENetMode.Client && !wasPickedUp)
+                    if(Main.netMode == ENetMode.Client)
                     {
-                        wasPickedUp = true;
                         Main.netClient.RequestItemPickup();
                     }
 

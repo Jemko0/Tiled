@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Timers;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
@@ -146,23 +147,24 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.RequestWorldChanges:
-                                    Thread.Sleep(1);
-                                    foreach (NetWorldChange c in worldChanges)
+                                    WorldChangesPacket changesPacket = new WorldChangesPacket();
+
+                                    changesPacket.length = worldChanges.Count;
+                                    changesPacket.changes = new NetWorldChange[worldChanges.Count];
+
+                                    for (int i = 0; i < changesPacket.length; i++)
                                     {
-                                        WorldChangesPacket worldChangesPacket = new WorldChangesPacket();
-                                        worldChangesPacket.x = c.x;
-                                        worldChangesPacket.y = c.y;
-                                        worldChangesPacket.type = (byte)c.type;
-
-                                        NetOutgoingMessage outChange = server.CreateMessage();
-
-                                        outChange.Write((byte)EPacketType.ReceiveWorldChange);
-                                        worldChangesPacket.PacketToNetOutgoingMessage(outChange);
-
-                                        server.SendMessage(outChange, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
-                                        server.FlushSendQueue();
+                                        changesPacket.changes[i] = worldChanges[i];
                                     }
 
+                                    NetOutgoingMessage changesOutMsg = server.CreateMessage();
+
+                                    changesOutMsg.Write((byte)EPacketType.ReceiveWorldChanges);
+                                    
+                                    changesPacket.PacketToNetOutgoingMessage(changesOutMsg);
+                                    server.SendMessage(changesOutMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                                    server.FlushSendQueue();
+                                    
 
                                     //SEND CURRENTLY ACTIVE ENTITIES TO NEW CLIENT
                                     ActiveEntityPacket entityData = new ActiveEntityPacket();
