@@ -2,6 +2,7 @@
 using System;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
+using Tiled.Gameplay.Items;
 using Tiled.ID;
 
 namespace Tiled.Collision
@@ -138,8 +139,16 @@ namespace Tiled.Collision
         {
             for (int i = 0; i < Main.entities.Count; i++)
             {
-                if (entity.GetRectF().IntersectsWith(Main.entities[i].GetRectF()) && Main.entities[i] != entity)
+                if (entity.canCollide && Main.entities[i].canCollide && entity.GetRectF().IntersectsWith(Main.entities[i].GetRectF()) && Main.entities[i] != entity)
                 {
+                    if (Main.entities[i] is EItem)
+                    {
+                        if ((Main.entities[i] as EItem).isSwing)
+                        {
+                            continue;
+                        }
+                    }
+
                     return Main.entities[i];
                 }
             }
@@ -281,6 +290,33 @@ namespace Tiled.Collision
             }
 
             return false;
+        }
+    }
+
+    public class CollisionStatics
+    {
+        public static Entity? isEntityAt(Vector2 position)
+        {
+            for (int i = 0; i < Main.entities.Count; i++)
+            {
+                if(Main.entities[i].GetRectF().Contains(new System.Drawing.PointF(position.X, position.Y)))
+                {
+                    return Main.entities[i];
+                }
+            }
+            return null;
+        }
+
+        public static Entity? isEntityWithinRect(System.Drawing.RectangleF rect)
+        {
+            for (int i = 0; i < Main.entities.Count; i++)
+            {
+                if (Main.entities[i].GetRectF().IntersectsWith(rect))
+                {
+                    return Main.entities[i];
+                }
+            }
+            return null;
         }
     }
 }

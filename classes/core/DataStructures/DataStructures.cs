@@ -33,6 +33,11 @@ namespace Tiled.DataStructures
         /// used for neighbor checking in tileFrames
         /// </summary>
         public TileNeighbors ignoreNeighbors;
+
+
+        public bool useSpecificTileTypesForFrame;
+        public bool[] frameOnlyTypes;
+
         public int frameSize;
         public int framePadding;
 
@@ -111,9 +116,12 @@ namespace Tiled.DataStructures
         None,
         Base,
         BasePickaxe,
-        DirtBlock,
         Torch,
         Bomb,
+        Wood,
+
+        DirtBlock,
+        StoneBlock,
     }
 
     public enum EItemSwingAnimationType
@@ -170,6 +178,9 @@ namespace Tiled.DataStructures
         Stone,
         Plank,
         Torch,
+        TreeTrunk,
+        TreeLeaves,
+        MAX,
     }
 
     public enum EWallType

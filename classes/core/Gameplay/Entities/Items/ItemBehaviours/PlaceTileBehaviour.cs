@@ -18,7 +18,7 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
 
         public void UseOnTile(EItem item, int x, int y)
         {
-            if(World.IsValidForTilePlacement(x, y))
+            if(World.IsValidForTilePlacement(x, y, item.Item.placeTile))
             {
                 World.SetTile(x, y, item.Item.placeTile, false);
             }

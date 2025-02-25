@@ -70,7 +70,7 @@ namespace Tiled.Networking.Shared
     {
         //one time send
         RequestPlayerID,
-        RequestServerInfo,
+        //RequestServerInfo,
         RequestWorld,
         RequestWorldChanges,
         RequestActiveEntities,
@@ -85,7 +85,7 @@ namespace Tiled.Networking.Shared
 
         //one time receive
         ReceivePlayerID,
-        ReceiveServerInfo,
+        //ReceiveServerInfo,
         ReceiveWorld,
         ReceiveWorldChanges,
         ReceiveSpawnClient,

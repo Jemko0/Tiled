@@ -153,6 +153,7 @@ namespace Tiled
         public void InitTasks()
         {
             tasks.Add(new WGT_Terrain("Terrain"));
+            tasks.Add(new WGT_PlaceTrees("Trees"));
         }
 
         public async Task RunTasks(WorldGenParams newParams)
@@ -266,7 +267,17 @@ namespace Tiled
 
         public static bool IsValidForTilePlacement(int x, int y)
         {
-            return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y);
+            return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y) && (Collision.CollisionStatics.isEntityWithinRect(new((x * TILESIZE), (y * TILESIZE), TILESIZE, TILESIZE)) == null);
+        }
+
+        public static bool IsValidForTilePlacement(int x, int y, ETileType type)
+        {
+            if(!TileID.GetTile(type).collision)
+            {
+                return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y);
+            }
+
+            return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y) && (Collision.CollisionStatics.isEntityWithinRect(new((x * TILESIZE), (y * TILESIZE), TILESIZE, TILESIZE)) == null);
         }
 
         #endregion
@@ -288,17 +299,15 @@ namespace Tiled
             int frameY = 0;
             int frameSlot = tileData.frameSize + tileData.framePadding;
 
-            
-
             if (IsValidFrame(tileFramesCached[x, y]))
             {
                 return tileFramesCached[x, y];
             }
 
-            bool r = IsValidForTileFrame(x + 1, y) && !tileData.ignoreNeighbors.R;
-            bool l = IsValidForTileFrame(x - 1, y) && !tileData.ignoreNeighbors.L;
-            bool t = IsValidForTileFrame(x, y - 1) && !tileData.ignoreNeighbors.T;
-            bool b = IsValidForTileFrame(x, y + 1) && !tileData.ignoreNeighbors.B;
+            bool r = IsValidForTileFrame(x + 1, y) && !tileData.ignoreNeighbors.R && IsPartOfAllowedTileFrameTypes(x + 1, y, tileData);
+            bool l = IsValidForTileFrame(x - 1, y) && !tileData.ignoreNeighbors.L && IsPartOfAllowedTileFrameTypes(x - 1, y, tileData);
+            bool t = IsValidForTileFrame(x, y - 1) && !tileData.ignoreNeighbors.T && IsPartOfAllowedTileFrameTypes(x, y + 1, tileData);
+            bool b = IsValidForTileFrame(x, y + 1) && !tileData.ignoreNeighbors.B && IsPartOfAllowedTileFrameTypes(x, y - 1, tileData);
 
             var tuple = (r, l, t, b);
 
@@ -383,6 +392,15 @@ namespace Tiled
 
             tileFramesCached[x, y] = new Rectangle(frameX, frameY, TILESIZE, TILESIZE);
             return tileFramesCached[x, y];
+        }
+
+        public static bool IsPartOfAllowedTileFrameTypes(int x, int y, Tile tileData)
+        {
+            if(tileData.useSpecificTileTypesForFrame)
+            {
+                return tileData.frameOnlyTypes[(int)tiles[x, y]] != false;
+            }
+            return true;
         }
 
         public static Rectangle GetHangingTileFrame(int x, int y, Tile tileData)
@@ -579,9 +597,14 @@ namespace Tiled
                 return;
             }
 
+            if(!IsValidForBreaking(x, y))
+            {
+                return;
+            }
+
             Tile tileData = TileID.GetTile(tiles[x, y]);
 
-            if (pickPower > tileData.minPick || axePower > tileData.minAxe)
+            if ((tileData.minPick != -1 && pickPower > tileData.minPick && pickPower != -1 ) || (tileData.minAxe != -1 && axePower > tileData.minAxe && axePower != -1))
             {
                 if (tileBreak[x, y] == -128)
                 {
@@ -590,8 +613,6 @@ namespace Tiled
                 }
 
                 tileBreak[x, y] = (sbyte)(tileBreak[x, y] - (pickPower + axePower));
-
-                
 
                 c:
                 if (tileBreak[x, y] < 0)
@@ -603,6 +624,11 @@ namespace Tiled
                 //Debug.WriteLine("DESTROY TILE: " + "x: " + x + " y: " + y + " breakLevel: " + tileBreak[x, y]);
             }
             
+        }
+
+        public static bool IsValidForBreaking(int x, int y)
+        {
+            return tiles[x, y - 1] != ETileType.TreeTrunk;
         }
 
         public static void CreateExplosion(int centerX, int centerY, int radius, sbyte maxPickPower, sbyte maxAxePower)
@@ -665,7 +691,9 @@ namespace Tiled
             }
 
 #if TILEDSERVER
-            Main.netServer.ServerSpawnEntity(ENetEntitySpawnType.Item, (byte)0, t.itemDrop, (byte)0, new(x * TILESIZE, y * TILESIZE), new(0.0f, -5.0f));
+            Random r = new Random((int)((Main.runtime + x + y - 12.0f) / 131.0f));
+            
+            Main.netServer.ServerSpawnEntity(ENetEntitySpawnType.Item, (byte)0, t.itemDrop, (byte)0, new(x * TILESIZE, y * TILESIZE), new((2.0f * r.NextSingle() - 1.0f) * 5.0f, -5.0f));
             return;
 #else
             if(Main.netMode == ENetMode.Standalone)
@@ -691,6 +719,54 @@ namespace Tiled
                     DestroyTile(x, y);
                 }
             }
+
+            if (tiles[x, y] == ETileType.TreeTrunk)
+            {
+                if (tiles[x, y + 1] == ETileType.Air)
+                {
+                    DestroyTile(x, y);
+                }
+                else
+                {
+                    if(tiles[x, y + 1] != ETileType.TreeTrunk)
+                    {
+                        if (tiles[x + 1, y] == ETileType.Air && tiles[x - 1, y] == ETileType.Air)
+                        {
+                            DestroyTile(x, y);
+                        }
+                    }
+                }
+            }
+
+            if (tiles[x, y] == ETileType.TreeLeaves)
+            {
+                if (tiles[x, y + 1] == ETileType.Air)
+                {
+                    DestroyTile(x, y);
+                }
+                else
+                {
+                    if (tiles[x, y + 1] != ETileType.TreeLeaves)
+                    {
+                        if (tiles[x + 1, y] == ETileType.Air && tiles[x - 1, y] == ETileType.Air)
+                        {
+                            DestroyTile(x, y);
+                        }
+                    }
+                }
+            }
+        }
+
+        public static (ETileType, ETileType, ETileType, ETileType) GetNeighborTypes(int x, int y)
+        {
+            (ETileType, ETileType, ETileType, ETileType) tuple;
+
+            tuple.Item1 = tiles[x + 1, y];
+            tuple.Item2 = tiles[x - 1, y];
+            tuple.Item3 = tiles[x, y + 1];
+            tuple.Item4 = tiles[x, y - 1];
+
+            return tuple;
         }
 
         public static void SetWall(int x, int y, EWallType type)

@@ -182,6 +182,7 @@ namespace Tiled
         public static float runtime;
         protected override void Update(GameTime gameTime)
         {
+
             if (!IsActive && netMode == ENetMode.Standalone)
             {
                 return;

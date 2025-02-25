@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -20,6 +21,7 @@ namespace Tiled.UI.UserWidgets
             text = HUD.CreateWidget<WText>(owningHUD);
             
             text.text = "Joining Server...";
+            text.justification = ETextJustification.Center;
             text.AttachToParent(this, AnchorPosition.Center);
 
             //Program.GetGame().localClient.OnException += LocalClient_OnException;
@@ -49,5 +51,12 @@ namespace Tiled.UI.UserWidgets
                 DestroyWidget();
             }
         }
+#if !TILEDSERVER
+        public override void DrawWidget(ref SpriteBatch sb)
+        {
+            text.text = "Joining Server..." + "\n" + "STATUS: " + Main.netClient.loadState.ToString();
+            base.DrawWidget(ref sb);
+        }
+#endif
     }
 }

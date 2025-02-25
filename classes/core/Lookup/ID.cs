@@ -47,16 +47,17 @@ namespace Tiled.ID
 
                 case ETileType.Grass:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/grass");
+                    t.hardness = 10;
                     t.itemDrop = EItemType.DirtBlock;
                     break;
 
                 case ETileType.Stone:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/stone");
-                    t.hardness = 32;
+                    t.hardness = 30;
                     break;
 
                 case ETileType.Plank:
-                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/plank");
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/wood");
                     break;
 
                 case ETileType.Torch:
@@ -67,6 +68,30 @@ namespace Tiled.ID
                     t.blockLight = 0;
                     t.light = 32;
                     t.collision = false;
+                    break;
+
+                case ETileType.TreeLeaves:
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/tree/leaves");
+                    t.itemDrop = EItemType.None;
+                    t.hardness = 0;
+                    t.blockLight = 2;
+                    t.collision = false;
+                    break;
+
+                case ETileType.TreeTrunk:
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/tree/trunk");
+                    t.ignoreNeighbors = new TileNeighbors(0, 0, 1, 1);
+                    t.hardness = 16;
+
+                    //extremely hacky for now
+                    t.useSpecificTileTypesForFrame = true;
+                    t.frameOnlyTypes = new bool[(int)ETileType.MAX];
+                    t.frameOnlyTypes[(int)ETileType.TreeTrunk] = true;
+
+                    t.collision = false;
+                    t.itemDrop = EItemType.Wood;
+                    t.minPick = -1;
+                    t.minAxe = 10;
                     break;
             }
 
@@ -180,18 +205,40 @@ namespace Tiled.ID
                     i.name = "Dirt";
                     i.consumable = true;
                     i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/dirtBlock");
-                    i.useTime = 0.2f;
+                    i.useTime = 0.15f;
                     i.maxStack = 999;
                     i.size = new Vector2(16, 16);
                     i.behaviourType = typeof(PlaceTileBehaviour);
-                    i.placeTile = ETileType.Dirt;
+                    i.placeTile = ETileType.TreeTrunk;
+                    break;
+
+                case EItemType.Wood:
+                    i.name = "Wood";
+                    i.consumable = true;
+                    i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/woodBlock");
+                    i.useTime = 0.15f;
+                    i.maxStack = 999;
+                    i.size = new Vector2(16, 16);
+                    i.behaviourType = typeof(PlaceTileBehaviour);
+                    i.placeTile = ETileType.Plank;
+                    break;
+
+                case EItemType.StoneBlock:
+                    i.name = "Stone";
+                    i.consumable = true;
+                    i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/stoneBlock");
+                    i.useTime = 0.15f;
+                    i.maxStack = 999;
+                    i.size = new Vector2(16, 16);
+                    i.behaviourType = typeof(PlaceTileBehaviour);
+                    i.placeTile = ETileType.TreeLeaves;
                     break;
 
                 case EItemType.Torch:
                     i.name = "Torch";
                     i.consumable = true;
                     i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/torch");
-                    i.useTime = 0.2f;
+                    i.useTime = 0.15f;
                     i.maxStack = 99;
                     i.size = new Vector2(16, 16);
                     i.behaviourType = typeof(PlaceTileBehaviour);
@@ -202,7 +249,9 @@ namespace Tiled.ID
                     i.name = "Bomb";
                     i.consumable = true;
                     i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Projectile/BombProjectile");
+                    i.useTime = 0.75f;
                     i.projectile = EProjectileType.Bomb;
+                    i.projectileThrowVelocity = new(3.0f, 0.0f);
                     i.useTime = 0.5f;
                     i.behaviourType = typeof(ProjectileThrowBehaviour);
                     break;

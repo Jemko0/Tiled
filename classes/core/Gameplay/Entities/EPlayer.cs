@@ -61,6 +61,7 @@ namespace Tiled.Gameplay
                 inventory.items[1] = new ContainerItem(EItemType.DirtBlock, 999);
                 inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
                 inventory.items[3] = new ContainerItem(EItemType.Bomb, 16);
+                inventory.items[4] = new ContainerItem(EItemType.StoneBlock, 999);
             }
 
             if(Main.netMode == ENetMode.Client)
@@ -249,7 +250,6 @@ namespace Tiled.Gameplay
                 swingItem.UseWithEntity(this, tile);
                 swingItem.UseOnTile(tile.X, tile.Y);
             }
-            
         }
 
         private void CurrentSwingItemSwingEnded(ItemSwingArgs e)

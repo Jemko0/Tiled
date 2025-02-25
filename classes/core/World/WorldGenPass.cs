@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -100,7 +101,7 @@ namespace Tiled
                             break;
 
                         int surfaceTileY = CalcSurface(x, wparams, noise, baseSurfaceHeight);
-                        int rockHeight = surfaceTileY + 80;
+                        int rockHeight = surfaceTileY + 30;
                         World.surfaceHeights[x] = surfaceTileY;
 
                         for (int y = surfaceTileY; y < wparams.maxTilesY; y++)
@@ -141,7 +142,7 @@ namespace Tiled
             }, cts.Token);
         }
 
-        private int CalcSurface(int x, WorldGenParams wparams, FastNoiseLite noise, int baseSurface)
+        private static int CalcSurface(int x, WorldGenParams wparams, FastNoiseLite noise, int baseSurface)
         {
             //noise1
             noise.SetSeed(wparams.seed);
@@ -170,6 +171,99 @@ namespace Tiled
 
             float finalVal = (noise1 - noise2) - pv;
             return baseSurface + (int)finalVal;
+        }
+    }
+
+    public class WGT_PlaceTrees : WorldGenTask
+    {
+        public WGT_PlaceTrees(string identifier) : base(identifier)
+        {
+        }
+
+        public override async Task Run(IProgress<WorldGenProgress> progress, WorldGenParams wparams)
+        {
+            using var cts = new CancellationTokenSource();
+
+            await Task.Run(() =>
+            {
+                for(int x = 4; x < World.surfaceHeights.Length - 4; x += 4)
+                {
+                    int treeX = x;
+                    int treeY = World.surfaceHeights[x] - 1;
+
+                    if
+                    (
+                    (World.tiles[treeX, treeY + 1] == ETileType.Grass || World.tiles[treeX, treeY + 1] == ETileType.Dirt)
+                    &&
+                    (World.tiles[treeX + 1, treeY + 1] == ETileType.Grass || World.tiles[treeX + 1, treeY + 1] == ETileType.Dirt)
+                    &&
+                    (World.tiles[treeX - 1, treeY + 1] == ETileType.Grass || World.tiles[treeX - 1, treeY + 1] == ETileType.Dirt)
+                    )
+                    {
+                        if (World.tiles[treeX + 1, treeY] == ETileType.Air && World.tiles[treeX - 1, treeY] == ETileType.Air)
+                        {
+                            PlaceTree(treeX, treeY, wparams);
+                        }
+                    }
+
+                    progress?.Report(new WorldGenProgress
+                    {
+                        CurrentTask = "Placing Trees",
+                        PercentComplete = (float)x / World.surfaceHeights.Length
+                    });
+                }
+
+                World.CompleteCurrent();
+            }, cts.Token);
+        }
+
+        public static void PlaceTree(int x, int y, WorldGenParams wp)
+        {
+            World.SetTile(x, y, ETileType.TreeTrunk);
+            World.SetTile(x + 1, y, ETileType.TreeTrunk);
+            World.SetTile(x - 1, y, ETileType.TreeTrunk);
+
+            int minTreeLength = 4;
+            int maxTreeLength = 20;
+            int highestTreeTile = 0;
+            int treeLength = Math.Clamp((int)((new Random(wp.seed + x + y).NextSingle()) * maxTreeLength), minTreeLength, int.MaxValue);
+
+            for(int trunkY = 0; trunkY < treeLength; trunkY++)
+            {
+                World.SetTile(x, y - trunkY, ETileType.TreeTrunk);
+                highestTreeTile = y - trunkY;
+            }
+
+            //LEAVES
+            
+
+            int minRad = 2;
+            int maxRad = 6;
+            int radius = Math.Clamp((int)((new Random(wp.seed - 51 + x + y + wp.seed - 112).NextSingle()) * maxRad), minRad, int.MaxValue);
+
+            int centerX = x;
+            int centerY = highestTreeTile - radius;
+
+            int minX = Math.Max(0, centerX - radius);
+            int maxX = Math.Min(World.tiles.GetLength(0) - 1, centerX + radius);
+            int minY = Math.Max(0, centerY - radius);
+            int maxY = Math.Min(World.tiles.GetLength(1) - 1, centerY + radius);
+
+            for (int ly = minY; ly < maxY; ly++)
+            {
+                for (int lx = minX; lx < maxX; lx++)
+                {
+                    double distance = Math.Sqrt(Math.Pow(lx - centerX, 2) + Math.Pow(ly - centerY, 2));
+
+                    if (distance <= radius)
+                    {
+                        if (!World.IsValidTile(lx, ly))
+                        {
+                            World.SetTile(lx, ly, ETileType.TreeLeaves);
+                        }
+                    }
+                }
+            }
         }
     }
 }

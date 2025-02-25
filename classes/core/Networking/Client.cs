@@ -107,8 +107,6 @@ namespace Tiled
                                     Main.netMode = ENetMode.Client;
                                     Main.inTitle = false;
 
-                                    clientJoined?.Invoke(true);
-
                                     IDPacket playerIDPacket = new IDPacket(0);
                                     playerIDPacket.PacketToNetIncomingMessage(inc);
     
@@ -146,17 +144,14 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.ReceiveWorldComplete:
-                                    // World loading is complete, now request spawn
-                                    NetOutgoingMessage spawnRequest = client.CreateMessage();
-                                    spawnRequest.Write((byte)EPacketType.RequestClientSpawn);
-                                    spawnRequest.Write(localPlayerID);
-                                    client.SendMessage(spawnRequest, NetDeliveryMethod.ReliableOrdered);
-
                                     loadState = WorldLoadState.RequestingEntities;
+
+                                    NetOutgoingMessage entityRequest = client.CreateMessage();
+                                    entityRequest.Write((byte)EPacketType.RequestActiveEntities);
+                                    client.SendMessage(entityRequest, NetDeliveryMethod.ReliableOrdered);
                                     break;
 
                                 case EPacketType.ReceiveSpawnClient:
-
                                     ClientSpawnPacket spawnPacket = new ClientSpawnPacket();
                                     spawnPacket.PacketToNetIncomingMessage(inc);
                                     
@@ -180,6 +175,8 @@ namespace Tiled
                                         client.SendMessage(requestOthers, NetDeliveryMethod.ReliableOrdered);
 
                                         clientTickTimer.Start();
+                                        loadState = WorldLoadState.Complete;
+                                        clientJoined?.Invoke(true);
                                     }
                                     break;
 
@@ -302,6 +299,11 @@ namespace Tiled
 
                                         NetShared.SpawnEntityShared(newEntity);
                                     }
+
+                                    NetOutgoingMessage spawnRequest = client.CreateMessage();
+                                    spawnRequest.Write((byte)EPacketType.RequestClientSpawn);
+                                    spawnRequest.Write(localPlayerID);
+                                    client.SendMessage(spawnRequest, NetDeliveryMethod.ReliableOrdered);
                                     break;
 
                                 case EPacketType.ReceiveWorldChunk:

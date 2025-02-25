@@ -174,8 +174,9 @@ namespace Tiled
                                     changesPacket.PacketToNetOutgoingMessage(changesOutMsg);
                                     server.SendMessage(changesOutMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
                                     server.FlushSendQueue();
-                                    
+                                    break;
 
+                                case EPacketType.RequestActiveEntities:
                                     //SEND CURRENTLY ACTIVE ENTITIES TO NEW CLIENT
                                     ActiveEntityPacket entityData = new ActiveEntityPacket();
                                     entityData.arrayLength = NetShared.netEntitites.Count;
@@ -186,16 +187,16 @@ namespace Tiled
                                         NetEntity current = new NetEntity();
                                         current.netID = NetShared.netEntitites.ElementAt(i).Value.netID;
 
-                                        if(NetShared.netEntitites.ElementAt(i).Value is EItem)
+                                        if (NetShared.netEntitites.ElementAt(i).Value is EItem)
                                         {
                                             current.spawnType = ENetEntitySpawnType.Item;
                                         }
-                                        else if(NetShared.netEntitites.ElementAt(i).Value is EProjectile)
+                                        else if (NetShared.netEntitites.ElementAt(i).Value is EProjectile)
                                         {
                                             current.spawnType = ENetEntitySpawnType.Projectile;
                                         }
 
-                                        switch(current.spawnType)
+                                        switch (current.spawnType)
                                         {
                                             case ENetEntitySpawnType.Item:
                                                 current.itemType = (NetShared.netEntitites.ElementAt(i).Value as EItem).type;
@@ -220,6 +221,8 @@ namespace Tiled
                                     server.SendMessage(entitiesMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
                                     server.FlushSendQueue();
                                     break;
+
+
 
                                 case EPacketType.ReceiveClientUpdate:
                                     ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
@@ -280,7 +283,6 @@ namespace Tiled
                                     ETileType previousTile = World.tiles[change.x, change.y];
 
                                     
-
                                     //send tile
                                     SendTileSquare(change);
                                     break;
@@ -445,12 +447,32 @@ namespace Tiled
 
         private void SendEntityUpdates()
         {
-           foreach(int ID in NetShared.netEntitites.Keys)
+           var copy = NetShared.netEntitites;
+
+            //CAUSES AN EXCEPTION SOMETIMES; DEPERECATED
+           /*foreach (int ID in copy.Keys)
            {
                 EntityUpdatePacket entityUpdatePacket = new EntityUpdatePacket();
+                
                 entityUpdatePacket.entityID = ID;
-                entityUpdatePacket.position = NetShared.netEntitites[ID].position;
-                entityUpdatePacket.velocity = NetShared.netEntitites[ID].velocity;
+                entityUpdatePacket.position = copy[ID].position;
+                entityUpdatePacket.velocity = copy[ID].velocity;
+
+                NetOutgoingMessage entityUpdateMsg = server.CreateMessage();
+                entityUpdateMsg.Write((byte)EPacketType.ReceiveServerUpdateEntity);
+                entityUpdatePacket.PacketToNetOutgoingMessage(entityUpdateMsg);
+
+                server.SendToAll(entityUpdateMsg, NetDeliveryMethod.Unreliable);
+                server.FlushSendQueue();
+           }*/
+
+           for (int ID = 0; ID < copy.Count; ID++)
+           {
+                EntityUpdatePacket entityUpdatePacket = new EntityUpdatePacket();
+
+                entityUpdatePacket.entityID = copy.ElementAt(ID).Key;
+                entityUpdatePacket.position = copy.ElementAt(ID).Value.position;
+                entityUpdatePacket.velocity = copy.ElementAt(ID).Value.velocity;
 
                 NetOutgoingMessage entityUpdateMsg = server.CreateMessage();
                 entityUpdateMsg.Write((byte)EPacketType.ReceiveServerUpdateEntity);
@@ -508,7 +530,7 @@ namespace Tiled
             }
 
             NetShared.netEntitites[idPacket.ID].LocalDestroy();
-
+            NetShared.netEntitites.Remove(idPacket.ID);
             NetOutgoingMessage entityDestroyMsg = server.CreateMessage();
             entityDestroyMsg.Write((byte)EPacketType.ReceiveDestroyEntity);
             idPacket.PacketToNetOutgoingMessage(entityDestroyMsg);
