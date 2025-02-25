@@ -132,7 +132,7 @@ namespace Tiled
                                     server.SendToAll(spawnOutMsg, NetDeliveryMethod.ReliableOrdered);
                                     server.FlushSendQueue();
                                     break;
-    
+
                                 case EPacketType.RequestWorld:
                                     WorldPacket worldPacket = new WorldPacket();
                                     worldPacket.maxTilesX = World.maxTilesX;
@@ -145,6 +145,15 @@ namespace Tiled
 
                                     server.SendMessage(worldOutMsg, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
                                     server.FlushSendQueue();
+
+                                    // Wait for world generation to complete before sending chunks
+                                    while (World.isGenerating)
+                                    {
+                                        Thread.Sleep(100);
+                                    }
+
+                                    // Send world in chunks
+                                    SendWorldChunks(msg.SenderConnection);
                                     break;
 
                                 case EPacketType.RequestWorldChanges:

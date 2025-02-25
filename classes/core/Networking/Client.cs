@@ -125,27 +125,36 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.ReceiveWorld:
-
                                     WorldPacket worldPacket = new WorldPacket();
                                     worldPacket.PacketToNetIncomingMessage(inc);
                                     World.maxTilesX = worldPacket.maxTilesX;
                                     World.maxTilesY = worldPacket.maxTilesY;
                                     Program.GetGame().world.seed = worldPacket.seed;
                                     Program.GetGame().world.StartWorldGeneration();
-                                    World.renderWorld = true;
-                                    
-                                    //request world changes
-                                    NetOutgoingMessage changeRequest = client.CreateMessage();
-                                    changeRequest.Write((byte)EPacketType.RequestWorldChanges);
-                                    client.SendMessage(changeRequest, NetDeliveryMethod.ReliableOrdered);
 
-                                    //request spawn
+                                    loadState = WorldLoadState.GeneratingWorld;
+
+                                    // Wait for world generation to complete locally before rendering
+                                    Thread worldGenWaitThread = new Thread(() => {
+                                        while (World.isGenerating)
+                                        {
+                                            Thread.Sleep(100);
+                                        }
+                                        World.renderWorld = true;
+                                    });
+                                    worldGenWaitThread.Start();
+                                    break;
+
+                                case EPacketType.ReceiveWorldComplete:
+                                    // World loading is complete, now request spawn
                                     NetOutgoingMessage spawnRequest = client.CreateMessage();
                                     spawnRequest.Write((byte)EPacketType.RequestClientSpawn);
                                     spawnRequest.Write(localPlayerID);
                                     client.SendMessage(spawnRequest, NetDeliveryMethod.ReliableOrdered);
+
+                                    loadState = WorldLoadState.RequestingEntities;
                                     break;
-    
+
                                 case EPacketType.ReceiveSpawnClient:
 
                                     ClientSpawnPacket spawnPacket = new ClientSpawnPacket();
@@ -293,6 +302,31 @@ namespace Tiled
 
                                         NetShared.SpawnEntityShared(newEntity);
                                     }
+                                    break;
+
+                                case EPacketType.ReceiveWorldChunk:
+                                    WorldChunkPacket chunkPacket = new WorldChunkPacket();
+                                    chunkPacket.PacketToNetIncomingMessage(inc);
+
+                                    // Process this chunk
+                                    int baseX = chunkPacket.chunkX * chunkPacket.chunkSize;
+                                    int baseY = chunkPacket.chunkY * chunkPacket.chunkSize;
+
+                                    for (int x = 0; x < chunkPacket.chunkSize; x++)
+                                    {
+                                        for (int y = 0; y < chunkPacket.chunkSize; y++)
+                                        {
+                                            int worldX = baseX + x;
+                                            int worldY = baseY + y;
+
+                                            if (worldX < World.maxTilesX && worldY < World.maxTilesY)
+                                            {
+                                                World.SetTile(worldX, worldY, chunkPacket.tiles[x, y]);
+                                            }
+                                        }
+                                    }
+
+                                    loadState = WorldLoadState.RequestingChanges;
                                     break;
                             }
                             break;
