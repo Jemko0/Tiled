@@ -100,6 +100,8 @@ namespace Tiled.Networking.Shared
         ReceiveTileBreak,
         ReceiveSelectedSlotChange,
         ReceiveEntities,
+        ReceiveWorldChunk,
+        ReceiveWorldComplete,
 
         //ticking receive
         ReceiveWorldUpdate,
@@ -519,6 +521,49 @@ namespace Tiled.Networking.Shared
                 msg.Write((byte)entities[i].projectileType);
                 msg.Write(entities[i].position.X);
                 msg.Write(entities[i].position.Y);
+            }
+        }
+    }
+
+    public class WorldChunkPacket : IPacket
+    {
+        public int chunkX;
+        public int chunkY;
+        public int chunkSize;
+        public int totalChunks;
+        public ETileType[,] tiles;
+
+        public void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write(chunkX);
+            msg.Write(chunkY);
+            msg.Write(chunkSize);
+            msg.Write(totalChunks);
+
+            // Send tile data
+            for (int x = 0; x < chunkSize; x++)
+            {
+                for (int y = 0; y < chunkSize; y++)
+                {
+                    msg.Write((byte)tiles[x, y]);
+                }
+            }
+        }
+
+        public void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            chunkX = msg.ReadInt32();
+            chunkY = msg.ReadInt32();
+            chunkSize = msg.ReadInt32();
+            totalChunks = msg.ReadInt32();
+
+            tiles = new ETileType[chunkSize, chunkSize];
+            for (int x = 0; x < chunkSize; x++)
+            {
+                for (int y = 0; y < chunkSize; y++)
+                {
+                    tiles[x, y] = (ETileType)msg.ReadByte();
+                }
             }
         }
     }

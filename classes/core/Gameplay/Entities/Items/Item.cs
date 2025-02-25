@@ -16,7 +16,6 @@ namespace Tiled.Gameplay.Items
         public bool isSwing;
         public Entity? swingOwner;
         public float age;
-        bool wasPickedUp = false;
 
         public delegate void swingEnd(ItemSwingArgs e);
         public event swingEnd swingEnded;

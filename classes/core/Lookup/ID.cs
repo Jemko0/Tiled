@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items.ItemBehaviours;
+using Tiled.Gameplay.Projectiles.ProjectileBehaviours;
 
 namespace Tiled.ID
 {
@@ -200,11 +201,11 @@ namespace Tiled.ID
                 case EItemType.Bomb:
                     i.name = "Bomb";
                     i.consumable = true;
+                    i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Projectile/BombProjectile");
                     i.projectile = EProjectileType.Bomb;
                     i.useTime = 0.5f;
                     i.behaviourType = typeof(ProjectileThrowBehaviour);
                     break;
-
             }
 
             cachedGet[type] = i;
@@ -256,10 +257,11 @@ namespace Tiled.ID
 
             p.name = "projectile";
             p.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Projectile/BaseProjectile");
-            p.initVelocity = new(5.0f, 5.0f);
+            p.initVelocity = new(3.0f, 3.0f);
             p.size = new(16, 16);
+            p.behaviourType = typeof(DefaultProjectileBehaviour);
 
-            switch(type)
+            switch (type)
             {
                 case EProjectileType.None:
                     p.name = "NoneType";
@@ -268,11 +270,13 @@ namespace Tiled.ID
 
                 case EProjectileType.Bullet:
                     p.name = "bullet";
-                    p.size = new(16, 16);
+                    p.size = new(8, 8);
                     break;
 
                 case EProjectileType.Bomb:
-                    p.size = new(48, 48);
+                    p.size = new(24, 24);
+                    p.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Projectile/BombProjectile");
+                    p.behaviourType = typeof(BombProjectileBehaviour);
                     break;
             }
 

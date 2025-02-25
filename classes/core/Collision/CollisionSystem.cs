@@ -10,9 +10,13 @@ namespace Tiled.Collision
     {
         private Entity entity;
         private const float skinWidth = 0.1f;
+        public bool collidesWithEntities = false;
 
-        public delegate void Hit();
+        public delegate void Hit(Vector2 hitVelocity);
         public event Hit onHit;
+
+        public delegate void HitEntity(Entity e);
+        public event HitEntity onEntityHit;
 
         public CollisionComponent(Entity entity)
         {
@@ -35,10 +39,22 @@ namespace Tiled.Collision
             float moveX = entity.velocity.X;
             float moveY = entity.velocity.Y;
             MoveWithCollision(ref moveX, ref moveY);
+
+            if(collidesWithEntities)
+            {
+                Entity e = GetCollidingEntity();
+                if(e != null)
+                {
+                    onEntityHit.Invoke(e);
+                }
+            }
         }
 
         private void MoveWithCollision(ref float moveX, ref float moveY)
         {
+            Vector2 hitVel = new();
+            bool anyCollision = false;
+
             // Handle X movement first
             if (moveX != 0)
             {
@@ -67,8 +83,9 @@ namespace Tiled.Collision
 
                 if (collision)
                 {
+                    anyCollision = true;
+                    hitVel.X = entity.velocity.X;
                     moveX = direction * (Math.Max(0, shortestHit - skinWidth));
-                    onHit?.Invoke();
                     entity.velocity.X = 0;
                 }
             }
@@ -103,12 +120,18 @@ namespace Tiled.Collision
 
                 if (collision)
                 {
+                    anyCollision = true;
+                    hitVel.Y = entity.velocity.Y;
                     moveY = direction * (Math.Max(0, shortestHit - skinWidth));
                     entity.velocity.Y = 0;
                 }
             }
-
             entity.position.Y += moveY;
+
+            if (anyCollision)
+            {
+                onHit?.Invoke(hitVel);
+            }
         }
 
         public Entity? GetCollidingEntity()

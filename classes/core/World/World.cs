@@ -605,6 +605,32 @@ namespace Tiled
             
         }
 
+        public static void CreateExplosion(int centerX, int centerY, int radius, sbyte maxPickPower, sbyte maxAxePower)
+        {
+            int minX = Math.Max(0, centerX - radius);
+            int maxX = Math.Min(tiles.GetLength(0) - 1, centerX + radius);
+            int minY = Math.Max(0, centerY - radius);
+            int maxY = Math.Min(tiles.GetLength(1) - 1, centerY + radius);
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    double distance = Math.Sqrt(Math.Pow(x - centerX, 2) + Math.Pow(y - centerY, 2));
+
+                    if (distance <= radius)
+                    {
+                        double powerMultiplier = 1.0 - (distance / radius);
+
+                        sbyte pickPower = (sbyte)(maxPickPower * powerMultiplier);
+                        sbyte axePower = (sbyte)(maxAxePower * powerMultiplier);
+
+                        BreakTile(x, y, pickPower, axePower);
+                    }
+                }
+            }
+        }
+
         public static void DestroyTile(int x, int y)
         {
             Tile t = TileID.GetTile(tiles[x, y]);
@@ -653,6 +679,11 @@ namespace Tiled
 
         public static void UpdateTile(int x, int y)
         {
+            if(!IsValidIndex(tiles, x, y))
+            {
+                return;
+            }
+
             if (tiles[x, y] == ETileType.Torch)
             {
                 if (!HasDirectNeighbors(x, y))

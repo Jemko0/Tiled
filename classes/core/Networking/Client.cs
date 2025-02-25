@@ -68,6 +68,17 @@ namespace Tiled
             running = false;
         }
 
+        public enum WorldLoadState
+        {
+            NotStarted,
+            GeneratingWorld,
+            RequestingChanges,
+            RequestingEntities,
+            Complete
+        }
+
+        public WorldLoadState loadState = WorldLoadState.NotStarted;
+
         public void StartClient()
         {
             Thread.Sleep(1000);

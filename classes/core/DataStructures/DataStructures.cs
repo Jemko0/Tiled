@@ -78,6 +78,7 @@ namespace Tiled.DataStructures
         public Texture2D sprite;
         public Vector2 size;
         public Vector2 initVelocity;
+        public Type behaviourType;
     }
 
     public enum EProjectileType

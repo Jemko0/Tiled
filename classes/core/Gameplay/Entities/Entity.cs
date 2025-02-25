@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Diagnostics;
+using System.Net.Mime;
 using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.ID;
@@ -17,10 +18,11 @@ namespace Tiled.Gameplay
         public CollisionComponent collision;
         protected int frameSlotSizeX = 32;
         protected int frameSlotSizeY = 48;
-        protected float rotation = 0.0f;
-        protected Vector2 rotOrigin = new(0, 0);
+        public float rotation = 0.0f;
+        public Vector2 rotOrigin = new(0, 0);
         public int netID = -1;
         public EEntityType entityType;
+        public bool centerSprite = false;
 
         public bool facingLeft;
         public int direction;
@@ -150,9 +152,15 @@ namespace Tiled.Gameplay
             finalColor *= (float)(World.lightMap[(int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)] / (float)Lighting.MAX_LIGHT);
             finalColor.A = 255;
 
-            draw:
+        draw:
             SpriteEffects flip = facingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), GetFrame(), finalColor, rotation, rotOrigin, flip, 0u);
+            Rectangle drawRect = GetRect();
+            if(centerSprite)
+            {
+                drawRect.Location = drawRect.Center;
+            }
+            sb.Draw(entitySprite, Rendering.WorldToScreen(drawRect), GetFrame(), finalColor, rotation, rotOrigin, flip, 0u);
+            //sb.Draw(Program.GetGame().Content.Load<Texture2D>("Entities/debug"), Rendering.WorldToScreen(GetRect()), null, Color.White, 0.0f, new(0,0), SpriteEffects.None, 1.0f);
         }
 
         public void Dispose()

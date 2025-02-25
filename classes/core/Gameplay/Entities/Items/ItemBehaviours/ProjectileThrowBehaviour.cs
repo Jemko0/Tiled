@@ -26,6 +26,7 @@ namespace Tiled.Gameplay.Items.ItemBehaviours
             {
                 projectile = EProjectile.CreateProjectile(item.Item.projectile, (Entity)entity);
                 projectile.position = ((Entity)entity).position;
+                projectile.velocity = (item.Item.projectileThrowVelocity * item.swingOwner.direction);
             }
 #if TILEDSERVER
             Main.netServer.ServerSpawnEntity(ENetEntitySpawnType.Projectile, EEntityType.None, EItemType.None, item.Item.projectile, item.swingOwner.position, (item.Item.projectileThrowVelocity * item.swingOwner.direction));

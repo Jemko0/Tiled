@@ -1,5 +1,6 @@
 ﻿using Lidgren.Network;
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -569,6 +570,56 @@ namespace Tiled
         public void MarkTileChange(NetWorldChange change)
         {
             MarkTileChange(change.x, change.y, change.type);
+        }
+
+        public void SendWorldChunks(NetConnection connection, int chunkSize = 100)
+        {
+            // Calculate number of chunks
+            int chunksX = (int)Math.Ceiling((double)World.maxTilesX / chunkSize);
+            int chunksY = (int)Math.Ceiling((double)World.maxTilesY / chunkSize);
+            int totalChunks = chunksX * chunksY;
+
+            for (int chunkX = 0; chunkX < chunksX; chunkX++)
+            {
+                for (int chunkY = 0; chunkY < chunksY; chunkY++)
+                {
+                    WorldChunkPacket chunkPacket = new WorldChunkPacket();
+                    chunkPacket.chunkX = chunkX;
+                    chunkPacket.chunkY = chunkY;
+                    chunkPacket.totalChunks = totalChunks;
+                    chunkPacket.chunkSize = chunkSize;
+
+                    // Fill chunk with tile data
+                    chunkPacket.tiles = new ETileType[chunkSize, chunkSize];
+                    for (int x = 0; x < chunkSize; x++)
+                    {
+                        for (int y = 0; y < chunkSize; y++)
+                        {
+                            int worldX = chunkX * chunkSize + x;
+                            int worldY = chunkY * chunkSize + y;
+
+                            if (worldX < World.maxTilesX && worldY < World.maxTilesY)
+                            {
+                                chunkPacket.tiles[x, y] = World.tiles[worldX, worldY];
+                            }
+                        }
+                    }
+
+                    NetOutgoingMessage chunkMsg = server.CreateMessage();
+                    chunkMsg.Write((byte)EPacketType.ReceiveWorldChunk);
+                    chunkPacket.PacketToNetOutgoingMessage(chunkMsg);
+
+                    server.SendMessage(chunkMsg, connection, NetDeliveryMethod.ReliableOrdered);
+
+                    // Small delay to prevent overwhelming the network
+                    System.Threading.Thread.Sleep(10);
+                }
+            }
+
+            // Send completion message
+            NetOutgoingMessage completeMsg = server.CreateMessage();
+            completeMsg.Write((byte)EPacketType.ReceiveWorldComplete);
+            server.SendMessage(completeMsg, connection, NetDeliveryMethod.ReliableOrdered);
         }
     }
 }
