@@ -100,11 +100,11 @@ namespace Tiled.UI
             spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, SamplerState.PointClamp);
 
             // Only draw widgets that don't have a parent (root widgets)
-            foreach (var widget in activeWidgets)
+            for(int i = 0; i < activeWidgets.Count; i++)
             {
-                if (widget.parent == null && !widget.disposed)
+                if (activeWidgets[i].parent == null && !activeWidgets[i].disposed)
                 {
-                    widget.Draw(ref spriteBatch);
+                    activeWidgets[i].Draw(ref spriteBatch);
                 }
             }
 

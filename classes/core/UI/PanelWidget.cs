@@ -26,6 +26,11 @@ namespace Tiled.UI
 
             for (int i = 0; i < children.Count; i++)
             {
+                if(children[i] == null )
+                {
+                    continue;
+                }
+
                 DrawChild(ref sb, i);
             }
         }

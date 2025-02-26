@@ -48,7 +48,27 @@ namespace Tiled.Input
             actionMappings.Add("inv_3", new ActionMapping(Keys.D3));
             actionMappings.Add("inv_4", new ActionMapping(Keys.D4));
             actionMappings.Add("inv_5", new ActionMapping(Keys.D5));
-            actionMappings.Add("inv_open", new ActionMapping(Keys.I));
+            actionMappings.Add("inv_open", new ActionMapping(Keys.E));
+        }
+
+        /// <summary>
+        /// replaces a mapping that already exists, does not check for non existing ones so it will crash when u use an invalid mapping name
+        /// </summary>
+        /// <param name="mapping"></param>
+        /// <param name="newKey"></param>
+        public static void RebindMapping(string mapping, Keys newKey)
+        {
+            actionMappings[mapping].keyboardKey = newKey;
+        }
+
+
+        /// <summary>
+        /// loads mappings from fil
+        /// </summary>
+        /// <param name="file"></param>
+        public static void LoadMappings(string file)
+        {
+            throw new NotImplementedException("lolol");
         }
 
         public static bool IsMappingHeld(string mapping)

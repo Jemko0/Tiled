@@ -5,7 +5,7 @@ using System;
 namespace Tiled.UI
 {
     /// <summary>
-    /// Lays children out horizontally from left to right
+    /// Lays children out horizontally from left to right and then after the <see cref="wrapEvery"/> amount, it loops back and goes down a row
     /// </summary>
     public class WWrapBox : PanelWidget
     {
@@ -17,8 +17,10 @@ namespace Tiled.UI
         public override void DrawChild(ref SpriteBatch sb, int childIdx)
         {
             if (childIdx >= maxChildIndex)
+            {
                 return;
-
+            }
+            
             int row = (int)Math.Floor((float)childIdx / wrapEvery);
 
             children[childIdx].anchorPosition = new Vector2(0, 0);
@@ -30,7 +32,7 @@ namespace Tiled.UI
             }
 
             children[childIdx].ScaleGeometry();
-            children[childIdx].Draw(ref sb);  // Keep direct Draw call
+            children[childIdx].Draw(ref sb);
         }
     }
 }

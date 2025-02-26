@@ -81,6 +81,7 @@ namespace Tiled.Gameplay
         {
             invOpen = !invOpen;
             Debug.WriteLine(invOpen);
+            Program.GetGame().localPlayerController.inUI = invOpen;
             inventoryUI.SetOpenInv(invOpen);
         }
 
@@ -94,6 +95,11 @@ namespace Tiled.Gameplay
 
         private void SetSlot(ActionMappingArgs e)
         {
+            if(invOpen)
+            {
+                return;
+            }
+
             int newSlot = -1;
 
             switch (e.key)
@@ -201,7 +207,7 @@ namespace Tiled.Gameplay
 
         private void LMB(MouseButtonEventArgs e)
         {
-            if (!Program.GetGame().IsActive)
+            if (!Program.GetGame().IsActive || invOpen)
             {
                 return;
             }
