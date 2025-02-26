@@ -28,7 +28,7 @@ namespace Tiled
         public static Rectangle[,] tileFramesCached;
         public static Rectangle[,] wallFramesCached;
         public static uint[,] lightMap;
-        public float worldTime = 8.0f;
+        public float worldTime = 5.0f;
         public float timeSpeed = 0.0002f;
         public float timeSpeedMultiplier = 1.0f;
         public const float gravity = 0.43f;
@@ -201,7 +201,7 @@ namespace Tiled
             }
             else
             {
-                worldTime = 8.0f;
+                worldTime = 4.0f;
             }
             return true;
         }
