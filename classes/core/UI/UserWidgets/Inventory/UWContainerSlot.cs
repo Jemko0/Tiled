@@ -49,7 +49,7 @@ namespace Tiled.UI.UserWidgets
             Texture2D itemIcon = ItemID.GetItem(container.items[slotID].type).sprite;
             sb.Draw(itemIcon, padded, null, Color.White, 0, new(), SpriteEffects.None, 0.9f);
 
-            //base.DrawWidget(ref sb);
+            amtText.Draw(ref sb);
         }
     }
 }

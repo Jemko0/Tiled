@@ -80,6 +80,7 @@ namespace Tiled.Gameplay
         private void OpenInventory(ActionMappingArgs e)
         {
             invOpen = !invOpen;
+            Debug.WriteLine(invOpen);
             inventoryUI.SetOpenInv(invOpen);
         }
 

@@ -19,12 +19,6 @@ namespace Tiled.UI
 
         public virtual void DrawChildren(ref SpriteBatch sb)
         {
-            /*
-            var tex = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
-            tex.SetData(new Color[] { Color.White });
-
-            sb.Draw(tex, scaledGeometry, Color.Blue);
-            */
             if(children == null)
             {
                 return;
@@ -32,11 +26,6 @@ namespace Tiled.UI
 
             for (int i = 0; i < children.Count; i++)
             {
-                if(i > maxChildIndex)
-                {
-                    return;
-                }
-
                 DrawChild(ref sb, i);
             }
         }

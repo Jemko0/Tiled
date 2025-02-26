@@ -16,9 +16,11 @@ namespace Tiled.UI
 
         public override void DrawChild(ref SpriteBatch sb, int childIdx)
         {
+            if (childIdx >= maxChildIndex)
+                return;
+
             int row = (int)Math.Floor((float)childIdx / wrapEvery);
 
-            //children[childIdx].SetGeometry(new Vector2(GetSize().X, children[childIdx].GetSize().Y), DataStructures.AnchorPosition.TopLeft);
             children[childIdx].anchorPosition = new Vector2(0, 0);
             children[childIdx].SetOffset(new Vector2(0, 0));
 
@@ -28,7 +30,7 @@ namespace Tiled.UI
             }
 
             children[childIdx].ScaleGeometry();
-            children[childIdx].Draw(ref sb);
+            children[childIdx].Draw(ref sb);  // Keep direct Draw call
         }
     }
 }

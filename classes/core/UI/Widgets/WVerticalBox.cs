@@ -16,10 +16,11 @@ namespace Tiled.UI
 
         public override void DrawChild(ref SpriteBatch sb, int childIdx)
         {
-            Vector2 size = childrenKeepWidth? children[childIdx].GetSize() : new Vector2(GetSize().X, children[childIdx].GetSize().Y);
+            if (childIdx >= maxChildIndex)
+                return;
+
+            Vector2 size = childrenKeepWidth ? children[childIdx].GetSize() : new Vector2(GetSize().X, children[childIdx].GetSize().Y);
             children[childIdx].SetGeometry(size, DataStructures.AnchorPosition.Center);
-            //children[childIdx].anchorPosition = new Vector2(0, 0);
-            //children[childIdx].SetOffset(new Vector2(0, 0));
 
             if (childIdx != 0)
             {
