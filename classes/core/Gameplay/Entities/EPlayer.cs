@@ -15,8 +15,8 @@ namespace Tiled.Gameplay
 {
     public class EPlayer : Entity
     {
-        public float accel = 0.75f;
-        public float maxWalkSpeed = 4.0f;
+        public float accel = 0.25f;
+        public float maxWalkSpeed = 3.0f;
         public float jumpPower = 6f;
         public Container inventory;
         int jumpCounter = 0;

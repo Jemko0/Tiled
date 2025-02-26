@@ -94,8 +94,8 @@ namespace Tiled.Gameplay.Items
                 case EItemSwingAnimationType.Swing:
                     position = new Vector2(entity.facingLeft? entity.GetRect().Left : entity.GetRect().Right, entity.GetRect().Center.Y);
                     rotation = MathHelper.Lerp(-4.0f * direction, 1.0f * direction, animProgress);
-                    rotOrigin.X = 32.0f * ((Math.Abs(direction) - direction) / 2);
-                    rotOrigin.Y = 32.0f;
+                    rotOrigin.X = entitySprite.Width * ((Math.Abs(direction) - direction) / 2);
+                    rotOrigin.Y = entitySprite.Height;
                     break;
             }
 

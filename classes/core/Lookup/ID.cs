@@ -56,10 +56,6 @@ namespace Tiled.ID
                     t.hardness = 30;
                     break;
 
-                case ETileType.Plank:
-                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/wood");
-                    break;
-
                 case ETileType.Torch:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/torch");
                     t.hangingOnWalls = true;
@@ -92,6 +88,11 @@ namespace Tiled.ID
                     t.itemDrop = EItemType.Wood;
                     t.minPick = -1;
                     t.minAxe = 1;
+                    break;
+
+                case ETileType.Plank:
+                    t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/plank");
+                    t.hardness = 16;
                     break;
             }
 

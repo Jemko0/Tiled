@@ -55,6 +55,7 @@ namespace Tiled.DataStructures
         /// determines what item this block is gonna drop when mined
         /// </summary>
         public EItemType itemDrop;
+
         public sbyte minPick;
         public sbyte minAxe;
     }
