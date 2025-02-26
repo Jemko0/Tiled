@@ -237,27 +237,59 @@ namespace Tiled
             //LEAVES
             
 
-            int minRad = 2;
-            int maxRad = 6;
+            int minRad = 4;
+            int maxRad = 7;
             int radius = Math.Clamp((int)((new Random(wp.seed - 51 + x + y + wp.seed - 112).NextSingle()) * maxRad), minRad, int.MaxValue);
 
             int centerX = x;
-            int centerY = highestTreeTile - radius;
+            int treeTop = highestTreeTile - radius; // Top of the tree (lowest Y value)
 
-            int minX = Math.Max(0, centerX - radius);
-            int maxX = Math.Min(World.tiles.GetLength(0) - 1, centerX + radius);
-            int minY = Math.Max(0, centerY - radius);
-            int maxY = Math.Min(World.tiles.GetLength(1) - 1, centerY + radius);
+            // Create a single Random instance
+            Random random = new Random();
 
-            for (int ly = minY; ly < maxY; ly++)
+            // For a tree in a Y-down system, we need to make the radius INCREASE as Y increases
+            for (int ly = treeTop; ly <= treeTop + radius; ly++)
             {
-                for (int lx = minX; lx < maxX; lx++)
-                {
-                    double distance = Math.Sqrt(Math.Pow(lx - centerX, 2) + Math.Pow(ly - centerY, 2));
+                // Calculate how far down we are from the top of the tree
+                int distanceFromTop = ly - treeTop;
 
-                    if (distance <= radius)
+                // Calculate width at this level - starts narrow at top, gets wider as we go down,
+                // then narrows again near the bottom for a more rounded shape
+                double heightProgress = (double)distanceFromTop / radius;
+                int levelRadius;
+
+                if (heightProgress < 0.2)
+                {
+                    // Top 20% - gradually increasing width
+                    levelRadius = (int)(radius * heightProgress * 2.5);
+                }
+                else if (heightProgress < 0.8)
+                {
+                    // Middle 60% - maximum width
+                    levelRadius = (int)(radius * 0.8);
+                }
+                else
+                {
+                    // Bottom 20% - gradually decreasing width
+                    levelRadius = (int)(radius * (1 - (heightProgress - 0.8) * 2.5));
+                }
+
+                // Ensure levelRadius is at least 1
+                levelRadius = Math.Max(1, levelRadius);
+
+                // Calculate horizontal boundaries
+                int levelMinX = Math.Max(0, centerX - levelRadius);
+                int levelMaxX = Math.Min(World.tiles.GetLength(0) - 1, centerX + levelRadius);
+
+                for (int lx = levelMinX; lx <= levelMaxX; lx++)
+                {
+                    double distanceFromCenter = Math.Abs(lx - centerX);
+
+                    // Allow a bit of randomness for a natural look
+                    if (distanceFromCenter <= levelRadius * (0.9 + random.NextDouble() * 0.2))
                     {
-                        if (!World.IsValidTile(lx, ly))
+                        // Only place leaves if the tile isn't already valid
+                        if (!World.IsValidTile(lx, ly) && ly >= 0 && ly < World.tiles.GetLength(1))
                         {
                             World.SetTile(lx, ly, ETileType.TreeLeaves);
                         }

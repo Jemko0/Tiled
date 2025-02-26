@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +7,6 @@ using System.Threading.Tasks;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items;
 using Tiled.ID;
-using Tiled.Networking.Shared;
 using Tiled.UI;
 using Tiled.UI.UserWidgets;
 
