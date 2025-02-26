@@ -25,7 +25,7 @@ namespace Tiled.UI
         protected AnchorPosition anchor;
         protected Vector2 offset; // Optional pixel offset from anchor point
 
-        protected Widget parent;
+        public Widget parent;
         protected List<Widget> children = new List<Widget>();
         public bool disposed;
         public Widget(HUD owner)

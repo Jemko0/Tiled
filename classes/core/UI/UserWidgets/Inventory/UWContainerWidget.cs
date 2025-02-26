@@ -7,20 +7,28 @@ namespace Tiled.UI.UserWidgets
     public class UWContainerWidget : PanelWidget
     {
         public Container container;
-        public WHorizontalBox horizontalBox;
+        public WWrapBox wrapBox;
+
+        public bool renderFull = true;
         public UWContainerWidget(HUD owner) : base(owner)
         {
         }
 
         public override void Construct()
         {
-            horizontalBox = HUD.CreateWidget<WHorizontalBox>(owningHUD);
-            horizontalBox.AttachToParent(this);
+            wrapBox = HUD.CreateWidget<WWrapBox>(owningHUD);
+            wrapBox.AttachToParent(this);
         }
 
         public void SetContainer(ref Container container)
         {
             this.container = container;
+        }
+
+        public void SetOpenInv(bool open)
+        {
+            renderFull = open;
+            wrapBox.maxChildIndex = open ? 512 : 5;
         }
 
         public void UpdateSlots()
@@ -35,28 +43,23 @@ namespace Tiled.UI.UserWidgets
             }
             */
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < container.items.Length; i++)
             {
                 UWContainerSlot currentChild = HUD.CreateWidget<UWContainerSlot>(owningHUD);
                 currentChild.SetGeometry(new Vector2(64, 64), DataStructures.AnchorPosition.TopLeft);
                 currentChild.slotID = i;
                 currentChild.container = container;
-                currentChild.AttachToParent(horizontalBox);
+                currentChild.AttachToParent(wrapBox);
             }
         }
 
         public void UpdateChildren(ref Container refcontainer)
         {
             container = refcontainer;
-            foreach(var c in horizontalBox.GetChildren())
+            foreach(var c in wrapBox.GetChildren())
             {
                 ((UWContainerSlot)c).container = refcontainer;
             }
-        }
-
-        public override void DrawChild(ref SpriteBatch sb, int childIdx)
-        {
-            base.DrawChild(ref sb, childIdx);
         }
     }
 }

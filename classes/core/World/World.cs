@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items;
 using Tiled.ID;
+using Tiled.Networking.Shared;
 using Tiled.UI;
 using Tiled.UI.UserWidgets;
 
@@ -36,6 +37,8 @@ namespace Tiled
         public static List<WorldGenTask> tasks = new List<WorldGenTask>();
         public delegate void TaskProgressChanged(object sender, WorldGenProgress e);
         public event TaskProgressChanged taskProgressChanged;
+        public delegate void WorldGenFinished();
+        public event WorldGenFinished worldGenFinished;
 
         public static int[] surfaceHeights;
         public static int cavesLayerHeight = 0;
@@ -96,6 +99,8 @@ namespace Tiled
                     // Wait for the world generation to complete
                     await RunTasks(newParams);
 
+                    worldGenFinished?.Invoke();
+
                     if (LoadWorld(false) && Main.netMode == ENetMode.Standalone)
                     {
                         Program.GetGame().CreatePlayer(new Vector2(newParams.maxTilesX / 2, 0));
@@ -151,6 +156,7 @@ namespace Tiled
         public void InitTasks()
         {
             tasks.Add(new WGT_Terrain("Terrain"));
+            tasks.Add(new WGT_SurfaceCaves("Caves"));
             tasks.Add(new WGT_PlaceTrees("Trees"));
         }
 
@@ -168,7 +174,7 @@ namespace Tiled
                 // Important: We need to await the actual task execution
                 var runTask = task.Run(currentTaskProgress, newParams);
                 await runTask; // Wait for the actual task to complete
-
+                Debug.WriteLine(task.taskName);
             }
         }
 
@@ -199,7 +205,7 @@ namespace Tiled
             }
             else
             {
-                worldTime = 4.0f;
+                worldTime = 6.0f;
             }
             return true;
         }
@@ -302,10 +308,10 @@ namespace Tiled
                 return tileFramesCached[x, y];
             }
 
-            bool r = IsValidForTileFrame(x + 1, y) && !tileData.ignoreNeighbors.R && IsPartOfAllowedTileFrameTypes(x + 1, y, tileData);
-            bool l = IsValidForTileFrame(x - 1, y) && !tileData.ignoreNeighbors.L && IsPartOfAllowedTileFrameTypes(x - 1, y, tileData);
-            bool t = IsValidForTileFrame(x, y - 1) && !tileData.ignoreNeighbors.T && IsPartOfAllowedTileFrameTypes(x, y + 1, tileData);
-            bool b = IsValidForTileFrame(x, y + 1) && !tileData.ignoreNeighbors.B && IsPartOfAllowedTileFrameTypes(x, y - 1, tileData);
+            bool r = IsValidForTileFrame(x + 1, y) && !tileData.ignoreNeighbors.R && IsPartOfAllowedTileFrameTypes(x + 1, y, tileData) && (tiles[x + 1, y] != ETileType.TreeTrunk || tiles[x, y] == ETileType.TreeTrunk);
+            bool l = IsValidForTileFrame(x - 1, y) && !tileData.ignoreNeighbors.L && IsPartOfAllowedTileFrameTypes(x - 1, y, tileData) && (tiles[x - 1, y] != ETileType.TreeTrunk || tiles[x, y] == ETileType.TreeTrunk);
+            bool t = IsValidForTileFrame(x, y - 1) && !tileData.ignoreNeighbors.T && IsPartOfAllowedTileFrameTypes(x, y - 1, tileData) && (tiles[x, y - 1] != ETileType.TreeTrunk || tiles[x, y] == ETileType.TreeTrunk);
+            bool b = IsValidForTileFrame(x, y + 1) && !tileData.ignoreNeighbors.B && IsPartOfAllowedTileFrameTypes(x, y + 1, tileData) && (tiles[x, y + 1] != ETileType.TreeTrunk || tiles[x, y] == ETileType.TreeTrunk);
 
             var tuple = (r, l, t, b);
 
@@ -602,7 +608,7 @@ namespace Tiled
 
             Tile tileData = TileID.GetTile(tiles[x, y]);
 
-            if ((tileData.minPick != -1 && pickPower > tileData.minPick && pickPower != -1 ) || (tileData.minAxe != -1 && axePower > tileData.minAxe && axePower != -1))
+            if ((tileData.minPick != -1 && pickPower > tileData.minPick) || (tileData.minAxe != -1 && axePower > tileData.minAxe))
             {
                 if (tileBreak[x, y] == -128)
                 {
@@ -626,7 +632,11 @@ namespace Tiled
 
         public static bool IsValidForBreaking(int x, int y)
         {
-            return tiles[x, y - 1] != ETileType.TreeTrunk;
+            if(tiles[x, y] != ETileType.TreeTrunk)
+            {
+                return tiles[x, y - 1] != ETileType.TreeTrunk;
+            }
+            return true;
         }
 
         public static void CreateExplosion(int centerX, int centerY, int radius, sbyte maxPickPower, sbyte maxAxePower)
@@ -797,6 +807,114 @@ namespace Tiled
             }
 
             wallFramesCached[x, y] = invalidFrame;
+        }
+
+        public static void DigTunnel(int startX, int startY, int length, float curviness = 0.2f, int width = 3)
+        {
+            Random random = new Random();
+
+            double angle = random.NextDouble() * Math.PI * 2;
+
+            float currentX = startX;
+            float currentY = startY;
+
+            for (int step = 0; step < length; step++)
+            {
+                angle += (random.NextDouble() - 0.5) * curviness;
+
+                currentX += (float)Math.Cos(angle);
+                currentY += (float)Math.Sin(angle);
+
+                int tileX = (int)Math.Round(currentX);
+                int tileY = (int)Math.Round(currentY);
+
+                for (int dy = -width; dy <= width; dy++)
+                {
+                    for (int dx = -width; dx <= width; dx++)
+                    {
+                        int digX = tileX + dx;
+                        int digY = tileY + dy;
+
+                        if (digX >= 0 && digX < World.tiles.GetLength(0) &&
+                            digY >= 0 && digY < World.tiles.GetLength(1))
+                        {
+                            double distance = Math.Sqrt(dx * dx + dy * dy);
+
+                            if (distance <= width)
+                            {
+                                if (distance <= width - 1 || random.NextDouble() > 0.4)
+                                {
+                                    SetTile(digX, digY, ETileType.Air);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public static void GenerateCaveSystem(int startX, int startY, int numTunnels = 5, int maxLength = 30, int minWidth = 2, int maxWidth = 5)
+        {
+            Random random = new Random(Program.GetGame().world.seed);
+
+            List<(int x, int y)> junctionPoints = new List<(int x, int y)> { (startX, startY) };
+
+            for (int i = 0; i < numTunnels; i++)
+            {
+                int junctionIndex = random.Next(junctionPoints.Count);
+                int junctionX = junctionPoints[junctionIndex].x;
+                int junctionY = junctionPoints[junctionIndex].y;
+
+                int tunnelLength = random.Next(1, maxLength);
+                float curviness = 0.1f + (float)random.NextDouble() * 0.3f;
+                int width = random.Next(minWidth, maxWidth);
+
+                // Dig the tunnel
+                DigTunnel(junctionX, junctionY, tunnelLength, curviness, width);
+
+                float angle = (float)(random.NextDouble() * Math.PI * 2);
+                int endX = junctionX + (int)(Math.Cos(angle) * tunnelLength);
+                int endY = junctionY + (int)(Math.Sin(angle) * tunnelLength);
+
+                endX = Math.Clamp(endX, 0, World.tiles.GetLength(0) - 1);
+                endY = Math.Clamp(endY, 0, World.tiles.GetLength(1) - 1);
+
+                junctionPoints.Add((endX, endY));
+            }
+
+            foreach ((int x, int y) in junctionPoints)
+            {
+                if (random.NextDouble() > 0.5)
+                {
+                    int chamberRadius = random.Next(5, 10);
+                    DigChamber(x, y, chamberRadius);
+                }
+            }
+        }
+
+        public static void DigChamber(int centerX, int centerY, int radius)
+        {
+            Random random = new Random();
+
+            int minX = Math.Max(0, centerX - radius);
+            int maxX = Math.Min(World.tiles.GetLength(0) - 1, centerX + radius);
+            int minY = Math.Max(0, centerY - radius);
+            int maxY = Math.Min(World.tiles.GetLength(1) - 1, centerY + radius);
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    double distance = Math.Sqrt(Math.Pow(x - centerX, 2) + Math.Pow(y - centerY, 2));
+
+                    double noiseThreshold = radius * (0.8 + random.NextDouble() * 0.3);
+
+                    if (distance <= noiseThreshold)
+                    {
+                        World.SetTile(x, y, ETileType.Air);
+                    }
+                }
+            }
         }
     }
 }

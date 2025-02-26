@@ -116,6 +116,7 @@ namespace Tiled.DataStructures
         None,
         Base,
         BasePickaxe,
+        BaseAxe,
         Torch,
         Bomb,
         Wood,

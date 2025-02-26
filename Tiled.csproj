@@ -35,6 +35,7 @@
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="classes\core\Gameplay\Entities\Items\ItemBehaviours\AxeBehaviour.cs" />
     <None Include="classes\core\Gameplay\Entities\Items\ItemBehaviours\ProjectileThrowBehaviour.cs" />
   </ItemGroup>
   <ItemGroup>

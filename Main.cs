@@ -228,10 +228,11 @@ namespace Tiled
 
             world.UpdateWorld();
 
-            foreach (Entity entity in entities.ToList())
+            for(int i = 0; i < entities.Count; i++)
             {
-                entity.Update();
+                entities[i].Update();
             }
+
             base.Update(gameTime);
         }
 

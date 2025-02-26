@@ -65,10 +65,10 @@ namespace Tiled
 
             // Generate world
             Program.GetGame().world = new World();
-            Program.GetGame().world.worldTime = 8;
-            Program.GetGame().world.seed = 35341;
-            World.maxTilesX = 1000;
-            World.maxTilesY = 600;
+            Program.GetGame().world.worldTime = 4;
+            Program.GetGame().world.seed = 85938471;
+            World.maxTilesX = 1200;
+            World.maxTilesY = 800;
             Program.GetGame().world.StartWorldGeneration();
             
             while(World.isGenerating)
@@ -327,11 +327,12 @@ namespace Tiled
                                 case EPacketType.RequestInventory:
                                     int requestInventoryID = socketToClientID[msg.SenderConnection];
 
-                                    int containerSize = 5;
+                                    int containerSize = 10;
                                     NetShared.clientIDToPlayer[requestInventoryID].inventory = new Inventory.Container(containerSize);
                                     NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(0, new ContainerItem(EItemType.BasePickaxe, 1));
-                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(1, new ContainerItem(EItemType.Torch, 7));
-                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(2, new ContainerItem(EItemType.Bomb, 5));
+                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(1, new ContainerItem(EItemType.BaseAxe, 1));
+                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(2, new ContainerItem(EItemType.Torch, 16));
+                                    NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(3, new ContainerItem(EItemType.Bomb, 5));
 
                                     InventoryPacket inventoryPacket = new InventoryPacket();
                                     inventoryPacket.size = containerSize;

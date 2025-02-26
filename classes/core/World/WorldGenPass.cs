@@ -166,7 +166,7 @@ namespace Tiled
             noise.SetFractalType(FastNoiseLite.FractalType.FBm);
             noise.SetFractalOctaves(1);
             noise.SetFractalLacunarity(1.1f);
-            noise.SetFrequency(0.0075f);
+            noise.SetFrequency(0.0135f);
             float pv = (noise.GetNoise(x, 0)) * 15.0f;
 
             float finalVal = (noise1 - noise2) - pv;
@@ -235,10 +235,10 @@ namespace Tiled
             }
 
             //LEAVES
-            
+            float exp = 1.5f;
 
-            int minRad = 4;
-            int maxRad = 7;
+            int minRad = (int)Math.Clamp(Math.Pow(treeLength / 3, exp), 3, int.MaxValue);
+            int maxRad = (int)Math.Pow(treeLength / 2, exp) / 2;
             int radius = Math.Clamp((int)((new Random(wp.seed - 51 + x + y + wp.seed - 112).NextSingle()) * maxRad), minRad, int.MaxValue);
 
             int centerX = x;
@@ -296,6 +296,36 @@ namespace Tiled
                     }
                 }
             }
+        }
+    }
+
+    public class WGT_SurfaceCaves : WorldGenTask
+    {
+        public WGT_SurfaceCaves(string identifier) : base(identifier)
+        {
+        }
+
+        public override async Task Run(IProgress<WorldGenProgress> progress, WorldGenParams wparams)
+        {
+            using var cts = new CancellationTokenSource();
+
+            await Task.Run(() =>
+            {
+               for(int x = 0; x < World.surfaceHeights.Length; x += 48)
+               {
+                    int y = World.surfaceHeights[x] + 72;
+                    int len = (int)(new Random(wparams.seed - x + y).NextSingle() * 8.0f);
+                    int w = (int)(new Random(wparams.seed / (x + 1) + len).NextSingle() * 144.0f);
+
+                    int randomY = Math.Clamp((int)((new Random(wparams.seed + 3 + x).NextSingle() - ((float)y / wparams.maxTilesX)) * (wparams.maxTilesY)),y, wparams.maxTilesY);
+
+                    World.GenerateCaveSystem(x, randomY, len, w);
+
+                    progress.Report(new WorldGenProgress { CurrentTask = "Placing Trees", PercentComplete = (float)x / World.surfaceHeights.Length });
+               }
+
+               World.CompleteCurrent();
+            }, cts.Token);
         }
     }
 }

@@ -91,7 +91,7 @@ namespace Tiled.ID
                     t.collision = false;
                     t.itemDrop = EItemType.Wood;
                     t.minPick = -1;
-                    t.minAxe = 10;
+                    t.minAxe = 1;
                     break;
             }
 
@@ -194,11 +194,21 @@ namespace Tiled.ID
                 case EItemType.BasePickaxe:
                     i.name = "Base Pickaxe";
                     i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/basePickaxe");
-                    i.useTime = 0.8f;
+                    i.useTime = 0.65f;
                     i.maxStack = 1;
                     i.pickaxePower = 4;
                     i.size = new Vector2(24, 24);
                     i.behaviourType = typeof(PickaxeBehaviour);
+                    break;
+
+                case EItemType.BaseAxe:
+                    i.name = "Base Axe";
+                    i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Item/baseAxe");
+                    i.useTime = 0.75f;
+                    i.maxStack = 1;
+                    i.axePower = 4;
+                    i.size = new Vector2(24, 24);
+                    i.behaviourType = typeof(AxeBehaviour);
                     break;
 
                 case EItemType.DirtBlock:

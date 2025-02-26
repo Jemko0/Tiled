@@ -1,6 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Tiled.Gameplay;
 using Tiled.ID;
 using Tiled.Inventory;
 
@@ -36,6 +35,7 @@ namespace Tiled.UI.UserWidgets
             {
                 return;
             }
+
             amtText.text = container.items[slotID].stack > 0 ? container.items[slotID].stack.ToString() : "";
 
             if (container.items[slotID].type == DataStructures.EItemType.None)
@@ -49,7 +49,7 @@ namespace Tiled.UI.UserWidgets
             Texture2D itemIcon = ItemID.GetItem(container.items[slotID].type).sprite;
             sb.Draw(itemIcon, padded, null, Color.White, 0, new(), SpriteEffects.None, 0.9f);
 
-            base.DrawWidget(ref sb);
+            //base.DrawWidget(ref sb);
         }
     }
 }

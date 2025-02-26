@@ -9,6 +9,7 @@ using Tiled.Inventory;
 using Tiled.UI.UserWidgets;
 using Tiled.UI;
 using Tiled.ID;
+using System.Diagnostics;
 
 namespace Tiled.Gameplay
 {
@@ -22,6 +23,8 @@ namespace Tiled.Gameplay
         public int selectedSlot = 0;
         public int clientID = -1;
         public bool canUseItems = true;
+
+        bool invOpen;
         UWContainerWidget inventoryUI;
         public EPlayer()
         {
@@ -42,6 +45,7 @@ namespace Tiled.Gameplay
             Mappings.actionMappings["inv_3"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_4"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_5"].onActionMappingPressed += SetSlot;
+            Mappings.actionMappings["inv_open"].onActionMappingPressed += OpenInventory;
 
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
@@ -49,7 +53,7 @@ namespace Tiled.Gameplay
 #if !TILEDSERVER
             if(Main.netMode == ENetMode.Standalone)
             {
-                inventory = new Container(5);
+                inventory = new Container(52);
                 inventory.entityCarrier = this;
 
                 inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
@@ -58,7 +62,7 @@ namespace Tiled.Gameplay
                 inventoryUI.UpdateSlots();
 
                 inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
-                inventory.items[1] = new ContainerItem(EItemType.DirtBlock, 999);
+                inventory.items[1] = new ContainerItem(EItemType.BaseAxe, 1);
                 inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
                 inventory.items[3] = new ContainerItem(EItemType.Bomb, 16);
                 inventory.items[4] = new ContainerItem(EItemType.StoneBlock, 999);
@@ -71,6 +75,12 @@ namespace Tiled.Gameplay
 #else
             
 #endif
+        }
+
+        private void OpenInventory(ActionMappingArgs e)
+        {
+            invOpen = !invOpen;
+            inventoryUI.SetOpenInv(invOpen);
         }
 
         public void ClientInventoryReceived()
@@ -202,6 +212,11 @@ namespace Tiled.Gameplay
                 SwingItem(selectedSlot, tile);
             }
 
+            if(Keyboard.GetState().IsKeyDown(Keys.F))
+            {
+                Program.GetGame().localPlayerController.attachToEntity = false;
+            }
+
 #if !TILEDSERVER
             RepSwingItem(tile);
 #endif
@@ -241,6 +256,7 @@ namespace Tiled.Gameplay
             canUseItems = false;
             var swingItem = EItem.CreateItem(inventory.items[selectedSlot].type);
             swingItem.swingEnded += CurrentSwingItemSwingEnded;
+            swingItem.direction = direction;
             swingItem.isSwing = true;
             swingItem.swingOwner = this;
 

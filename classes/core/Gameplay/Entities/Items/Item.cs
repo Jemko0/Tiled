@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items.ItemBehaviours;
 using Tiled.ID;
@@ -82,6 +83,8 @@ namespace Tiled.Gameplay.Items
         {
             position = entity.position;
             float animProgress = age / Item.useTime;
+            facingLeft = entity.facingLeft;
+            direction = entity.direction;
 
             switch(Item.swingAnimationType)
             {
@@ -90,9 +93,9 @@ namespace Tiled.Gameplay.Items
 
                 case EItemSwingAnimationType.Swing:
                     position = new Vector2(entity.facingLeft? entity.GetRect().Left : entity.GetRect().Right, entity.GetRect().Center.Y);
-                    rotation = MathHelper.Lerp(entity.facingLeft? -5.0f : -4.0f, entity.facingLeft ? -10.0f : 1.0f, animProgress);
-                    rotOrigin.X = -8.0f;
-                    rotOrigin.Y = 40.0f;
+                    rotation = MathHelper.Lerp(-4.0f * direction, 1.0f * direction, animProgress);
+                    rotOrigin.X = 32.0f * ((Math.Abs(direction) - direction) / 2);
+                    rotOrigin.Y = 32.0f;
                     break;
             }
 

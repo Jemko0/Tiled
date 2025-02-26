@@ -7,6 +7,7 @@ namespace Tiled.UI
     /// </summary>
     public class PanelWidget : Widget
     {
+        public int maxChildIndex = int.MaxValue;
         public PanelWidget(HUD owner) : base(owner)
         {
         }
@@ -31,6 +32,11 @@ namespace Tiled.UI
 
             for (int i = 0; i < children.Count; i++)
             {
+                if(i > maxChildIndex)
+                {
+                    return;
+                }
+
                 DrawChild(ref sb, i);
             }
         }

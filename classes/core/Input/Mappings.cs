@@ -48,6 +48,7 @@ namespace Tiled.Input
             actionMappings.Add("inv_3", new ActionMapping(Keys.D3));
             actionMappings.Add("inv_4", new ActionMapping(Keys.D4));
             actionMappings.Add("inv_5", new ActionMapping(Keys.D5));
+            actionMappings.Add("inv_open", new ActionMapping(Keys.I));
         }
 
         public static bool IsMappingHeld(string mapping)
