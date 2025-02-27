@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
@@ -176,6 +175,7 @@ namespace Tiled
         {
             screenCenter = new Point(Window.ClientBounds.Width / 2, Window.ClientBounds.Height / 2);
             renderScale = Window.ClientBounds.Height / 1080.0f;
+            renderScale *= localCamera.zoom;
         }
 
         public static float delta;

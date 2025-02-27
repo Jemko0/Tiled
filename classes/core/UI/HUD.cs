@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tiled.Gameplay;
 using Tiled.UI.UserWidgets;
+using Tiled.UI.Widgets;
 
 namespace Tiled.UI
 {

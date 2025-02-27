@@ -16,6 +16,9 @@ namespace Tiled.UI.UserWidgets
         WButton multiplayerBtn;
         WText multiplayerBtnText;
 
+        WButton settingsBtn;
+        WText settingsBtnText;
+
         public override void Construct()
         {
             vb = HUD.CreateWidget<WVerticalBox>(owningHUD);
@@ -45,6 +48,22 @@ namespace Tiled.UI.UserWidgets
             multiplayerBtnText.text = "Multiplayer";
             multiplayerBtnText.justification = DataStructures.ETextJustification.Center;
             multiplayerBtnText.AttachToParent(multiplayerBtn);
+
+            settingsBtn = HUD.CreateWidget<WButton>();
+            settingsBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
+            settingsBtn.layerDepth = 1.0f;
+            settingsBtn.AttachToParent(vb);
+            settingsBtn.onButtonPressed += OnSettingsButtonPressed;
+
+            settingsBtnText = HUD.CreateWidget<WText>();
+            multiplayerBtnText.text = "Settings";
+            multiplayerBtnText.justification = DataStructures.ETextJustification.Center;
+            multiplayerBtnText.AttachToParent(settingsBtn);
+        }
+
+        private void OnSettingsButtonPressed(DataStructures.ButtonPressArgs args)
+        {
+            
         }
 
         private void MultiplayerButtonPressed(DataStructures.ButtonPressArgs args)
