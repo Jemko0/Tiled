@@ -49,21 +49,23 @@ namespace Tiled.UI.UserWidgets
             multiplayerBtnText.justification = DataStructures.ETextJustification.Center;
             multiplayerBtnText.AttachToParent(multiplayerBtn);
 
-            settingsBtn = HUD.CreateWidget<WButton>();
+            settingsBtn = HUD.CreateWidget<WButton>(owningHUD);
             settingsBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
             settingsBtn.layerDepth = 1.0f;
             settingsBtn.AttachToParent(vb);
             settingsBtn.onButtonPressed += OnSettingsButtonPressed;
 
-            settingsBtnText = HUD.CreateWidget<WText>();
-            multiplayerBtnText.text = "Settings";
-            multiplayerBtnText.justification = DataStructures.ETextJustification.Center;
-            multiplayerBtnText.AttachToParent(settingsBtn);
+            settingsBtnText = HUD.CreateWidget<WText>(owningHUD);
+            settingsBtnText.text = "Settings";
+            settingsBtnText.justification = DataStructures.ETextJustification.Center;
+            settingsBtnText.AttachToParent(settingsBtn);
         }
 
         private void OnSettingsButtonPressed(DataStructures.ButtonPressArgs args)
         {
-            
+            var s = HUD.CreateWidget<UWSettings>(owningHUD);
+            s.SetGeometry(new Vector2(256, 0), DataStructures.AnchorPosition.Center);
+            DestroyWidget();
         }
 
         private void MultiplayerButtonPressed(DataStructures.ButtonPressArgs args)

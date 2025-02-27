@@ -13,7 +13,14 @@ namespace Tiled.UI.Widgets
         public Texture2D sliderThumbTexture;
         bool isFocused;
         public float sliderValue;
+        public float normalizedValue;
         public int thumbSize = 32;
+
+        public float minValue = 0;
+        public float maxValue = 1;
+
+        public int maxDecimalPlaces = 5;
+
         public WSlider(HUD owner) : base(owner)
         {
         }
@@ -41,9 +48,9 @@ namespace Tiled.UI.Widgets
             if(isFocused)
             {
                 float pixelValue = Mouse.GetState().X - scaledGeometry.X;
-                float normalized = pixelValue / scaledGeometry.Width;
-                sliderValue = Math.Clamp(normalized, 0.0f, 1.0f);
-
+                normalizedValue = Math.Clamp(pixelValue / scaledGeometry.Width, 0.0f, 1.0f);
+                sliderValue = (float)Math.Round(MathHelper.Lerp(minValue, maxValue, normalizedValue), maxDecimalPlaces);
+                
                 Debug.WriteLine(sliderValue);
             }
 
@@ -71,7 +78,7 @@ namespace Tiled.UI.Widgets
 
             sb.Draw(backgroundTexture, middleDest, middleSrc, drawColor, 0.0f, new Vector2(0.0f), SpriteEffects.None, layerDepth);
 
-            sb.Draw(sliderThumbTexture, new Rectangle((int)MathHelper.Lerp(scaledGeometry.X, scaledGeometry.X + (scaledGeometry.Width - ((thumbSize / 2) * HUD.DPIScale)), sliderValue), scaledGeometry.Center.Y - (int)((thumbSize / 2) * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale)), Color.White);
+            sb.Draw(sliderThumbTexture, new Rectangle((int)MathHelper.Lerp(scaledGeometry.X, scaledGeometry.X + (scaledGeometry.Width - ((thumbSize / 2) * HUD.DPIScale)), normalizedValue), scaledGeometry.Center.Y - (int)((thumbSize / 2) * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale)), Color.White);
         }
     }
 }
