@@ -274,15 +274,16 @@ namespace Tiled
                 return;
             }
 
+            const int TILE_PAD = 1;
             
-            int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE);
-            int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE);
+            int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE) + TILE_PAD - 1;
+            int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE) + TILE_PAD - 1;
 
             int tilesX = (int)Math.Ceiling((Window.ClientBounds.Width / renderScale) / World.TILESIZE);
             int tilesY = (int)Math.Ceiling((Window.ClientBounds.Height / renderScale) / World.TILESIZE);
 
-            int endX = startX + tilesX + 1;
-            int endY = startY + tilesY + 1;
+            int endX = startX + tilesX + TILE_PAD;
+            int endY = startY + tilesY + TILE_PAD;
 
             for (int x = startX; x < endX; x++)
             {
@@ -369,7 +370,11 @@ namespace Tiled
         {
             for(int i = 0; i < entities.Count; i++)
             {
-                entities[i].Draw(ref _spriteBatch);
+                if(localCamera.IsInView(entities[i].GetRectF()))
+                {
+                    entities[i].Draw(ref _spriteBatch);
+                }
+                
             }
         }
     }

@@ -13,36 +13,54 @@ namespace Tiled.UI.UserWidgets
         }
 
         WVerticalBox mainVert;
+
         WButton backButton;
         WText backButtonText;
+
+        WText zoomSliderDesc;
         WSlider zoomSlider;
         WText zoomSliderText;
 
-        public const int vbWidth = 256;
+        public const int width = 1024;
         public override void Construct()
         {
             mainVert = HUD.CreateWidget<WVerticalBox>(owningHUD);
-            mainVert.SetGeometry(new Vector2(vbWidth, 256), AnchorPosition.Center);
+            mainVert.SetGeometry(new Vector2(width, 256), AnchorPosition.Center);
+            mainVert.childrenKeepWidth = true;
             mainVert.AttachToParent(this);
 
             //camZoomSlider
-            WHorizontalBox s1 = HUD.CreateWidget<WHorizontalBox>(owningHUD);
-            s1.SetGeometry(new Vector2(512, 32), AnchorPosition.Center);
-            s1.AttachToParent(mainVert);
+            WHorizontalBox h1 = HUD.CreateWidget<WHorizontalBox>(owningHUD);
+            h1.SetGeometry(new Vector2(512, 128), AnchorPosition.Center);
+            h1.AttachToParent(mainVert);
+            //h1.childrenAnchorOffset = new Vector2(0.5f, 0.5f);
 
-            zoomSlider = HUD.CreateWidget<WSlider>(owningHUD);
+            zoomSliderDesc = HUD.CreateWidget<WText>(owningHUD);
+            zoomSliderDesc.SetGeometry(new Vector2(150, 16), AnchorPosition.Center);
+            zoomSliderDesc.text = "Camera Zoom";
+            zoomSliderDesc.layerDepth = 1.0f;
+            zoomSliderDesc.autoSize = true;
+            zoomSliderDesc.justification = ETextJustification.Center;
+            zoomSliderDesc.AttachToParent(h1);
+
+            /*zoomSlider = HUD.CreateWidget<WSlider>(owningHUD);
             zoomSlider.minValue = 0.5f;
             zoomSlider.maxValue = 3.0f;
             zoomSlider.maxDecimalPlaces = 2;
+            zoomSlider.layerDepth = 0.9f;
             zoomSlider.SetGeometry(new Vector2(512, 16), AnchorPosition.Center);
-            zoomSlider.AttachToParent(s1);
+            zoomSlider.sliderValue = 1.0f;
             zoomSlider.onSliderValueChanged += ZoomSlider_onSliderValueChanged;
+            zoomSlider.AttachToParent(h1);*/
 
             zoomSliderText = HUD.CreateWidget<WText>(owningHUD);
-            zoomSliderText.SetGeometry(new Vector2(128, 16), AnchorPosition.Center);
+            zoomSliderText.SetGeometry(new Vector2(48, 16), AnchorPosition.Center);
             zoomSliderText.justification = ETextJustification.Center;
-            zoomSliderText.AttachToParent(s1);
+            zoomSliderText.layerDepth = 1.0f;
+            zoomSliderText.autoSize = true;
+            zoomSliderText.AttachToParent(h1);
 
+            
             //back
             backButton = HUD.CreateWidget<WButton>(owningHUD);
             backButton.SetGeometry(new Vector2(128, 72), AnchorPosition.Center);
@@ -64,13 +82,14 @@ namespace Tiled.UI.UserWidgets
 
         private void ZoomSlider_onSliderValueChanged()
         {
-            Main.userSettings.data.camZoom = zoomSlider.sliderValue;
+            //Main.userSettings.data.camZoom = zoomSlider.sliderValue;
+            Program.GetGame().localCamera.zoom = zoomSlider.sliderValue;
         }
 
         public override void DrawWidget(ref SpriteBatch sb)
         {
-            SetGeometry(new Vector2(vbWidth, 0), DataStructures.AnchorPosition.Center);
-            zoomSliderText.text = zoomSlider.sliderValue.ToString();
+            SetGeometry(new Vector2(width, 0), DataStructures.AnchorPosition.Center);
+            /*zoomSliderText.text = zoomSlider.sliderValue.ToString();*/
             base.DrawWidget(ref sb);
         }
     }

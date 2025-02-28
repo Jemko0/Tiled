@@ -19,12 +19,13 @@ namespace Tiled.UI
             if (childIdx >= maxChildIndex)
                 return;
 
-            Vector2 size = childrenKeepWidth ? children[childIdx].GetSize() : new Vector2(GetSize().X, children[childIdx].GetSize().Y);
+            Vector2 size = childrenKeepWidth ? children[childIdx].GetSize() : new Vector2(GetSize().X, (GetSize().Y - (innerPadding * children.Count)) / children.Count);
             children[childIdx].SetGeometry(size, DataStructures.AnchorPosition.Center);
+            children[childIdx].anchorPosition = new Vector2(0, 0);
 
             if (childIdx != 0)
             {
-                children[childIdx].SetOffset(new Vector2(0, (children[childIdx - 1].GetSize().Y * childIdx) + innerPadding * childIdx));
+                children[childIdx].SetOffset(new Vector2(0, (children[childIdx - 1].GetSize().Y * (childIdx)) + innerPadding * childIdx));
             }
             
             children[childIdx].ScaleGeometry();

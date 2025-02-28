@@ -217,12 +217,15 @@ namespace Tiled.UI
 
         public void Draw(ref SpriteBatch sb)
         {
+            
+
             if (!visible || disposed)  // Check disposed state
             {
                 return;
             }
 
             DrawWidget(ref sb);
+            DrawBounds(ref sb);
         }
         public virtual void DrawWidget(ref SpriteBatch sb)
         {
@@ -231,8 +234,7 @@ namespace Tiled.UI
 
         public void DrawBounds(ref SpriteBatch sb)
         {
-            var tex = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
-            tex.SetData(new Color[] { Color.Red });
+            var tex = Program.GetGame().Content.Load<Texture2D>("Entities/debug");
             sb.Draw(tex, scaledGeometry, null, Color.White, 0.0f, new(), SpriteEffects.None, layerDepth);
         }
 

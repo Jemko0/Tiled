@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Tiled.DataStructures;
 
 namespace Tiled.UI
 {
@@ -9,6 +10,7 @@ namespace Tiled.UI
     public class WHorizontalBox : PanelWidget
     {
         public int innerPadding = 5;
+        public bool childrenKeepWidth = true;
         public Vector2 childrenAnchorOffset = new Vector2 (0, 0);
         public WHorizontalBox(HUD owner) : base(owner)
         {
@@ -19,16 +21,23 @@ namespace Tiled.UI
             if (childIdx >= maxChildIndex)
                 return;
 
-            children[childIdx].anchorPosition = childrenAnchorOffset;
-            children[childIdx].SetOffset(new Vector2(0, 0));
+            Widget child = children[childIdx];
+
+            child.anchorPosition = childrenAnchorOffset;
+            child.SetOffset(new Vector2(0, 0));
+
+            if (!childrenKeepWidth)
+            {
+                child.SetGeometry(new Vector2(GetSize().X / children.Count, GetSize().Y), AnchorPosition.TopLeft);
+            }
 
             if (childIdx != 0)
             {
-                children[childIdx].SetOffset(new Vector2((children[childIdx - 1].GetSize().X * childIdx) + innerPadding * childIdx, 0));
+                child.SetOffset(new Vector2((children[childIdx - 1].GetSize().X * childIdx) + innerPadding * childIdx, 0));
             }
 
-            children[childIdx].ScaleGeometry();
-            children[childIdx].Draw(ref sb);
+            child.ScaleGeometry();
+            child.Draw(ref sb);
         }
     }
 }

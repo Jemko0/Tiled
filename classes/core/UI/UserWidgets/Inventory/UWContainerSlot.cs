@@ -14,7 +14,6 @@ namespace Tiled.UI.UserWidgets
         public UWContainerSlot(HUD owner) : base(owner)
         {
             slotBg = Program.GetGame().Content.Load<Texture2D>("UI/inventory/inventorySlot");
-            
         }
 
         public override void Construct()

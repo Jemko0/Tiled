@@ -26,24 +26,23 @@ namespace Tiled.UI
         WText backBtnText;
 
         WTextBox txtbox;
-        int vbWidth = 256;
+        int vbWidth = 512;
         public override void Construct()
         {
             vb = HUD.CreateWidget<WVerticalBox>(owningHUD);
-            vb.childrenKeepWidth = true;
-            vb.SetGeometry(new Vector2(vbWidth, 256), AnchorPosition.TopCenter);
+            vb.childrenKeepWidth = false;
+            vb.SetGeometry(new Vector2(vbWidth, 256), null);
             vb.AttachToParent(this, AnchorPosition.TopCenter);
 
-
-            hz = HUD.CreateWidget<WHorizontalBox>(owningHUD);
-            hz.SetGeometry(new Vector2(vbWidth, 0), AnchorPosition.TopCenter);
-
-
             txtbox = HUD.CreateWidget<WTextBox>(owningHUD);
-            txtbox.SetGeometry(new Vector2(256, 32), AnchorPosition.TopCenter);
-            txtbox.hintText = "IP-Adress";
+            txtbox.SetGeometry(new Vector2(256, 32), null);
+            txtbox.hintText = "IP-Address";
             txtbox.AttachToParent(vb);
 
+            hz = HUD.CreateWidget<WHorizontalBox>(owningHUD);
+            hz.childrenKeepWidth = false;
+            hz.SetGeometry(new Vector2(vbWidth, 128), AnchorPosition.TopCenter);
+            hz.AttachToParent(vb, AnchorPosition.TopCenter);
 
             backBtn = HUD.CreateWidget<WButton>(owningHUD);
             backBtn.SetGeometry(new Vector2(128, 72), AnchorPosition.TopCenter);
@@ -71,8 +70,6 @@ namespace Tiled.UI
             joinBtnText.justification = ETextJustification.Center;
             joinBtnText.layerDepth = 0.9f;
             joinBtnText.AttachToParent(joinBtn);
-
-            hz.AttachToParent(vb, AnchorPosition.TopCenter);
         }
 
         private void BackPressed(ButtonPressArgs args)

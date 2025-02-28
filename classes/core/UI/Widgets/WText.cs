@@ -12,6 +12,8 @@ namespace Tiled.UI
     {
         public string text { get; set; } = "Hello, World!";
         public float fontScale { get; set; } = 1.0f;
+
+        public bool autoSize { get; set; } = false;
         public ETextJustification justification { get; set; }
         public WText(HUD owner) : base(owner)
         {
@@ -19,7 +21,13 @@ namespace Tiled.UI
 
         public override void DrawWidget(ref SpriteBatch sb)
         {
+            if(autoSize)
+            {
+                SetGeometry(new Vector2(Fonts.Andy_24pt.MeasureString(text).Length(), GetSize().Y), null);
+            }
+
             float x = 0.0f;
+
             switch(justification)
             {
                 case ETextJustification.Left:
