@@ -14,10 +14,14 @@ namespace Tiled.UI.Widgets
         bool isFocused;
         public float sliderValue;
         public float normalizedValue;
+        float oldSliderValue;
         public int thumbSize = 32;
 
         public float minValue = 0;
         public float maxValue = 1;
+
+        public delegate void SliderEventArgs();
+        public event SliderEventArgs onSliderValueChanged;
 
         public int maxDecimalPlaces = 5;
 
@@ -45,13 +49,17 @@ namespace Tiled.UI.Widgets
 
         public override void DrawWidget(ref SpriteBatch sb)
         {
+            oldSliderValue = sliderValue;
             if(isFocused)
             {
                 float pixelValue = Mouse.GetState().X - scaledGeometry.X;
                 normalizedValue = Math.Clamp(pixelValue / scaledGeometry.Width, 0.0f, 1.0f);
                 sliderValue = (float)Math.Round(MathHelper.Lerp(minValue, maxValue, normalizedValue), maxDecimalPlaces);
                 
-                Debug.WriteLine(sliderValue);
+                if(oldSliderValue != sliderValue)
+                {
+                    onSliderValueChanged?.Invoke();
+                }
             }
 
 

@@ -22,7 +22,7 @@ namespace Tiled.Gameplay.Projectiles.ProjectileBehaviours
         public void Start(EProjectile item)
         {
             item.centerSprite = true;
-            item.rotOrigin = new(8, 8);
+            item.rotOrigin = new(item.entitySprite.Width / 2, item.entitySprite.Height / 2);
             age = 0.0f;
         }
 

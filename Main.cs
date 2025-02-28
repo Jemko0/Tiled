@@ -11,6 +11,7 @@ using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
 using Tiled.UI.UserWidgets;
+using Tiled.User;
 
 namespace Tiled
 {
@@ -37,6 +38,8 @@ namespace Tiled
         public static bool inTitle = true;
         public static Texture2D undergroundBackgroundTexture;
         public static Texture2D tileBreakTexture;
+
+        public static Settings userSettings = new Settings();
 
 #if TILEDSERVER
         public static TiledServer netServer;

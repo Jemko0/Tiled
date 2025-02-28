@@ -9,6 +9,7 @@ namespace Tiled.UI
     public class WHorizontalBox : PanelWidget
     {
         public int innerPadding = 5;
+        public Vector2 childrenAnchorOffset = new Vector2 (0, 0);
         public WHorizontalBox(HUD owner) : base(owner)
         {
         }
@@ -18,7 +19,7 @@ namespace Tiled.UI
             if (childIdx >= maxChildIndex)
                 return;
 
-            children[childIdx].anchorPosition = new Vector2(0, 0);
+            children[childIdx].anchorPosition = childrenAnchorOffset;
             children[childIdx].SetOffset(new Vector2(0, 0));
 
             if (childIdx != 0)

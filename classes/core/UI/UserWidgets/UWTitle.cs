@@ -64,7 +64,7 @@ namespace Tiled.UI.UserWidgets
         private void OnSettingsButtonPressed(DataStructures.ButtonPressArgs args)
         {
             var s = HUD.CreateWidget<UWSettings>(owningHUD);
-            s.SetGeometry(new Vector2(256, 0), DataStructures.AnchorPosition.Center);
+            s.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
             DestroyWidget();
         }
 
