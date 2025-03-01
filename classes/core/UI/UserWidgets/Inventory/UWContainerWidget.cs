@@ -9,7 +9,7 @@ namespace Tiled.UI.UserWidgets
         public Container container;
         public WWrapBox wrapBox;
 
-        public bool renderFull = true;
+        public bool renderFull = false;
         public UWContainerWidget(HUD owner) : base(owner)
         {
         }
@@ -18,6 +18,7 @@ namespace Tiled.UI.UserWidgets
         {
             wrapBox = HUD.CreateWidget<WWrapBox>(owningHUD);
             wrapBox.AttachToParent(this);
+            SetOpenInv(false);
         }
 
         public void SetContainer(ref Container container)

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Tiled.DataStructures;
 using Tiled.ID;
+using Tiled.Input;
 using Tiled.Inventory;
 
 namespace Tiled.UI.UserWidgets
@@ -24,6 +26,36 @@ namespace Tiled.UI.UserWidgets
             amtText.AttachToParent(this, DataStructures.AnchorPosition.BottomRight);
             amtText.layerDepth = 0.8f;
             amtText.justification = DataStructures.ETextJustification.Center;
+
+            InputManager.onLeftMousePressed += InputManager_onLeftMousePressed;
+        }
+
+        private void InputManager_onLeftMousePressed(MouseButtonEventArgs e)
+        {
+            if(IsHovered() && Program.GetGame().GetLocalPlayer().invOpen)
+            {
+                if(InputManager.mouseHasItem)
+                {
+                    if(container.items[slotID].type == EItemType.None)
+                    {
+                        container.items[slotID] = InputManager.mouseItem;
+                        InputManager.mouseHasItem = false;
+                    }
+                    else
+                    {
+                        ContainerItem oldItem = container.items[slotID];
+                        container.items[slotID] = InputManager.mouseItem;
+                        InputManager.mouseItem = oldItem;
+                        InputManager.mouseHasItem = true;
+                    }
+                }
+                else
+                {
+                    InputManager.mouseHasItem = true;
+                    InputManager.mouseItem = container.items[slotID];
+                    container.items[slotID] = ContainerItem.empty;
+                }
+            }
         }
 
         public override void DrawWidget(ref SpriteBatch sb)

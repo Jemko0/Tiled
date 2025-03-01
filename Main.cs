@@ -256,6 +256,18 @@ namespace Tiled
             _spriteBatch.End();
 
             localHUD.DrawWidgets();
+            RenderMouseItem();
+        }
+
+        public void RenderMouseItem()
+        {
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp);
+            if(InputManager.mouseHasItem)
+            {
+                var s = ItemID.GetItem(InputManager.mouseItem.type).sprite;
+                _spriteBatch.Draw(s, new Rectangle(Mouse.GetState().X, Mouse.GetState().Y, (int)(32 * HUD.DPIScale), (int)(32 * HUD.DPIScale)), Color.White);
+            }
+            _spriteBatch.End();
         }
 
         public void RenderBackground()

@@ -24,7 +24,7 @@ namespace Tiled.Gameplay
         public int clientID = -1;
         public bool canUseItems = true;
 
-        bool invOpen;
+        public bool invOpen;
         UWContainerWidget inventoryUI;
         public EPlayer()
         {
