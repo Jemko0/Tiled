@@ -6,7 +6,7 @@ namespace Tiled
     public class Camera : GameComponent
     {
         public Vector2 position;
-        public float zoom = 1.5f;
+        public float zoom = 1.0f;
         public const float viewPadding = 1.0f;
 
         public Camera(Game game) : base(game)

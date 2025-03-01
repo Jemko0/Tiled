@@ -260,7 +260,7 @@ namespace Tiled.ID
                     i.name = "Bomb";
                     i.consumable = true;
                     i.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Projectile/BombProjectile");
-                    i.useTime = 0.05f;
+                    i.useTime = 0.5f;
                     i.projectile = EProjectileType.Bomb;
                     i.projectileThrowVelocity = new(3.0f, 0.0f);
                     i.behaviourType = typeof(ProjectileThrowBehaviour);

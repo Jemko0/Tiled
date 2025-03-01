@@ -24,7 +24,6 @@ namespace Tiled.UI
             Widget child = children[childIdx];
 
             child.anchorPosition = childrenAnchorOffset;
-            child.SetOffset(new Vector2(0, 0));
 
             if (!childrenKeepWidth)
             {

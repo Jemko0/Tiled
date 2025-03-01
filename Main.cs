@@ -181,6 +181,11 @@ namespace Tiled
             renderScale *= localCamera.zoom;
         }
 
+        public void ForceCalcRenderScale()
+        {
+            CalcRenderScale();
+        }
+
         public static float delta;
         public static float runtime;
         protected override void Update(GameTime gameTime)
@@ -274,7 +279,7 @@ namespace Tiled
         {
             if(localCamera.position.Y >  World.averageSurfaceHeight * World.TILESIZE)
             {
-                _spriteBatch.Draw(undergroundBackgroundTexture, new Rectangle(0, 1920 + World.averageSurfaceHeight * World.TILESIZE - (int)localCamera.position.Y, Window.ClientBounds.Width, Window.ClientBounds.Height), new Rectangle((int)localCamera.position.X, (int)localCamera.position.Y, (int)(Window.ClientBounds.Width / renderScale), (int)(Window.ClientBounds.Height / renderScale)), Color.White);
+                _spriteBatch.Draw(undergroundBackgroundTexture, new Rectangle(0, 1920 + (World.averageSurfaceHeight * World.TILESIZE) - (int)localCamera.position.Y, Window.ClientBounds.Width, Window.ClientBounds.Height), new Rectangle((int)localCamera.position.X, (int)localCamera.position.Y, (int)(Window.ClientBounds.Width / renderScale), (int)(Window.ClientBounds.Height / renderScale)), Color.White);
             }
         }
 

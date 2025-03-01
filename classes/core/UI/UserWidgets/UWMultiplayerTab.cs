@@ -57,7 +57,6 @@ namespace Tiled.UI
             backBtnText.layerDepth = 0.9f;
             backBtnText.AttachToParent(backBtn);
 
-
             joinBtn = HUD.CreateWidget<WButton>(owningHUD);
             joinBtn.SetGeometry(new Vector2(128, 72), AnchorPosition.TopCenter);
             joinBtn.layerDepth = 1.0f;

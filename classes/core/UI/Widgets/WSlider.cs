@@ -25,6 +25,9 @@ namespace Tiled.UI.Widgets
 
         public int maxDecimalPlaces = 5;
 
+        //public bool forceDrawHeight = false;
+        //public int drawHeight = 0;
+
         public WSlider(HUD owner) : base(owner)
         {
         }
@@ -81,12 +84,13 @@ namespace Tiled.UI.Widgets
             Rectangle middleSrc = new Rectangle(8, 0, 46, 64);
 
             Color drawColor = isFocused ? Color.SteelBlue : Color.LightSkyBlue;
+
             sb.Draw(backgroundTexture, leftDest, leftSrc, drawColor, 0.0f, new Vector2(0.0f), SpriteEffects.None, layerDepth);
             sb.Draw(backgroundTexture, rightDest, rightSrc, drawColor, 0.0f, new Vector2(0.0f), SpriteEffects.None, layerDepth);
 
             sb.Draw(backgroundTexture, middleDest, middleSrc, drawColor, 0.0f, new Vector2(0.0f), SpriteEffects.None, layerDepth);
 
-            sb.Draw(sliderThumbTexture, new Rectangle((int)MathHelper.Lerp(scaledGeometry.X, scaledGeometry.X + (scaledGeometry.Width - ((thumbSize / 2) * HUD.DPIScale)), normalizedValue), scaledGeometry.Center.Y - (int)((thumbSize / 2) * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale)), Color.White);
+            sb.Draw(sliderThumbTexture, new Rectangle((int)MathHelper.Lerp(scaledGeometry.X, scaledGeometry.X + (scaledGeometry.Width - ((thumbSize / 2) * HUD.DPIScale)), normalizedValue), scaledGeometry.Center.Y - (int)((thumbSize / 2) * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale), (int)(thumbSize * HUD.DPIScale)), null, Color.White, 0.0f, new Vector2(0, 0), SpriteEffects.None, 0.0f);
         }
     }
 }

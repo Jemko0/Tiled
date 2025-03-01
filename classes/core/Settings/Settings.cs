@@ -62,7 +62,7 @@ namespace Tiled.User
         {
             var g = Program.GetGame();
 
-            g.localCamera.zoom = data.camZoom;
+            //g.localCamera.zoom = data.camZoom;
         }
     }
 }
