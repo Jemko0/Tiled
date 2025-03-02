@@ -69,7 +69,7 @@ namespace Tiled.Gameplay
                 inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
                 inventory.items[1] = new ContainerItem(EItemType.BaseAxe, 1);
                 inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
-                inventory.items[3] = new ContainerItem(EItemType.Bomb, 16);
+                inventory.items[3] = new ContainerItem(EItemType.Bomb, 4444);
                 inventory.items[4] = new ContainerItem(EItemType.StoneBlock, 999);
             }
 
