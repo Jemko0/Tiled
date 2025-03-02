@@ -10,6 +10,7 @@ using Tiled.UI.UserWidgets;
 using Tiled.UI;
 using Tiled.ID;
 using System.Diagnostics;
+using Tiled.Events;
 
 namespace Tiled.Gameplay
 {
@@ -26,6 +27,9 @@ namespace Tiled.Gameplay
 
         public bool invOpen;
         UWContainerWidget inventoryUI;
+        public UWEscapeMenu escMenu;
+        public UWSettings settingsWidget;
+
         public EPlayer()
         {
             collision = new CollisionComponent(this);
@@ -46,6 +50,7 @@ namespace Tiled.Gameplay
             Mappings.actionMappings["inv_4"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_5"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_open"].onActionMappingPressed += OpenInventory;
+            Mappings.actionMappings["esc_menu"].onActionMappingPressed += OpenEsc;
 
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
@@ -80,9 +85,28 @@ namespace Tiled.Gameplay
         private void OpenInventory(ActionMappingArgs e)
         {
             invOpen = !invOpen;
-            Debug.WriteLine(invOpen);
+            //Debug.WriteLine(invOpen);
             Program.GetGame().localPlayerController.inUI = invOpen;
             inventoryUI.SetOpenInv(invOpen);
+        }
+
+        private void OpenEsc(ActionMappingArgs e)
+        {
+            Main.escMenuOpen = !Main.escMenuOpen;
+            if(Main.escMenuOpen)
+            {
+                escMenu = HUD.CreateWidget<UWEscapeMenu>(Program.GetGame().localHUD);
+                escMenu.SetGeometry(new Vector2(1920, 1080), AnchorPosition.Center);
+            }
+            else
+            {
+                if(settingsWidget != null)
+                {
+                    settingsWidget.DestroyWidget();
+                }
+
+                escMenu.DestroyWidget();
+            }
         }
 
         public void ClientInventoryReceived()
@@ -95,7 +119,7 @@ namespace Tiled.Gameplay
 
         private void SetSlot(ActionMappingArgs e)
         {
-            if(invOpen)
+            if(invOpen || Main.escMenuOpen)
             {
                 return;
             }
@@ -205,9 +229,23 @@ namespace Tiled.Gameplay
             return new Rectangle(0, fH * fI, fW, fH);
         }
 
+        public override void Destroyed()
+        {
+            inventory.items = null;
+            inventory = null;
+            InputManager.onLeftMousePressed -= LMB;
+            InputManager.onRightMousePressed -= RMB;
+            foreach(var mapping in Mappings.actionMappings)
+            {
+                EventHelper.UnbindAllEventHandlers(mapping.Value, "onActionMappingPressed");
+                EventHelper.UnbindAllEventHandlers(mapping.Value, "onActionMappingReleased");
+            }
+            inventoryUI.DestroyWidget();
+        }
+
         private void LMB(MouseButtonEventArgs e)
         {
-            if (!Program.GetGame().IsActive || invOpen)
+            if (!Program.GetGame().IsActive || invOpen || Main.escMenuOpen)
             {
                 return;
             }

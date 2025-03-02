@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Input;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -84,6 +85,11 @@ namespace Tiled
 
             await Task.Run(() =>
             {
+                FastNoiseLite dirtNoise = new FastNoiseLite();
+                dirtNoise.SetSeed(wparams.seed);
+                dirtNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2S);
+                dirtNoise.SetFractalOctaves(3);
+
                 FastNoiseLite noise = new FastNoiseLite();
                 int baseSurfaceHeight = wparams.maxTilesY / 2;
 
@@ -107,7 +113,9 @@ namespace Tiled
                         for (int y = surfaceTileY; y < wparams.maxTilesY; y++)
                         {
                             ETileType placeType = ETileType.Air;
-                            if(y == surfaceTileY)
+                            dirtNoise.SetFrequency(MathHelper.Lerp(0.01f, 0.15f, (y / (float)wparams.maxTilesY)));
+
+                            if (y == surfaceTileY)
                             {
                                 placeType = ETileType.Grass;
                             }
@@ -115,7 +123,15 @@ namespace Tiled
                             {
                                 if(y > rockHeight)
                                 {
-                                    placeType = ETileType.Stone;
+                                    
+                                    if (dirtNoise.GetNoise(x, y) > -0.4f + (y / (float)wparams.maxTilesY))
+                                    {
+                                        placeType = ETileType.Dirt;
+                                    }
+                                    else
+                                    {
+                                        placeType = ETileType.Stone;
+                                    }
                                 }
                                 else
                                 {

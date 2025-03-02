@@ -199,7 +199,6 @@ namespace Tiled.UI
 
         public bool IsHovered()
         {
-            
             return !isBeingDestroyed && scaledGeometry.Contains(Mouse.GetState().X, Mouse.GetState().Y);
         }
 
@@ -217,19 +216,18 @@ namespace Tiled.UI
 
         public void Draw(ref SpriteBatch sb)
         {
-            
-
             if (!visible || disposed)  // Check disposed state
             {
                 return;
             }
 
             DrawWidget(ref sb);
-            DrawBounds(ref sb);
+            //DrawBounds(ref sb);
         }
+
         public virtual void DrawWidget(ref SpriteBatch sb)
         {
-            DrawBounds(ref sb);
+
         }
 
         public void DrawBounds(ref SpriteBatch sb)

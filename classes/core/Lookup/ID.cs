@@ -54,6 +54,7 @@ namespace Tiled.ID
                 case ETileType.Stone:
                     t.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/stone");
                     t.hardness = 30;
+                    t.itemDrop = EItemType.StoneBlock;
                     break;
 
                 case ETileType.Torch:
@@ -88,6 +89,7 @@ namespace Tiled.ID
                     t.itemDrop = EItemType.Wood;
                     t.minPick = -1;
                     t.minAxe = 1;
+                    t.blockLight = 1;
                     break;
 
                 case ETileType.Plank:
@@ -242,7 +244,7 @@ namespace Tiled.ID
                     i.maxStack = 999;
                     i.size = new Vector2(16, 16);
                     i.behaviourType = typeof(PlaceTileBehaviour);
-                    i.placeTile = ETileType.TreeLeaves;
+                    i.placeTile = ETileType.Stone;
                     break;
 
                 case EItemType.Torch:

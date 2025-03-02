@@ -205,7 +205,7 @@ namespace Tiled
             }
             else
             {
-                worldTime = 6.0f;
+                worldTime = 1.0f;
             }
             return true;
         }
@@ -845,6 +845,12 @@ namespace Tiled
                                 if (distance <= width - 1 || random.NextDouble() > 0.4)
                                 {
                                     SetTile(digX, digY, ETileType.Air);
+
+                                    /*SetWall(digX, digY, EWallType.Dirt);
+                                    SetWall(digX + 1, digY, EWallType.Dirt);
+                                    SetWall(digX - 1, digY, EWallType.Dirt);
+                                    SetWall(digX, digY - 1, EWallType.Dirt);
+                                    SetWall(digX, digY + 1, EWallType.Dirt);*/
                                 }
                             }
                         }
@@ -911,7 +917,13 @@ namespace Tiled
 
                     if (distance <= noiseThreshold)
                     {
-                        World.SetTile(x, y, ETileType.Air);
+                        SetTile(x, y, ETileType.Air);
+
+                        /*SetWall(x, y, EWallType.Dirt);
+                        SetWall(x + 1, y, EWallType.Dirt);
+                        SetWall(x - 1, y, EWallType.Dirt);
+                        SetWall(x, y - 1, EWallType.Dirt);
+                        SetWall(x, y + 1, EWallType.Dirt);*/
                     }
                 }
             }

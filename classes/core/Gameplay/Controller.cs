@@ -53,12 +53,11 @@ namespace Tiled.Gameplay
 
         public void GetInput()
         {
-            if (controlledEntity != Program.GetGame().localPlayerController.controlledEntity)
+            if (controlledEntity != Program.GetGame().localPlayerController.controlledEntity || Main.escMenuOpen)
             {
                 inputLR = 0.0f;
                 return;
             }
-
             inputLR = 0.0f;
 
             if(Mappings.IsMappingHeld("move_left"))

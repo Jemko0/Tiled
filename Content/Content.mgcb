@@ -164,6 +164,12 @@
 /processorParam:TextureFormat=Compressed
 /build:Fonts/Andy.spritefont
 
+#begin Shaders/LightingRTShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Shaders/LightingRTShader.fx
+
 #begin Shaders/SkyShader.fx
 /importer:EffectImporter
 /processor:EffectProcessor

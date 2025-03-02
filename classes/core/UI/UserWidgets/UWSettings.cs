@@ -23,6 +23,7 @@ namespace Tiled.UI.UserWidgets
 
         WHorizontalBox hz;
 
+        public bool inGame = false;
 
         public const int vbWidth = 1024;
         public override void Construct()
@@ -75,8 +76,18 @@ namespace Tiled.UI.UserWidgets
 
         private void BackButton_onButtonPressed(ButtonPressArgs args)
         {
-            var t = HUD.CreateWidget<UWTitle>(owningHUD);
-            t.SetGeometry(new(1920, 1080), AnchorPosition.Center);
+            if(!inGame)
+            {
+                var t = HUD.CreateWidget<UWTitle>(owningHUD);
+                t.SetGeometry(new(1920, 1080), AnchorPosition.Center);
+            }
+            else
+            {
+                var e = HUD.CreateWidget<UWEscapeMenu>(owningHUD);
+                e.SetGeometry(new(1920, 1080), AnchorPosition.Center);
+                Program.GetGame().GetLocalPlayer().escMenu = e;
+            }
+            
             DestroyWidget();
         }
 
