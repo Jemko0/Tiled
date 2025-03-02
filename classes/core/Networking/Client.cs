@@ -1,4 +1,5 @@
 ﻿using Lidgren.Network;
+using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.Xna.Framework;
 using System;
@@ -439,6 +440,17 @@ namespace Tiled
             msg.Write((byte)EPacketType.ReceiveSelectedSlotChange);
             msg.Write(slot);
 
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void SendDamage(uint d, int netID)
+        {
+            DamagePacket p = new DamagePacket();
+            p.damage = d;
+            p.fromID = netID;
+
+            NetOutgoingMessage msg = client.CreateMessage();
+            p.PacketToNetOutgoingMessage(msg);
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
     }

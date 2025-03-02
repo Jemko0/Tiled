@@ -11,6 +11,7 @@ using Tiled.UI;
 using Tiled.ID;
 using System.Diagnostics;
 using Tiled.Events;
+using Tiled.Gameplay.Components;
 
 namespace Tiled.Gameplay
 {
@@ -29,10 +30,12 @@ namespace Tiled.Gameplay
         UWContainerWidget inventoryUI;
         public UWEscapeMenu escMenu;
         public UWSettings settingsWidget;
+        public HealthComponent healthComponent;
 
         public EPlayer()
         {
             collision = new CollisionComponent(this);
+            healthComponent = new HealthComponent(100, 100, 0);
         }
 
         public override void Begin()
@@ -69,8 +72,8 @@ namespace Tiled.Gameplay
                 inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
                 inventory.items[1] = new ContainerItem(EItemType.BaseAxe, 1);
                 inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
-                inventory.items[3] = new ContainerItem(EItemType.Bomb, 4444);
-                inventory.items[4] = new ContainerItem(EItemType.StoneBlock, 999);
+                inventory.items[3] = new ContainerItem(EItemType.StoneBlock, 999);
+                inventory.items[10] = new ContainerItem(EItemType.Bomb, 1000);
             }
 
             if(Main.netMode == ENetMode.Client)

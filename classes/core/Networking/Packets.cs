@@ -102,6 +102,7 @@ namespace Tiled.Networking.Shared
         ReceiveEntities,
         ReceiveWorldChunk,
         ReceiveWorldComplete,
+        ReceiveDamage,
 
         //ticking receive
         ReceiveWorldUpdate,
@@ -565,6 +566,24 @@ namespace Tiled.Networking.Shared
                     tiles[x, y] = (ETileType)msg.ReadByte();
                 }
             }
+        }
+    }
+
+    public class DamagePacket : IPacket
+    {
+        public uint damage;
+        public int fromID;
+
+        public void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            damage = msg.ReadUInt32();
+            fromID = msg.ReadInt32();
+        }
+
+        public void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write(damage);
+            msg.Write(fromID);
         }
     }
 }

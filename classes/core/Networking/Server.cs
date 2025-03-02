@@ -379,6 +379,16 @@ namespace Tiled
                                     NetShared.clientIDToPlayer[socketToClientID[msg.SenderConnection]].selectedSlot = msg.ReadInt32();
                                     break;
 
+                                case EPacketType.ReceiveDamage:
+                                    int clientID = socketToClientID[msg.SenderConnection];
+                                    EPlayer dmgPlayer = NetShared.clientIDToPlayer[clientID];
+
+                                    DamagePacket damagePacket = new DamagePacket();
+                                    damagePacket.PacketToNetIncomingMessage(msg);
+
+                                    Entity dmgEntity = NetShared.netEntitites[damagePacket.fromID];
+                                    //finish later
+                                    break;
                             }
                             break;
     

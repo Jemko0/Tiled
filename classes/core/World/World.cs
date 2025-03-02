@@ -46,6 +46,9 @@ namespace Tiled
         public static int averageSurfaceHeight = 0;
         public static sbyte[,] tileBreak;
         public static bool isGenerating = false;
+
+        public static float difficulty = 1.0f;
+
         public World()
         {
         }
