@@ -36,7 +36,7 @@ namespace Tiled
         public static Point screenCenter;
 
         public static bool inTitle = true;
-        public static bool unlit = true;
+        public static bool unlit = false;
         public static Texture2D undergroundBackgroundTexture;
         public static Texture2D tileBreakTexture;
 
@@ -211,9 +211,16 @@ namespace Tiled
             renderScale = Window.ClientBounds.Height / 1080.0f;
             renderScale *= localCamera.zoom;
 
+            lightRT?.Dispose();
+            sceneRT?.Dispose();
+            lightRT = null;
+            sceneRT = null;
+
             lightRT = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
             sceneRT = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
             backgroundUnlitRT = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+
+            GC.Collect();
         }
 
         public void ForceCalcRenderScale()
@@ -446,7 +453,7 @@ namespace Tiled
             Rectangle frame = World.GetTileFrame(x, y, tileData);
 
             Color finalColor = Color.White;
-            finalColor *= (float)World.lightMap[x, y] / Lighting.MAX_LIGHT;
+            //finalColor *= (float)World.lightMap[x, y] / Lighting.MAX_LIGHT;
             finalColor.A = 255;
             
             _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, unlit ? Color.White : finalColor);
@@ -461,7 +468,7 @@ namespace Tiled
         public void RenderWall(int x, int y)
         {
             Color finalColor = Color.Gray;
-            finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
+            //finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
             finalColor.A = 255;
 
             if (!World.IsValidWall(x, y))

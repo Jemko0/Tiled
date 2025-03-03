@@ -156,7 +156,6 @@ namespace Tiled.Gameplay
                 goto draw;
             }
 
-            finalColor *= (float)(World.lightMap[(int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)] / (float)Lighting.MAX_LIGHT);
             finalColor.A = 255;
 
         draw:
@@ -166,7 +165,7 @@ namespace Tiled.Gameplay
             {
                 drawRect.Location = drawRect.Center;
             }
-            sb.Draw(entitySprite, Rendering.WorldToScreen(drawRect), GetFrame(), Main.unlit? Color.White : finalColor, rotation, rotOrigin, flip, 0u);
+            sb.Draw(entitySprite, Rendering.WorldToScreen(drawRect), GetFrame(), finalColor, rotation, rotOrigin, flip, 0u);
             //sb.Draw(Program.GetGame().Content.Load<Texture2D>("Entities/debug"), Rendering.WorldToScreen(GetRect()), null, Color.White, 0.0f, new(0,0), SpriteEffects.None, 1.0f);
         }
 
