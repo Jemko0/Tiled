@@ -161,7 +161,15 @@ namespace Tiled
                                     newPlayer.clientID = spawnPacket.playerID;
                                     newPlayer.position = spawnPacket.position;
 
-                                    NetShared.clientIDToPlayer.Add(spawnPacket.playerID, newPlayer);
+                                    if(NetShared.clientIDToPlayer.ContainsKey(newPlayer.clientID))
+                                    {
+                                        NetShared.clientIDToPlayer[spawnPacket.playerID] = newPlayer;
+                                    }
+                                    else
+                                    {
+                                        NetShared.clientIDToPlayer.Add(spawnPacket.playerID, newPlayer);
+                                    }
+                                    
 
                                     if (localPlayerID == spawnPacket.playerID)
                                     {
@@ -273,7 +281,10 @@ namespace Tiled
                                     inv.items = inventoryPacket.items;
 
                                     ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).inventory = inv;
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).healthComponent = new Gameplay.Components.HealthComponent(100, 100, 0);
                                     ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).ClientInventoryReceived();
+
+
                                     break;
 
                                 case EPacketType.ReceiveInventoryChange:

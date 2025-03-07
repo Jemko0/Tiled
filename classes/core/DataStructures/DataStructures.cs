@@ -19,6 +19,8 @@ namespace Tiled.DataStructures
  
         public bool collision;
 
+        public bool destroyedByExplosion;
+
         /// <summary>
         /// determines if this tile only hangs on walls, like torches
         /// </summary>

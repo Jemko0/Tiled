@@ -62,6 +62,7 @@ namespace Tiled
             lightMap = new uint[maxTilesX, maxTilesY];
             surfaceHeights = new int[maxTilesX];
             tileBreak = new sbyte[maxTilesX, maxTilesY];
+            //tasks = new List<WorldGenTask>();
 
             for (int i = 0; i < maxTilesX; i++)
             {
@@ -103,6 +104,8 @@ namespace Tiled
                     await RunTasks(newParams);
 
                     worldGenFinished?.Invoke();
+
+                    ClearTasks();
 
                     if (LoadWorld(false) && Main.netMode == ENetMode.Standalone)
                     {
@@ -158,9 +161,21 @@ namespace Tiled
 
         public void InitTasks()
         {
+            tasks = new List<WorldGenTask>();
+            tasks.Clear();
             tasks.Add(new WGT_Terrain("Terrain"));
-            tasks.Add(new WGT_SurfaceCaves("Caves"));
+            tasks.Add(new WGT_Caves("Caves"));
             tasks.Add(new WGT_PlaceTrees("Trees"));
+        }
+
+        public void ClearTasks()
+        {
+            for (int i = 0; i < tasks.Count; i++)
+            {
+                tasks[i] = null;
+            }
+            tasks.Clear();
+            tasks = null;
         }
 
         public async Task RunTasks(WorldGenParams newParams)
@@ -179,6 +194,8 @@ namespace Tiled
                 await runTask; // Wait for the actual task to complete
                 Debug.WriteLine(task.taskName);
             }
+
+            return;
         }
 
         public static void CompleteCurrent()
@@ -274,7 +291,7 @@ namespace Tiled
 
         public static bool IsValidForTilePlacement(int x, int y)
         {
-            return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y) && (Collision.CollisionStatics.isEntityWithinRect(new((x * TILESIZE), (y * TILESIZE), TILESIZE, TILESIZE)) == null);
+            return (tiles[x, y] == ETileType.Air) && HasDirectNeighbors(x, y) && (Collision.CollisionStatics.isEntityWithinRect(new((x * TILESIZE), (y * TILESIZE), TILESIZE, TILESIZE)) == null);
         }
 
         public static bool IsValidForTilePlacement(int x, int y, ETileType type)
@@ -284,7 +301,7 @@ namespace Tiled
                 return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y);
             }
 
-            return tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y) && (Collision.CollisionStatics.isEntityWithinRect(new((x * TILESIZE), (y * TILESIZE), TILESIZE, TILESIZE)) == null);
+            return ((tiles[x, y] == ETileType.Air && HasDirectNeighbors(x, y)) || IsValidWall(x, y)) && (Collision.CollisionStatics.isEntityWithinRect(new((x * TILESIZE), (y * TILESIZE), TILESIZE, TILESIZE)) == null);
         }
 
         #endregion
@@ -672,6 +689,11 @@ namespace Tiled
         {
             Tile t = TileID.GetTile(tiles[x, y]);
 
+            if(!t.destroyedByExplosion)
+            {
+                return;
+            }
+
 #if TILEDSERVER
             if(Main.netMode == ENetMode.Server)
             {
@@ -847,13 +869,17 @@ namespace Tiled
                             {
                                 if (distance <= width - 1 || random.NextDouble() > 0.4)
                                 {
+                                    // Only place walls if we're digging through solid blocks below the surface
+                                    if (digY > World.surfaceHeights[digX] && digY < World.averageSurfaceHeight + 80 && World.tiles[digX, digY] != ETileType.Air)
+                                    {
+                                        SetWall(digX, digY, EWallType.Dirt);
+                                        SetWall(digX + 1, digY, EWallType.Dirt);
+                                        SetWall(digX - 1, digY, EWallType.Dirt);
+                                        SetWall(digX, digY - 1, EWallType.Dirt);
+                                        SetWall(digX, digY + 1, EWallType.Dirt);
+                                    }
+                                    
                                     SetTile(digX, digY, ETileType.Air);
-
-                                    /*SetWall(digX, digY, EWallType.Dirt);
-                                    SetWall(digX + 1, digY, EWallType.Dirt);
-                                    SetWall(digX - 1, digY, EWallType.Dirt);
-                                    SetWall(digX, digY - 1, EWallType.Dirt);
-                                    SetWall(digX, digY + 1, EWallType.Dirt);*/
                                 }
                             }
                         }
@@ -862,7 +888,7 @@ namespace Tiled
             }
         }
 
-        public static void GenerateCaveSystem(int startX, int startY, int numTunnels = 5, int maxLength = 30, int minWidth = 2, int maxWidth = 5)
+        public static void GenerateCaveSystem(int startX, int startY, int numTunnels = 8, int maxLength = 60, int minWidth = 3, int maxWidth = 7)
         {
             Random random = new Random(Program.GetGame().world.seed);
 
@@ -874,8 +900,8 @@ namespace Tiled
                 int junctionX = junctionPoints[junctionIndex].x;
                 int junctionY = junctionPoints[junctionIndex].y;
 
-                int tunnelLength = random.Next(1, maxLength);
-                float curviness = 0.1f + (float)random.NextDouble() * 0.3f;
+                int tunnelLength = random.Next(1, maxLength); // Increased minimum length
+                float curviness = 0.15f + (float)random.NextDouble() * 0.4f; // Increased variation in curves
                 int width = random.Next(minWidth, maxWidth);
 
                 // Dig the tunnel
@@ -893,9 +919,9 @@ namespace Tiled
 
             foreach ((int x, int y) in junctionPoints)
             {
-                if (random.NextDouble() > 0.5)
+                if (random.NextDouble() > 0.3) // Increased chance of chambers
                 {
-                    int chamberRadius = random.Next(5, 10);
+                    int chamberRadius = random.Next(6, 12); // Larger chambers
                     DigChamber(x, y, chamberRadius);
                 }
             }

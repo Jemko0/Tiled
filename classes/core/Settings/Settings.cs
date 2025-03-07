@@ -28,8 +28,12 @@ namespace Tiled.User
             }
             catch (Exception ex)
             {
+#if !TILEDSERVER
                 Main.netClient.externClientInvokeException(ex);
                 return false;
+#else
+                return false;
+#endif
             }
             
         }

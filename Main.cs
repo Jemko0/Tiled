@@ -185,7 +185,7 @@ namespace Tiled
 
         private void NetServer_onServerLog(string msg)
         {
-            Debug.WriteLine("[SERVER] " + msg);
+            System.Diagnostics.Debug.WriteLine("[SERVER] " + msg);
         }
 #endif
 
@@ -286,13 +286,13 @@ namespace Tiled
         {
             base.Draw(gameTime);
 
-            GraphicsDevice.SetRenderTarget(backgroundUnlitRT); //draw unlit background rt
+            GraphicsDevice.SetRenderTarget(backgroundUnlitRT); //Draw unlit Background RT
             GraphicsDevice.Clear(Color.Black);
 
             RenderSky();
             RenderSun();
 
-            GraphicsDevice.SetRenderTarget(sceneRT); //draw ot scene
+            GraphicsDevice.SetRenderTarget(sceneRT); //Draw to Scene
             GraphicsDevice.Clear(new Color(0, 0, 0, 0));
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
@@ -399,8 +399,8 @@ namespace Tiled
                     }
 
                     Color c = Color.White;
-                    float lerpValue = (float)World.lightMap[x, y] / (float)Lighting.MAX_LIGHT;
-                    c = Color.Lerp(Color.Black, Color.White, lerpValue);
+                    float lerpValue = World.lightMap[x, y] / (float)Lighting.MAX_LIGHT;
+                    c = unlit? Color.White : Color.Lerp(Color.Black, Color.White, lerpValue);
 
                     _spriteBatch.Draw(t, Rendering.GetLightTileTransform(x, y), c);
                 }
@@ -451,25 +451,19 @@ namespace Tiled
 
             Tile tileData = TileID.GetTile(World.tiles[x, y]);
             Rectangle frame = World.GetTileFrame(x, y, tileData);
-
-            Color finalColor = Color.White;
-            //finalColor *= (float)World.lightMap[x, y] / Lighting.MAX_LIGHT;
-            finalColor.A = 255;
             
-            _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, unlit ? Color.White : finalColor);
+            _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, Color.White);
 
             Rectangle? breakFrame = BreakTextureID.GetTextureFrame(World.tileBreak[x, y], tileData.hardness);
+
             if (breakFrame != null)
             {
-                _spriteBatch.Draw(tileBreakTexture, Rendering.GetTileTransform(x, y), breakFrame, unlit ? Color.White : finalColor);
+                _spriteBatch.Draw(tileBreakTexture, Rendering.GetTileTransform(x, y), breakFrame, Color.White);
             }
         }
 
         public void RenderWall(int x, int y)
         {
-            Color finalColor = Color.Gray;
-            //finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
-            finalColor.A = 255;
 
             if (!World.IsValidWall(x, y))
             {
@@ -479,8 +473,7 @@ namespace Tiled
             Wall wallData = WallID.GetWall(World.walls[x, y]);
             Rectangle frame = World.GetWallFrame(x, y, wallData);
 
-            
-            _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, unlit? Color.White : finalColor);
+            _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, Color.White);
         }
     
         public void RenderSky()

@@ -33,9 +33,9 @@ namespace Tiled.Gameplay.Components
             this.defense = defense;
         }
 
-        public void AddHealth(uint amt)
+        public void AddHealth(int amt)
         {
-            health += amt;
+            health = (uint)(health + amt);
         }
 
         public void ApplyDamage(uint damage, int fromNetID)
@@ -44,18 +44,19 @@ namespace Tiled.Gameplay.Components
 
             if(Main.netMode == DataStructures.ENetMode.Standalone)
             {
-                AddHealth(CalcDamage(damage, defense));
+                AddHealth((int)-CalcDamage(damage, defense));
                 return;
             }
-            
+#if !TILEDSERVER
             if(Main.netMode == DataStructures.ENetMode.Client)
             {
                 Main.netClient.SendDamage(damage, fromNetID);
                 return;
             }
+#endif
 
 #if TILEDSERVER
-            AddHealth(CalcDamage(damage, defense));
+            AddHealth((int)-CalcDamage(damage, defense));
             return;
 #endif
         }

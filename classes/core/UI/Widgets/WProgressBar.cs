@@ -1,10 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tiled.UI.Widgets
 {
@@ -13,8 +8,13 @@ namespace Tiled.UI.Widgets
         public Texture2D backgroundTexture;
         public Texture2D fillTexture;
 
-        public Color backgroundColor;
-        public Color fillColor;
+        public Color backgroundColor = Color.Black;
+        public Color fillColor = Color.Red;
+
+        public float value;
+        public float minValue;
+        public float maxValue;
+        public float valueNormalized;
 
         public WProgressBar(HUD owner) : base(owner)
         {
@@ -23,13 +23,25 @@ namespace Tiled.UI.Widgets
         public override void Construct()
         {
             backgroundTexture = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
+            backgroundTexture.SetData(new Color[] { Color.White });
             fillTexture = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
+            fillTexture.SetData(new Color[] { Color.White });
         }
 
         public override void DrawWidget(ref SpriteBatch sb)
         {
+            Update();
+            Rectangle dest = scaledGeometry;
+            dest.Width = (int)(dest.Width * valueNormalized);
+            dest.Inflate(-2 * HUD.DPIScale, -2 * HUD.DPIScale);
+
             sb.Draw(backgroundTexture, scaledGeometry, backgroundColor);
-            sb.Draw(fillTexture, scaledGeometry, fillColor);
+            sb.Draw(fillTexture, dest, fillColor);
+        }
+
+        public void Update()
+        {
+            valueNormalized = (value - minValue) / (maxValue - minValue);
         }
     }
 }

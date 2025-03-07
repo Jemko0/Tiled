@@ -30,6 +30,7 @@ namespace Tiled.ID
             t.minPick = 1;
             t.minAxe = 1;
             t.collision = true;
+            t.destroyedByExplosion = true;
             
             switch(type)
             {
@@ -122,7 +123,7 @@ namespace Tiled.ID
 
                 case EWallType.Dirt:
                     w.render = true;
-                    w.sprite = Program.GetGame().Content.Load<Texture2D>("Tiles/dirt");
+                    w.sprite = Program.GetGame().Content.Load<Texture2D>("Walls/dirtWall");
                     break;
             }
 

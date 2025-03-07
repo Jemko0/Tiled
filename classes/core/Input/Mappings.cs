@@ -50,6 +50,7 @@ namespace Tiled.Input
             actionMappings.Add("inv_5", new ActionMapping(Keys.D5));
             actionMappings.Add("inv_open", new ActionMapping(Keys.E));
             actionMappings.Add("esc_menu", new ActionMapping(Keys.Escape));
+            actionMappings.Add("dbg_selfdmg", new ActionMapping(Keys.P));
         }
 
         /// <summary>

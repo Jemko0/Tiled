@@ -12,6 +12,7 @@ using Tiled.ID;
 using System.Diagnostics;
 using Tiled.Events;
 using Tiled.Gameplay.Components;
+using Tiled.UI.Widgets;
 
 namespace Tiled.Gameplay
 {
@@ -31,6 +32,7 @@ namespace Tiled.Gameplay
         public UWEscapeMenu escMenu;
         public UWSettings settingsWidget;
         public HealthComponent healthComponent;
+        public WProgressBar healthBarUI;
 
         public EPlayer()
         {
@@ -54,26 +56,25 @@ namespace Tiled.Gameplay
             Mappings.actionMappings["inv_5"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_open"].onActionMappingPressed += OpenInventory;
             Mappings.actionMappings["esc_menu"].onActionMappingPressed += OpenEsc;
+            Mappings.actionMappings["dbg_selfdmg"].onActionMappingPressed += dbgSelfDamage; ;
 
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
 
 #if !TILEDSERVER
+
             if(Main.netMode == ENetMode.Standalone)
             {
                 inventory = new Container(52);
                 inventory.entityCarrier = this;
-
-                inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
-                inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.TopLeft, new(25, 25));
-                inventoryUI.SetContainer(ref inventory);
-                inventoryUI.UpdateSlots();
 
                 inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
                 inventory.items[1] = new ContainerItem(EItemType.BaseAxe, 1);
                 inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
                 inventory.items[3] = new ContainerItem(EItemType.StoneBlock, 999);
                 inventory.items[10] = new ContainerItem(EItemType.Bomb, 1000);
+
+                ClientCreateUI();
             }
 
             if(Main.netMode == ENetMode.Client)
@@ -81,8 +82,35 @@ namespace Tiled.Gameplay
                 Main.netClient.RequestInventory();
             }
 #else
-            
 #endif
+        }
+
+        private void dbgSelfDamage(ActionMappingArgs e)
+        {
+            healthComponent.ApplyDamage(10, netID);
+        }
+
+        private void DamageReceived(DamageEventArgs e)
+        {
+            healthBarUI.value = healthComponent.health;
+        }
+
+        private void ClientCreateUI()
+        {
+            inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
+            inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.BottomCenter, new(0, -50));
+            inventoryUI.SetContainer(ref inventory);
+            inventoryUI.UpdateSlots();
+
+            healthBarUI = HUD.CreateWidget<WProgressBar>(Program.GetGame().localHUD);
+            healthBarUI.minValue = 0.0f;
+            healthBarUI.value = healthComponent.health;
+            healthBarUI.maxValue = healthComponent.maxHealth;
+            healthBarUI.backgroundColor = Color.DarkRed;
+            healthComponent.onDamageGet += DamageReceived;
+
+            invOpen = true;
+            OpenInventory(new ActionMappingArgs(Keys.None));
         }
 
         private void OpenInventory(ActionMappingArgs e)
@@ -91,6 +119,19 @@ namespace Tiled.Gameplay
             //Debug.WriteLine(invOpen);
             Program.GetGame().localPlayerController.inUI = invOpen;
             inventoryUI.SetOpenInv(invOpen);
+
+            if(!invOpen)
+            {
+                inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.BottomCenter, new(0, -25));
+                healthBarUI.SetGeometry(new Vector2(320, 32), AnchorPosition.BottomCenter, new(-40, -135));
+                healthBarUI.visible = true;
+            }
+            else
+            {
+                inventoryUI.SetGeometry(new Vector2(400, 540), AnchorPosition.Center, new(0, 0));
+                healthBarUI.SetGeometry(new Vector2(320, 32), AnchorPosition.BottomCenter, new(-40, -135));
+                healthBarUI.visible = false;
+            }
         }
 
         private void OpenEsc(ActionMappingArgs e)
@@ -114,10 +155,7 @@ namespace Tiled.Gameplay
 
         public void ClientInventoryReceived()
         {
-            inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
-            inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.TopLeft, new(25, 25));
-            inventoryUI.SetContainer(ref inventory);
-            inventoryUI.UpdateSlots();
+            ClientCreateUI();
         }
 
         private void SetSlot(ActionMappingArgs e)
@@ -216,6 +254,16 @@ namespace Tiled.Gameplay
             }
             
             MovementUpdate();
+
+            if(Keyboard.GetState().IsKeyDown(Keys.D9))
+            {
+                Program.GetGame().world.worldTime += 0.1f;
+            }
+
+            if (Keyboard.GetState().IsKeyDown(Keys.D8))
+            {
+                Program.GetGame().world.worldTime -= 0.1f;
+            }
         }
 
         public override Rectangle? GetFrame()
@@ -234,6 +282,7 @@ namespace Tiled.Gameplay
 
         public override void Destroyed()
         {
+#if !TILEDSERVER
             inventory.items = null;
             inventory = null;
             InputManager.onLeftMousePressed -= LMB;
@@ -244,6 +293,13 @@ namespace Tiled.Gameplay
                 EventHelper.UnbindAllEventHandlers(mapping.Value, "onActionMappingReleased");
             }
             inventoryUI.DestroyWidget();
+
+            EventHelper.UnbindAllEventHandlers(healthComponent, "onDamageGet");
+            healthComponent = null;
+            healthBarUI.backgroundTexture.Dispose();
+            healthBarUI.fillTexture.Dispose();
+            healthBarUI.DestroyWidget();
+#endif
         }
 
         private void LMB(MouseButtonEventArgs e)

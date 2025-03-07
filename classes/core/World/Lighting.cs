@@ -153,7 +153,7 @@ namespace Tiled
 
         private static async Task ProcessLightUpdatesAsync(List<(int x, int y)> positions, CancellationToken token)
         {
-            var propagationQueue = new Queue<(int x, int y)>();
+            Queue<(int x, int y)> propagationQueue = new Queue<(int x, int y)>();
 
             foreach (var pos in positions)
             {
@@ -193,11 +193,13 @@ namespace Tiled
                 return Math.Max(skyLight, maxNeighborLight > 0 ? maxNeighborLight - 1 : 0);
             }
 
-            // For solid blocks, consider their light blocking property
             uint neighborLight = GetMaxNeighborLight(x, y);
-            if (neighborLight == 0) return 0;
 
-            // Calculate light reduction based on tile's blockLight property
+            if (neighborLight == 0)
+            {
+                return 0;
+            }
+
             uint reduction = Math.Min(neighborLight, tile.blockLight);
             return neighborLight > reduction ? neighborLight - reduction : 0;
         }
@@ -206,7 +208,6 @@ namespace Tiled
         {
             uint maxLight = 0;
 
-            // Check each neighbor
             if (World.IsValidIndex(World.lightMap, x + 1, y))
             {
                 maxLight = Math.Max(maxLight, World.lightMap[x + 1, y]);
