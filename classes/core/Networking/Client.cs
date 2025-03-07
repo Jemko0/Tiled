@@ -464,5 +464,15 @@ namespace Tiled
             p.PacketToNetOutgoingMessage(msg);
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
+
+        public void SendInventoryMove(int from, int to)
+        {
+            InvMoveSlotPacket p = new InvMoveSlotPacket();
+            p.fromID = from;
+            p.toID = to;
+            NetOutgoingMessage msg = client.CreateMessage();
+            p.PacketToNetOutgoingMessage(msg);
+            client.SendMessage(msg, NetDeliveryMethod.ReliableSequenced);
+        }
     }
 }

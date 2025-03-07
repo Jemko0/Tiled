@@ -25,7 +25,7 @@ namespace Tiled.ID
             t.framePadding = 2;
             t.ignoreNeighbors = new TileNeighbors(0, 0, 0, 0);
             t.light = 0;
-            t.blockLight = 3;
+            t.blockLight = 5;
             t.hardness = 10;
             t.minPick = 1;
             t.minAxe = 1;

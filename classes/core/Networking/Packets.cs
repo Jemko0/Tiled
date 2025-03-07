@@ -586,4 +586,22 @@ namespace Tiled.Networking.Shared
             msg.Write(fromID);
         }
     }
+
+    public class InvMoveSlotPacket : IPacket
+    {
+        public int fromID;
+        public int toID;
+
+        public void PacketToNetIncomingMessage(NetIncomingMessage msg)
+        {
+            fromID = msg.ReadInt32();
+            toID = msg.ReadInt32();
+        }
+
+        public void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
+        {
+            msg.Write(fromID);
+            msg.Write(toID);
+        }
+    }
 }

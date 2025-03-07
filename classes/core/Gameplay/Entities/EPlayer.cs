@@ -316,11 +316,6 @@ namespace Tiled.Gameplay
                 SwingItem(selectedSlot, tile);
             }
 
-            if(Keyboard.GetState().IsKeyDown(Keys.F))
-            {
-                Program.GetGame().localPlayerController.attachToEntity = false;
-            }
-
 #if !TILEDSERVER
             RepSwingItem(tile);
 #endif

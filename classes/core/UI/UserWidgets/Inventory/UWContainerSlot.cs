@@ -29,7 +29,6 @@ namespace Tiled.UI.UserWidgets
 
             InputManager.onLeftMousePressed += InputManager_onLeftMousePressed;
         }
-
         private void InputManager_onLeftMousePressed(MouseButtonEventArgs e)
         {
             if(IsHovered() && Program.GetGame().GetLocalPlayer().invOpen)
@@ -40,6 +39,7 @@ namespace Tiled.UI.UserWidgets
                     {
                         container.items[slotID] = InputManager.mouseItem;
                         InputManager.mouseHasItem = false;
+                        InputManager.mouseItemIndex = -1;
                     }
                     else
                     {
@@ -47,6 +47,7 @@ namespace Tiled.UI.UserWidgets
                         container.items[slotID] = InputManager.mouseItem;
                         InputManager.mouseItem = oldItem;
                         InputManager.mouseHasItem = true;
+                        InputManager.mouseItemIndex = slotID;
                     }
                 }
                 else
@@ -54,6 +55,8 @@ namespace Tiled.UI.UserWidgets
                     InputManager.mouseHasItem = true;
                     InputManager.mouseItem = container.items[slotID];
                     container.items[slotID] = ContainerItem.empty;
+
+                    InputManager.mouseItemIndex = slotID;
                 }
             }
         }
