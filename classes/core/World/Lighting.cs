@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tiled.ID;
 using System.Linq;
+using Tiled.Collision;
 
 namespace Tiled
 {
@@ -180,6 +181,13 @@ namespace Tiled
 
         private static uint CalculateLight(int x, int y)
         {
+            /*var entity = CollisionStatics.isEntityWithinRect(new System.Drawing.RectangleF(x * World.TILESIZE, y * World.TILESIZE, World.TILESIZE, World.TILESIZE));
+
+            if(entity != null)
+            {
+                return entity.light;
+            }*/
+
             var tile = TileID.GetTile(World.tiles[x, y]);
 
             // Check if tile is a light source
@@ -227,7 +235,7 @@ namespace Tiled
 
             return maxLight;
         }
-
+        
         public static uint CalculateSkyLight(int y)
         {
             if(y < World.averageSurfaceHeight + 80)

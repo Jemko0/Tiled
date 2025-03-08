@@ -27,6 +27,7 @@ namespace Tiled.Gameplay
         public HealthComponent healthComponent;
         public bool facingLeft;
         public int direction;
+        public uint light = 0;
         public Entity()
         {
             RegisterCollisionComponent();
@@ -133,6 +134,11 @@ namespace Tiled.Gameplay
             {
                 facingLeft = velocity.X < 0.0f;
                 direction = facingLeft ? -1 : 1;
+            }
+
+            if(light != 0)
+            {
+                Lighting.QueueLightUpdate((int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE));
             }
         }
 

@@ -223,7 +223,7 @@ namespace Tiled.ID
                     i.maxStack = 999;
                     i.size = new Vector2(16, 16);
                     i.behaviourType = typeof(PlaceTileBehaviour);
-                    i.placeTile = ETileType.TreeTrunk;
+                    i.placeTile = ETileType.Dirt;
                     break;
 
                 case EItemType.Wood:

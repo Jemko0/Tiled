@@ -13,7 +13,7 @@ namespace Tiled.Collision
         private const float skinWidth = 0.1f;
         public bool collidesWithEntities = false;
 
-        public delegate void Hit(Vector2 hitVelocity);
+        public delegate void Hit(Vector2 hitVelocity, Vector2 hitNormal);
         public event Hit onHit;
 
         public delegate void HitEntity(Entity e);
@@ -54,6 +54,7 @@ namespace Tiled.Collision
         private void MoveWithCollision(ref float moveX, ref float moveY)
         {
             Vector2 hitVel = new();
+            Vector2 hitNormal = new();
             bool anyCollision = false;
 
             // Handle X movement first
@@ -86,6 +87,8 @@ namespace Tiled.Collision
                 {
                     anyCollision = true;
                     hitVel.X = entity.velocity.X;
+                    hitNormal.X = direction;
+
                     moveX = direction * (Math.Max(0, shortestHit - skinWidth));
                     entity.velocity.X = 0;
                 }
@@ -123,6 +126,8 @@ namespace Tiled.Collision
                 {
                     anyCollision = true;
                     hitVel.Y = entity.velocity.Y;
+                    hitNormal.Y = direction;
+
                     moveY = direction * (Math.Max(0, shortestHit - skinWidth));
                     entity.velocity.Y = 0;
                 }
@@ -131,7 +136,7 @@ namespace Tiled.Collision
 
             if (anyCollision)
             {
-                onHit?.Invoke(hitVel);
+                onHit?.Invoke(hitVel, hitNormal);
             }
         }
 
@@ -311,9 +316,10 @@ namespace Tiled.Collision
         {
             for (int i = 0; i < Main.entities.Count; i++)
             {
-                if (Main.entities[i].GetRectF().IntersectsWith(rect))
+                Entity? current = Main.entities[i];
+                if ((bool)current?.GetRectF().IntersectsWith(rect))
                 {
-                    return Main.entities[i];
+                    return current;
                 }
             }
             return null;

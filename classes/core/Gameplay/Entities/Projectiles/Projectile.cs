@@ -31,7 +31,7 @@ namespace Tiled.Gameplay.Entities.Projectiles
             RegisterCollisionComponent();
             collision.onHit += Collision_onHit;
             collision.onEntityHit += Collision_onEntityHit;
-
+            light = 32;
             behavior?.Start(this);
         }
 
@@ -40,9 +40,9 @@ namespace Tiled.Gameplay.Entities.Projectiles
             behavior?.HitEntity(this, e);
         }
 
-        private void Collision_onHit(Vector2 hitVelocity)
+        private void Collision_onHit(Vector2 hitVelocity, Vector2 hitNormal)
         {
-            behavior?.Hit(this, hitVelocity);
+            behavior?.Hit(this, hitVelocity, hitNormal);
         }
 
         public static EProjectile CreateProjectile(EProjectileType type, Entity? ownerEntity = null)

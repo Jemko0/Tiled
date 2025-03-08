@@ -10,13 +10,13 @@ namespace Tiled.Gameplay.Projectiles.ProjectileBehaviours
     {
         void Start(EProjectile item);
         void Update(EProjectile item, float delta);
-        void Hit(EProjectile item, Vector2 hitVelocity);
+        void Hit(EProjectile item, Vector2 hitVelocity, Vector2 hitNormal);
         void HitEntity(EProjectile item, Entity entity);
     }
 
     public class DefaultProjectileBehaviour : IProjectileBehavior
     {
-        public void Hit(EProjectile item, Vector2 hitVelocity)
+        public void Hit(EProjectile item, Vector2 hitVelocity, Vector2 hitNormal)
         {
             throw new NotImplementedException();
         }

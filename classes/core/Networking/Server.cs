@@ -407,8 +407,8 @@ namespace Tiled
                                 case EPacketType.ReceiveClientContainer:
                                     InventoryPacket containerPacket = new InventoryPacket();
                                     containerPacket.PacketToNetIncomingMessage(msg);
-                                    NetShared.clientIDToPlayer[clientPlayerID].inventory.items = containerPacket.items;
-                                    NetShared.clientIDToPlayer[clientPlayerID].inventory.containerSize = containerPacket.size;
+                                    //NetShared.clientIDToPlayer[clientPlayerID].inventory.items = containerPacket.items;
+                                    //NetShared.clientIDToPlayer[clientPlayerID].inventory.containerSize = containerPacket.size;
                                     break;
                             }
                             break;

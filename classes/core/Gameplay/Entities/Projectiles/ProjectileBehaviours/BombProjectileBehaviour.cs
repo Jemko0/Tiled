@@ -8,10 +8,15 @@ namespace Tiled.Gameplay.Projectiles.ProjectileBehaviours
     {
         float age = 0.0f;
         float rotAmt = 0.0f;
-        public void Hit(EProjectile item, Vector2 hitVelocity)
+        public void Hit(EProjectile item, Vector2 hitVelocity, Vector2 hitNormal)
         {
             float restitution = 0.7f;
             item.velocity.Y = -hitVelocity.Y * restitution;
+
+            if(hitNormal.X != 0)
+            {
+                item.velocity.X = -hitVelocity.X * restitution;
+            }
         }
 
         public void HitEntity(EProjectile item, Entity entity)
