@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
@@ -380,14 +381,34 @@ namespace Tiled
                                     break;
 
                                 case EPacketType.ReceiveDamage:
-                                    int clientID = socketToClientID[msg.SenderConnection];
-                                    EPlayer dmgPlayer = NetShared.clientIDToPlayer[clientID];
-
                                     DamagePacket damagePacket = new DamagePacket();
                                     damagePacket.PacketToNetIncomingMessage(msg);
 
-                                    Entity dmgEntity = NetShared.netEntitites[damagePacket.fromID];
+                                    if(damagePacket.isPlayer)
+                                    {
+                                        EPlayer dmgPlayer = NetShared.clientIDToPlayer[damagePacket.toID];
+                                        dmgPlayer.healthComponent.DoDamage(damagePacket.damage, damagePacket.toID);
+                                    }
+                                    else
+                                    {
+                                        Entity dmgEntity = NetShared.netEntitites[damagePacket.toID];
+                                        dmgEntity.healthComponent.DoDamage(damagePacket.damage, damagePacket.toID);
+                                    }
+
+                                    NetOutgoingMessage dmgMsg = server.CreateMessage();
+                                    dmgMsg.Write((byte)EPacketType.ReceiveDamage);
+                                    damagePacket.PacketToNetOutgoingMessage(dmgMsg);
+                                    server.SendToAll(dmgMsg, NetDeliveryMethod.ReliableSequenced);
+
+                                    onServerLog.Invoke("DMG_EVENT / id: " + damagePacket.toID + " / dmg: " + damagePacket.damage + " / isPlayer: " + damagePacket.isPlayer);
                                     //finish later
+                                    break;
+
+                                case EPacketType.ReceiveClientContainer:
+                                    InventoryPacket containerPacket = new InventoryPacket();
+                                    containerPacket.PacketToNetIncomingMessage(msg);
+                                    NetShared.clientIDToPlayer[clientPlayerID].inventory.items = containerPacket.items;
+                                    NetShared.clientIDToPlayer[clientPlayerID].inventory.containerSize = containerPacket.size;
                                     break;
                             }
                             break;

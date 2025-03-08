@@ -103,6 +103,7 @@ namespace Tiled.Networking.Shared
         ReceiveWorldChunk,
         ReceiveWorldComplete,
         ReceiveDamage,
+        ReceiveClientContainer,
 
         //ticking receive
         ReceiveWorldUpdate,
@@ -572,18 +573,20 @@ namespace Tiled.Networking.Shared
     public class DamagePacket : IPacket
     {
         public uint damage;
-        public int fromID;
-
+        public int toID;
+        public bool isPlayer;
         public void PacketToNetIncomingMessage(NetIncomingMessage msg)
         {
             damage = msg.ReadUInt32();
-            fromID = msg.ReadInt32();
+            toID = msg.ReadInt32();
+            isPlayer = msg.ReadBoolean();
         }
 
         public void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
         {
             msg.Write(damage);
-            msg.Write(fromID);
+            msg.Write(toID);
+            msg.Write(isPlayer);
         }
     }
 

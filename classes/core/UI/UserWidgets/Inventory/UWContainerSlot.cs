@@ -31,6 +31,7 @@ namespace Tiled.UI.UserWidgets
         }
         private void InputManager_onLeftMousePressed(MouseButtonEventArgs e)
         {
+#if !TILEDSERVER
             if(IsHovered() && Program.GetGame().GetLocalPlayer().invOpen)
             {
                 if(InputManager.mouseHasItem)
@@ -39,7 +40,7 @@ namespace Tiled.UI.UserWidgets
                     {
                         container.items[slotID] = InputManager.mouseItem;
                         InputManager.mouseHasItem = false;
-                        InputManager.mouseItemIndex = -1;
+                        Main.netClient.SendContainerState(Program.GetGame().GetLocalPlayer());
                     }
                     else
                     {
@@ -47,7 +48,7 @@ namespace Tiled.UI.UserWidgets
                         container.items[slotID] = InputManager.mouseItem;
                         InputManager.mouseItem = oldItem;
                         InputManager.mouseHasItem = true;
-                        InputManager.mouseItemIndex = slotID;
+                        Main.netClient.SendContainerState(Program.GetGame().GetLocalPlayer());
                     }
                 }
                 else
@@ -55,10 +56,10 @@ namespace Tiled.UI.UserWidgets
                     InputManager.mouseHasItem = true;
                     InputManager.mouseItem = container.items[slotID];
                     container.items[slotID] = ContainerItem.empty;
-
-                    InputManager.mouseItemIndex = slotID;
+                    Main.netClient.SendContainerState(Program.GetGame().GetLocalPlayer());
                 }
             }
+#endif
         }
 
         public override void DrawWidget(ref SpriteBatch sb)

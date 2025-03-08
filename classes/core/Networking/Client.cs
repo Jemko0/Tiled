@@ -342,6 +342,22 @@ namespace Tiled
 
                                     loadState = WorldLoadState.RequestingChanges;
                                     break;
+
+                                case EPacketType.ReceiveDamage:
+                                    DamagePacket damagePacket = new DamagePacket();
+                                    damagePacket.PacketToNetIncomingMessage(inc);
+
+                                    if (damagePacket.isPlayer)
+                                    {
+                                        EPlayer dmgPlayer = NetShared.clientIDToPlayer[damagePacket.toID];
+                                        dmgPlayer.healthComponent.DoDamage(damagePacket.damage, damagePacket.toID);
+                                    }
+                                    else
+                                    {
+                                        Entity dmgEntity = NetShared.netEntitites[damagePacket.toID];
+                                        dmgEntity.healthComponent.DoDamage(damagePacket.damage, damagePacket.toID);
+                                    }
+                                    break;
                             }
                             break;
 
@@ -454,13 +470,20 @@ namespace Tiled
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
+        /// <summary>
+        /// isPlayer flag will always be true since a client should only send damage events from themselves
+        /// </summary>
+        /// <param name="d"></param>
+        /// <param name="netID"></param>
         public void SendDamage(uint d, int netID)
         {
             DamagePacket p = new DamagePacket();
             p.damage = d;
-            p.fromID = netID;
+            p.toID = netID;
+            p.isPlayer = true;
 
             NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.ReceiveDamage);
             p.PacketToNetOutgoingMessage(msg);
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
@@ -473,6 +496,19 @@ namespace Tiled
             NetOutgoingMessage msg = client.CreateMessage();
             p.PacketToNetOutgoingMessage(msg);
             client.SendMessage(msg, NetDeliveryMethod.ReliableSequenced);
+        }
+
+        public void SendContainerState(Container c)
+        {
+            InventoryPacket i = new InventoryPacket();
+            i.items = c.items;
+            i.size = c.items.Length;
+
+            NetOutgoingMessage m = client.CreateMessage();
+            m.Write((byte)EPacketType.ReceiveClientContainer);
+            i.PacketToNetOutgoingMessage(m);
+            
+            client.SendMessage(m, NetDeliveryMethod.ReliableSequenced);
         }
     }
 }

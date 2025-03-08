@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System;
+using System.Security.Cryptography.X509Certificates;
 using Tiled.Interfaces;
 
 namespace Tiled.Gameplay.Components
@@ -40,11 +41,9 @@ namespace Tiled.Gameplay.Components
 
         public void ApplyDamage(uint damage, int fromNetID)
         {
-            onDamageGet.Invoke(new DamageEventArgs(damage, fromNetID));
-
             if(Main.netMode == DataStructures.ENetMode.Standalone)
             {
-                AddHealth((int)-CalcDamage(damage, defense));
+                DoDamage(damage, fromNetID);
                 return;
             }
 #if !TILEDSERVER
@@ -61,9 +60,19 @@ namespace Tiled.Gameplay.Components
 #endif
         }
 
+
+        /// <summary>
+        /// actually performs the damage calc and sets hp
+        /// </summary>
+        public void DoDamage(uint dmg, int id)
+        {
+            AddHealth((int)-CalcDamage(dmg, defense));
+            onDamageGet?.Invoke(new DamageEventArgs(dmg, id));
+        }
+
         public static uint CalcDamage(uint rawDamage, uint defense)
         {
-            return (uint)(rawDamage - (defense * World.difficulty / 2.0f));
+            return (uint)Math.Clamp((rawDamage - (defense * World.difficulty / 2.0f)), 1, uint.MaxValue);
         }
     }
 }

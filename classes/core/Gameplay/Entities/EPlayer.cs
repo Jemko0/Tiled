@@ -31,14 +31,10 @@ namespace Tiled.Gameplay
         UWContainerWidget inventoryUI;
         public UWEscapeMenu escMenu;
         public UWSettings settingsWidget;
-        public HealthComponent healthComponent;
+        
         public WProgressBar healthBarUI;
 
-        public EPlayer()
-        {
-            collision = new CollisionComponent(this);
-            healthComponent = new HealthComponent(100, 100, 0);
-        }
+        public EPlayer() : base() { }
 
         public override void Begin()
         {
@@ -47,6 +43,7 @@ namespace Tiled.Gameplay
 
         public override void Possessed(Controller playerController)
         {
+#if !TILEDSERVER
             Mappings.actionMappings["move_jump"].onActionMappingPressed += JumpPressed;
             Mappings.actionMappings["move_jump"].onActionMappingReleased += JumpReleased;
             Mappings.actionMappings["inv_1"].onActionMappingPressed += SetSlot;
@@ -56,12 +53,12 @@ namespace Tiled.Gameplay
             Mappings.actionMappings["inv_5"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_open"].onActionMappingPressed += OpenInventory;
             Mappings.actionMappings["esc_menu"].onActionMappingPressed += OpenEsc;
-            Mappings.actionMappings["dbg_selfdmg"].onActionMappingPressed += dbgSelfDamage; ;
+            Mappings.actionMappings["dbg_selfdmg"].onActionMappingPressed += dbgSelfDamage;
 
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
 
-#if !TILEDSERVER
+
 
             if(Main.netMode == ENetMode.Standalone)
             {
@@ -87,7 +84,7 @@ namespace Tiled.Gameplay
 
         private void dbgSelfDamage(ActionMappingArgs e)
         {
-            healthComponent.ApplyDamage(10, netID);
+            healthComponent.ApplyDamage(10, clientID);
         }
 
         private void DamageReceived(DamageEventArgs e)

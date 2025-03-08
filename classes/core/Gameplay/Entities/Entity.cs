@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net.Mime;
 using Tiled.Collision;
 using Tiled.DataStructures;
+using Tiled.Gameplay.Components;
 using Tiled.ID;
 namespace Tiled.Gameplay
 {
@@ -23,17 +24,23 @@ namespace Tiled.Gameplay
         public int netID = -1;
         public EEntityType entityType;
         public bool centerSprite = false;
-
+        public HealthComponent healthComponent;
         public bool facingLeft;
         public int direction;
         public Entity()
         {
             RegisterCollisionComponent();
+            RegisterHealthComponent();
         }
 
         public void RegisterCollisionComponent()
         {
             collision = new CollisionComponent(this);
+        }
+
+        public void RegisterHealthComponent()
+        {
+            healthComponent = new HealthComponent(100, 100, 0);
         }
 
         public static T NewEntity<T>(params object?[]? args) where T : Entity
