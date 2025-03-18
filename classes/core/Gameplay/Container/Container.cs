@@ -9,6 +9,7 @@ namespace Tiled.Inventory
 {
     public class Container
     {
+        public uint containerID = 0;
         public int containerSize = 49;
         public ContainerItem[] items;
         public Entity? entityCarrier;
@@ -37,7 +38,16 @@ namespace Tiled.Inventory
 
                     if (entityCarrier != null)
                     {
-                        var i = EItem.CreateItem(item.type);
+                        EItem i;
+                        if(Main.netMode == ENetMode.Server && Main.netMode != ENetMode.Client)
+                        {
+                            i = (EItem)Main.netServer.ServerSpawnEntity(Networking.Shared.ENetEntitySpawnType.Item, itemType: item.type, position: entityCarrier.position, velocity: entityCarrier.velocity);
+                        }
+                        else
+                        {
+                            i = EItem.CreateItem(item.type);
+                        }
+                        
                         i.position = entityCarrier.position;
                         i.count = remainder;
                     }
