@@ -6,7 +6,6 @@ using Tiled.DataStructures;
 using Tiled.Gameplay;
 using Tiled.Gameplay.Entities.Projectiles;
 using Tiled.Gameplay.Items;
-using Tiled.Inventory;
 
 namespace Tiled.Networking.Shared
 {
@@ -26,29 +25,21 @@ namespace Tiled.Networking.Shared
         public static Dictionary<int, Entity> netEntitites = new Dictionary<int, Entity>();
 
         /// <summary>
-        /// Dict of registered net containers
-        /// </summary>
-        public static Dictionary<uint, Container> netContainers = new Dictionary<uint, Container>();
-
-        /// <summary>
         /// reads from the packet and spawns a new entity, client and server run this seperately
         /// </summary>
         /// <param name="packet"></param>
         /// <param name="id"></param>
-        public static Entity SpawnEntityShared(SpawnEntityPacket packet)
+        public static void SpawnEntityShared(SpawnEntityPacket packet)
         {
             switch(packet.spawnType)
             {
-                default:
-                    return null;
-
                 case ENetEntitySpawnType.Item:
                     EItem newItem = EItem.CreateItem(packet.itemType);
                     newItem.netID = packet.entityID;
                     netEntitites.Add(packet.entityID, newItem);
                     newItem.position = packet.position;
                     newItem.velocity = packet.velocity;
-                    return newItem;
+                    break;
 
                 case ENetEntitySpawnType.Entity:
                     Entity newEntity = new Entity();
@@ -56,7 +47,7 @@ namespace Tiled.Networking.Shared
                     netEntitites.Add(packet.entityID, newEntity);
                     newEntity.position = packet.position;
                     newEntity.velocity = packet.velocity;
-                    return newEntity;
+                    break;
 
                 case ENetEntitySpawnType.Projectile:
                     EProjectile newProjectile = EProjectile.CreateProjectile(packet.projectileType);
@@ -64,7 +55,7 @@ namespace Tiled.Networking.Shared
                     netEntitites.Add(packet.entityID, newProjectile);
                     newProjectile.position = packet.position;
                     newProjectile.velocity = packet.velocity;
-                    return newProjectile;
+                    break;
             }
         }
 
@@ -460,7 +451,6 @@ namespace Tiled.Networking.Shared
 
     public class InventoryPacket : Packet
     {
-        public uint containerID;
         public int size;
         public ContainerItem[] items;
 
@@ -478,7 +468,6 @@ namespace Tiled.Networking.Shared
 
         public override void PacketToNetIncomingMessage(NetIncomingMessage msg)
         {
-            containerID = msg.ReadUInt32();
             size = msg.ReadInt32();
             items = new ContainerItem[size];
 
@@ -491,7 +480,6 @@ namespace Tiled.Networking.Shared
 
         public override void PacketToNetOutgoingMessage(NetOutgoingMessage msg)
         {
-            msg.Write(containerID);
             msg.Write(size);
             foreach (var item in items)
             {

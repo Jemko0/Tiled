@@ -2,14 +2,15 @@
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Timers;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
 using Tiled.Gameplay.Entities.Projectiles;
 using Tiled.Gameplay.Items;
-using Tiled.Inventory;
 using Tiled.Networking.Shared;
 
 namespace Tiled
@@ -26,7 +27,6 @@ namespace Tiled
 
         int lastClientID = 0;
         int lastEntityID = int.MinValue;
-        uint lastContainerID = 0;
         public TiledServer()
         {
             NetPeerConfiguration config = new NetPeerConfiguration("tiled");
@@ -329,7 +329,6 @@ namespace Tiled
                                     int requestInventoryID = socketToClientID[msg.SenderConnection];
 
                                     int containerSize = 10;
-                                    uint newContainerID = lastContainerID++;
                                     NetShared.clientIDToPlayer[requestInventoryID].inventory = new Inventory.Container(containerSize);
                                     NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(0, new ContainerItem(EItemType.BasePickaxe, 1));
                                     NetShared.clientIDToPlayer[requestInventoryID].inventory.SetItem(1, new ContainerItem(EItemType.BaseAxe, 1));
@@ -339,7 +338,6 @@ namespace Tiled
                                     InventoryPacket inventoryPacket = new InventoryPacket();
                                     inventoryPacket.size = containerSize;
                                     inventoryPacket.items = NetShared.clientIDToPlayer[requestInventoryID].inventory.items;
-                                    inventoryPacket.containerID = lastContainerID;
 
                                     NetOutgoingMessage invMsg = server.CreateMessage();
                                     invMsg.Write((byte)EPacketType.ReceiveInventory);
@@ -517,7 +515,7 @@ namespace Tiled
             }
         }
 
-        public Entity ServerSpawnEntity(ENetEntitySpawnType type = ENetEntitySpawnType.Entity, EEntityType entityType = EEntityType.None, EItemType itemType = EItemType.None, EProjectileType projectileType = EProjectileType.None, Vector2 position, Vector2 velocity)
+        public void ServerSpawnEntity(ENetEntitySpawnType type, EEntityType entityType, EItemType itemType, EProjectileType projectileType, Vector2 position, Vector2 velocity)
         {
             SpawnEntityPacket request = new SpawnEntityPacket();
             request.spawnType = type;
@@ -540,7 +538,7 @@ namespace Tiled
             request.entityID = lastEntityID;
 
             //spawn entity locally/server
-            Entity serverEntity = NetShared.SpawnEntityShared(request);
+            NetShared.SpawnEntityShared(request);
 
             //spawn for everyone else
             NetOutgoingMessage newEntityMsg = server.CreateMessage();
@@ -551,8 +549,6 @@ namespace Tiled
 
             server.SendToAll(newEntityMsg, NetDeliveryMethod.ReliableOrdered);
             server.FlushSendQueue();
-
-            return serverEntity;
         }
 
         public void ServerDestroyEntity(int id)
@@ -638,19 +634,6 @@ namespace Tiled
         {
             MarkTileChange(change.x, change.y, change.type);
         }
-
-        public void ServerMakeNetContainer(int size, Entity? carrier)
-        {
-            Container newCont = new Container(size);
-            if(carrier != null)
-            {
-                newCont.entityCarrier = carrier;
-                uint id = lastContainerID++;
-                newCont.containerID = id;
-                //finish later lmao
-            }
-        }
-
 
         public void SendWorldChunks(NetConnection connection, int chunkSize = 100)
         {

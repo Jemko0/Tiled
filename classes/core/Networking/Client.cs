@@ -26,7 +26,7 @@ namespace Tiled
         public delegate void ClientException(Exception e);
         public event ClientJoinResult clientJoined;
         public event ClientException clientException;
-        
+
         public TiledClient()
         {
             NetPeerConfiguration config = new NetPeerConfiguration("tiled");
