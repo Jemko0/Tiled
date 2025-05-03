@@ -2,10 +2,8 @@
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Timers;
 using Tiled.DataStructures;
 using Tiled.Gameplay;

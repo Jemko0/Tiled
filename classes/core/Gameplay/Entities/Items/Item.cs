@@ -22,6 +22,7 @@ namespace Tiled.Gameplay.Items
         public event swingEnd swingEnded;
 
         private IItemBehaviour behavior;
+
         public EItem()
         {
         }
@@ -153,7 +154,6 @@ namespace Tiled.Gameplay.Items
         {
             if (Item.consumable && behavior.CanConsume(this, tile))
             {
-                //MAKE SERVER AUTHORATIVE VVV
                 if(Main.netMode == ENetMode.Standalone)
                 {
                     ((EPlayer)entity).inventory.RemoveFromSlot(((EPlayer)entity).selectedSlot, 1);
