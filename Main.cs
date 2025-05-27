@@ -233,6 +233,7 @@ namespace Tiled
         public static double runtime;
         protected override void Update(GameTime gameTime)
         {
+            Benchmark.StartBenchmark("Update Loop");
             if (!IsActive && netMode == ENetMode.Standalone)
             {
                 return;
@@ -281,6 +282,7 @@ namespace Tiled
             }
 
             base.Update(gameTime);
+            Benchmark.EndBenchmark("Update Loop");
         }
 
         protected override void Draw(GameTime gameTime)
