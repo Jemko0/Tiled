@@ -329,4 +329,21 @@ namespace Tiled.DataStructures
         public EProjectileType projectileType;
         public Vector2 position;
     }
+
+    public struct BenchmarkTime
+    {
+        public BenchmarkTime()
+        {
+            startTime = 0;
+            endTime = 0;
+        }
+
+        public BenchmarkTime(double startTime, double endTime)
+        {
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
+        public double startTime;
+        public double endTime;
+    }
 }

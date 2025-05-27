@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Tiled.classes.core.Debug;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
 using Tiled.ID;
@@ -229,7 +230,7 @@ namespace Tiled
         }
 
         public static float delta;
-        public static float runtime;
+        public static double runtime;
         protected override void Update(GameTime gameTime)
         {
             if (!IsActive && netMode == ENetMode.Standalone)
@@ -270,7 +271,7 @@ namespace Tiled
 #endif
 
             delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            runtime += delta;
+            runtime += (double)delta;
 
             world.UpdateWorld();
 
@@ -285,7 +286,7 @@ namespace Tiled
         protected override void Draw(GameTime gameTime)
         {
             base.Draw(gameTime);
-
+            Benchmark.StartBenchmark("Draw Scene");
             GraphicsDevice.SetRenderTarget(backgroundUnlitRT); //Draw unlit Background RT
             GraphicsDevice.Clear(Color.Black);
 
@@ -305,14 +306,22 @@ namespace Tiled
 
             GraphicsDevice.SetRenderTarget(lightRT);
 
+            Benchmark.StartBenchmark("LightPass");
             RenderLightTarget();
+            Benchmark.EndBenchmark("LightPass");
 
             GraphicsDevice.SetRenderTarget(null);
 
             _spriteBatch.Begin(effect: lightingShader);
             lightingShader.Parameters["Lighting"]?.SetValue(lightRT);
             lightingShader.Parameters["Sky"]?.SetValue(backgroundUnlitRT);
+
+            Benchmark.StartBenchmark("Draw Scene Render Target");
+
             _spriteBatch.Draw(sceneRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+
+            Benchmark.EndBenchmark("Draw Scene Render Target");
+
             _spriteBatch.End();
 
             /*_spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointWrap);
@@ -326,6 +335,24 @@ namespace Tiled
             localHUD.DrawWidgets();
 
             RenderMouseItem();
+            Benchmark.EndBenchmark("Draw Scene");
+            DrawBenchmarks();
+        }
+
+        public void DrawBenchmarks()
+        {
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
+            if(Benchmark.runningBenchmarks.Count > 0)
+            {
+                int i = 0;
+                foreach(var benchmark in Benchmark.solvedBenchmarks)
+                {
+                    _spriteBatch.DrawString(Fonts.Andy_24pt, benchmark.Key + " = " + benchmark.Value + "ms" + " | " + (int)(benchmark.Value) + "ms", new Vector2(0, i * 64 * renderScale), Color.Red, 0, new(), 1.5f * renderScale, SpriteEffects.None, 1.0f);
+                    i++;
+                }
+                
+            }
+            _spriteBatch.End();
         }
 
         public void RenderMouseItem()
@@ -388,7 +415,7 @@ namespace Tiled
 
             GraphicsDevice.Clear(Color.White);
 
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointWrap);
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
             for (int x = startX; x < endX; x++)
             {
                 for (int y = startY; y < endY; y++)
