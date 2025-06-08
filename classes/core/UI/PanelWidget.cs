@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 
 namespace Tiled.UI
 {
@@ -8,6 +7,7 @@ namespace Tiled.UI
     /// </summary>
     public class PanelWidget : Widget
     {
+        public int maxChildIndex = int.MaxValue;
         public PanelWidget(HUD owner) : base(owner)
         {
         }
@@ -19,12 +19,6 @@ namespace Tiled.UI
 
         public virtual void DrawChildren(ref SpriteBatch sb)
         {
-            /*
-            var tex = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
-            tex.SetData(new Color[] { Color.White });
-
-            sb.Draw(tex, scaledGeometry, Color.Blue);
-            */
             if(children == null)
             {
                 return;
@@ -32,6 +26,11 @@ namespace Tiled.UI
 
             for (int i = 0; i < children.Count; i++)
             {
+                if(children[i] == null )
+                {
+                    continue;
+                }
+
                 DrawChild(ref sb, i);
             }
         }
@@ -40,7 +39,5 @@ namespace Tiled.UI
         {
             children[childIdx].Draw(ref sb);
         }
-
-        
     }
 }

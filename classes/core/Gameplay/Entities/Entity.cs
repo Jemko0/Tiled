@@ -1,10 +1,14 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Diagnostics;
+using System.Net.Mime;
 using Tiled.Events;
 using Tiled.Collision;
 using Tiled.DataStructures;
+using Tiled.Gameplay.Components;
 using Tiled.ID;
+
 namespace Tiled.Gameplay
 {
     public class Entity : IDisposable
@@ -14,22 +18,32 @@ namespace Tiled.Gameplay
         public Vector2 velocity;
         public bool canCollide = true;
         public Texture2D entitySprite;
-        protected CollisionComponent collision;
+        public CollisionComponent collision;
         protected int frameSlotSizeX = 32;
         protected int frameSlotSizeY = 48;
-        protected float rotation = 0.0f;
-        protected Vector2 rotOrigin = new(0, 0);
-
+        public float rotation = 0.0f;
+        public Vector2 rotOrigin = new(0, 0);
+        public int netID = -1;
+        public EEntityType entityType;
+        public bool centerSprite = false;
+        public HealthComponent healthComponent;
         public bool facingLeft;
         public int direction;
+        public uint light = 0;
         public Entity()
         {
             RegisterCollisionComponent();
+            RegisterHealthComponent();
         }
 
         public void RegisterCollisionComponent()
         {
             collision = new CollisionComponent(this);
+        }
+
+        public void RegisterHealthComponent()
+        {
+            healthComponent = new HealthComponent(100, 100, 0);
         }
 
         public static T NewEntity<T>(params object?[]? args) where T : Entity
@@ -43,7 +57,37 @@ namespace Tiled.Gameplay
 
         public void Destroy()
         {
+            if (Main.netMode == ENetMode.Standalone)
+            {
+                LocalDestroy();
+                return;
+            }
+
+            if(netID == -1)
+            {
+                Debug.WriteLine("netID was -1, assuming this is a Locally spawned Entity");
+                LocalDestroy();
+                return;
+            }
+
+            
+#if TILEDSERVER
+            Main.netServer.ServerDestroyEntity(netID);
+#else
+            Main.netClient.ClientRequestDestroyEntity(netID);
+#endif
+        }
+
+        public virtual void Destroyed()
+        {
+
+        }
+
+
+        public void LocalDestroy()
+        {
             Main.UnregisterEntity(this);
+            Destroyed();
             Dispose();
         }
 
@@ -65,6 +109,7 @@ namespace Tiled.Gameplay
             EntityDef e = EntityID.GetEntityInfo(type);
             size = e.size;
             entitySprite = e.sprite;
+            entityType = type;
         }
 
         public virtual System.Drawing.RectangleF GetRectF()
@@ -91,6 +136,11 @@ namespace Tiled.Gameplay
             {
                 facingLeft = velocity.X < 0.0f;
                 direction = facingLeft ? -1 : 1;
+            }
+
+            if(light != 0)
+            {
+                Lighting.QueueLightUpdate((int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE));
             }
         }
 
@@ -121,12 +171,17 @@ namespace Tiled.Gameplay
                 goto draw;
             }
 
-            finalColor *= (float)(World.lightMap[(int)(position.X / World.TILESIZE), (int)(position.Y / World.TILESIZE)] / (float)Lighting.MAX_LIGHT);
             finalColor.A = 255;
 
-            draw:
+        draw:
             SpriteEffects flip = facingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            sb.Draw(entitySprite, Rendering.WorldToScreen(GetRect()), GetFrame(), finalColor, rotation, rotOrigin, flip, 0u);
+            Rectangle drawRect = GetRect();
+            if(centerSprite)
+            {
+                drawRect.Location = drawRect.Center;
+            }
+            sb.Draw(entitySprite, Rendering.WorldToScreen(drawRect), GetFrame(), finalColor, rotation, rotOrigin, flip, 0u);
+            //sb.Draw(Program.GetGame().Content.Load<Texture2D>("Entities/debug"), Rendering.WorldToScreen(GetRect()), null, Color.White, 0.0f, new(0,0), SpriteEffects.None, 1.0f);
         }
 
         public virtual void Dispose()

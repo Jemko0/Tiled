@@ -1,9 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-using Tiled.Gameplay.Items;
+using Tiled.Networking.Shared;
 using Tiled.UI;
 
 namespace Tiled.DataStructures
@@ -14,11 +13,13 @@ namespace Tiled.DataStructures
         public Texture2D sprite;
 
         /// <summary>
-        /// if false, will ignore tile frames, and also will be ignored by other tiles
+        /// if false, will ignore tile frames, and also will be ignored by other tile frames
         /// </summary>
         public bool useFrames;
  
         public bool collision;
+
+        public bool destroyedByExplosion;
 
         /// <summary>
         /// determines if this tile only hangs on walls, like torches
@@ -34,6 +35,11 @@ namespace Tiled.DataStructures
         /// used for neighbor checking in tileFrames
         /// </summary>
         public TileNeighbors ignoreNeighbors;
+
+
+        public bool useSpecificTileTypesForFrame;
+        public bool[] frameOnlyTypes;
+
         public int frameSize;
         public int framePadding;
 
@@ -42,8 +48,16 @@ namespace Tiled.DataStructures
         /// </summary>
         public uint blockLight;
 
+        /// <summary>
+        /// hardness of block
+        /// </summary>
         public sbyte hardness;
+
+        /// <summary>
+        /// determines what item this block is gonna drop when mined
+        /// </summary>
         public EItemType itemDrop;
+
         public sbyte minPick;
         public sbyte minAxe;
     }
@@ -63,6 +77,7 @@ namespace Tiled.DataStructures
         public EProjectileType projectile;
         public Type behaviourType;
         public EItemSwingAnimationType swingAnimationType;
+        public Vector2 projectileThrowVelocity;
     }
     
     public struct Projectile
@@ -71,6 +86,7 @@ namespace Tiled.DataStructures
         public Texture2D sprite;
         public Vector2 size;
         public Vector2 initVelocity;
+        public Type behaviourType;
     }
 
     public enum EProjectileType
@@ -103,9 +119,13 @@ namespace Tiled.DataStructures
         None,
         Base,
         BasePickaxe,
-        DirtBlock,
+        BaseAxe,
         Torch,
         Bomb,
+        Wood,
+
+        DirtBlock,
+        StoneBlock,
     }
 
     public enum EItemSwingAnimationType
@@ -162,6 +182,9 @@ namespace Tiled.DataStructures
         Stone,
         Plank,
         Torch,
+        TreeTrunk,
+        TreeLeaves,
+        MAX,
     }
 
     public enum EWallType
@@ -274,5 +297,53 @@ namespace Tiled.DataStructures
         {
             this.type = type;
         }
+    }
+
+    public enum ENetMode
+    {
+        Standalone,
+        Server,
+        Client,
+    }
+
+    public struct NetWorldChange
+    {
+        public int x;
+        public int y;
+        public ETileType type;
+
+        public NetWorldChange(int x, int y, ETileType type)
+        {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+        }
+    }
+
+    public struct NetEntity
+    {
+        public int netID;
+        public ENetEntitySpawnType spawnType;
+        public EEntityType type;
+        public EItemType itemType;
+        public EProjectileType projectileType;
+        public Vector2 position;
+    }
+
+    public struct BenchmarkTime
+    {
+        public BenchmarkTime()
+        {
+            startTime = 0;
+            endTime = 0;
+        }
+
+        public BenchmarkTime(double startTime, double endTime)
+        {
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
+        public double startTime;
+        public double endTime;
     }
 }

@@ -12,22 +12,27 @@ namespace Tiled.UI
     /// <summary>
     /// basic widget, supports children but does not render them. if you want to render children, use <see cref="PanelWidget"/>
     /// </summary>
+    
+    // Ugly Code lmao
     public class Widget : IDisposable
     {
+        public Widget parent;
         public bool visible = true;
-        public delegate void WidgetDestroyed(WidgetDestroyArgs e);
-        public event WidgetDestroyed onWidgetDestroyed;
+        public bool disposed;
+
         public HUD owningHUD;
+        public Vector2 anchorPosition; // Stores position as percentage (0-1) of screen
         public float layerDepth;
+
+        public event WidgetDestroyed onWidgetDestroyed;
+        public delegate void WidgetDestroyed(WidgetDestroyArgs e);
+
         protected Vector2 size;
         protected Rectangle scaledGeometry;
-        public Vector2 anchorPosition; // Stores position as percentage (0-1) of screen
         protected AnchorPosition anchor;
         protected Vector2 offset; // Optional pixel offset from anchor point
-
-        protected Widget parent;
         protected List<Widget> children = new List<Widget>();
-        public bool disposed;
+
         public Widget(HUD owner)
         {
             owningHUD = owner;
@@ -43,7 +48,10 @@ namespace Tiled.UI
             Debug.Assert(parent != this);
 
             if (parent != null)
+            {
                 return parent.scaledGeometry;
+            }
+                
 
             return new Rectangle(0, 0,
                 (int)(Program.GetGame().Window.ClientBounds.Width),
@@ -176,7 +184,6 @@ namespace Tiled.UI
                 return;
             }
 
-            // Update all children
             foreach (var child in children)
             {
                 child.ScaleGeometry();
@@ -199,11 +206,10 @@ namespace Tiled.UI
 
         public bool IsHovered()
         {
-            
-            return !isBeingDestroyed && scaledGeometry.Contains(Mouse.GetState().X, Mouse.GetState().Y);
+            return !disposed && !isBeingDestroyed && scaledGeometry.Contains(Mouse.GetState().X, Mouse.GetState().Y);
         }
 
-        private bool isBeingDestroyed = false;  // Add this flag
+        private bool isBeingDestroyed = false;
 
         public void DestroyWidget()
         {
@@ -218,22 +224,23 @@ namespace Tiled.UI
 
         public void Draw(ref SpriteBatch sb)
         {
-            if (!visible || disposed)  // Check disposed state
+            if (!visible || disposed || isBeingDestroyed)
             {
                 return;
             }
 
             DrawWidget(ref sb);
+            //DrawBounds(ref sb);
         }
+
         public virtual void DrawWidget(ref SpriteBatch sb)
         {
-            DrawBounds(ref sb);
+
         }
 
         public void DrawBounds(ref SpriteBatch sb)
         {
-            var tex = new Texture2D(Program.GetGame().GraphicsDevice, 1, 1);
-            tex.SetData(new Color[] { Color.Red });
+            var tex = Program.GetGame().Content.Load<Texture2D>("Entities/debug");
             sb.Draw(tex, scaledGeometry, null, Color.White, 0.0f, new(), SpriteEffects.None, layerDepth);
         }
 

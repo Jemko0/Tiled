@@ -23,24 +23,32 @@ namespace Tiled.UI.UserWidgets
 
             vb = HUD.CreateWidget<WVerticalBox>(owningHUD);
             vb.SetGeometry(new Vector2(720, 256), DataStructures.AnchorPosition.Center);
-            vb.AttachToParent(this);
+            vb.AttachToParent(this, DataStructures.AnchorPosition.Center);
 
             taskText = HUD.CreateWidget<WText>(owningHUD);
-            taskText.SetGeometry(new Vector2(0, 72), null);
+            taskText.SetGeometry(new Vector2(256, 72), null);
             taskText.justification = DataStructures.ETextJustification.Center;
             taskText.text = "taskText";
-            taskText.AttachToParent(vb);
+            taskText.AttachToParent(vb, DataStructures.AnchorPosition.Center);
 
             progressText = HUD.CreateWidget<WText>(owningHUD);
-            progressText.SetGeometry(new Vector2(0, 72), null);
+            progressText.SetGeometry(new Vector2(256, 72), null);
             progressText.justification = DataStructures.ETextJustification.Center;
             progressText.text = "progressText";
-            progressText.AttachToParent(vb);
+            progressText.AttachToParent(vb, DataStructures.AnchorPosition.Center);
 
             base.Construct();
+            World.maxTilesX = 8400 * 3;
+            World.maxTilesY = 2400 * 3;
+            Program.GetGame().world.seed = 12345;
 
             Program.GetGame().world.StartWorldGeneration();
             Program.GetGame().world.taskProgressChanged += WGenProgressChanged;
+            Program.GetGame().world.worldGenFinished += World_worldGenFinished;
+        }
+
+        private void World_worldGenFinished()
+        {
             DestroyWidget();
         }
 

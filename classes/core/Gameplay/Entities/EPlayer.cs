@@ -9,24 +9,32 @@ using Tiled.Inventory;
 using Tiled.UI.UserWidgets;
 using Tiled.UI;
 using Tiled.ID;
+using System.Diagnostics;
+using Tiled.Events;
+using Tiled.Gameplay.Components;
+using Tiled.UI.Widgets;
 
 namespace Tiled.Gameplay
 {
     public class EPlayer : Entity
     {
-        public float accel = 0.75f;
-        public float maxWalkSpeed = 4.0f;
+        public float accel = 0.25f;
+        public float maxWalkSpeed = 3.0f;
         public float jumpPower = 6f;
         public Container inventory;
         int jumpCounter = 0;
         public int selectedSlot = 0;
         public int clientID = -1;
         public bool canUseItems = true;
+
+        public bool invOpen;
         UWContainerWidget inventoryUI;
-        public EPlayer()
-        {
-            collision = new CollisionComponent(this);
-        }
+        public UWEscapeMenu escMenu;
+        public UWSettings settingsWidget;
+        
+        public WProgressBar healthBarUI;
+
+        public EPlayer() : base() { }
 
         public override void Begin()
         {
@@ -35,6 +43,7 @@ namespace Tiled.Gameplay
 
         public override void Possessed(Controller playerController)
         {
+#if !TILEDSERVER
             Mappings.actionMappings["move_jump"].onActionMappingPressed += JumpPressed;
             Mappings.actionMappings["move_jump"].onActionMappingReleased += JumpReleased;
             Mappings.actionMappings["inv_1"].onActionMappingPressed += SetSlot;
@@ -42,48 +51,161 @@ namespace Tiled.Gameplay
             Mappings.actionMappings["inv_3"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_4"].onActionMappingPressed += SetSlot;
             Mappings.actionMappings["inv_5"].onActionMappingPressed += SetSlot;
-
+            Mappings.actionMappings["inv_open"].onActionMappingPressed += OpenInventory;
+            Mappings.actionMappings["esc_menu"].onActionMappingPressed += OpenEsc;
+            Mappings.actionMappings["dbg_selfdmg"].onActionMappingPressed += dbgSelfDamage;
+            Mappings.actionMappings["time_fwd"].onActionMappingPressed += TimeFwd;
+            Mappings.actionMappings["time_bwd"].onActionMappingPressed += TimeBwd;
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
 
-            inventory = new Container(5);
-            inventory.entityCarrier = this;
 
+
+            if(Main.netMode == ENetMode.Standalone)
+            {
+                inventory = new Container(52);
+                inventory.entityCarrier = this;
+
+                inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
+                inventory.items[1] = new ContainerItem(EItemType.BaseAxe, 1);
+                inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
+                inventory.items[3] = new ContainerItem(EItemType.StoneBlock, 999);
+                inventory.items[10] = new ContainerItem(EItemType.Bomb, 1000);
+
+                ClientCreateUI();
+            }
+
+            if(Main.netMode == ENetMode.Client)
+            {
+                Main.netClient.RequestInventory();
+            }
+#else
+#endif
+        }
+
+        private void TimeBwd(ActionMappingArgs e)
+        {
+            Program.GetGame().world.worldTime -= 100 * Main.delta;
+        }
+
+        private void TimeFwd(ActionMappingArgs e)
+        {
+            Program.GetGame().world.worldTime += 100 * Main.delta;
+        }
+
+        private void dbgSelfDamage(ActionMappingArgs e)
+        {
+            healthComponent.ApplyDamage(10, clientID);
+        }
+
+        private void DamageReceived(DamageEventArgs e)
+        {
+            healthBarUI.value = healthComponent.health;
+        }
+
+        private void ClientCreateUI()
+        {
             inventoryUI = HUD.CreateWidget<UWContainerWidget>(Program.GetGame().localHUD);
-            inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.TopLeft, new(25, 25));
+            inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.BottomCenter, new(0, -50));
             inventoryUI.SetContainer(ref inventory);
             inventoryUI.UpdateSlots();
 
-            inventory.items[0] = new ContainerItem(EItemType.BasePickaxe, 1);
-            inventory.items[1] = new ContainerItem(EItemType.DirtBlock, 999);
-            inventory.items[2] = new ContainerItem(EItemType.Torch, 99);
-            inventory.items[3] = new ContainerItem(EItemType.Bomb, 16);
+            healthBarUI = HUD.CreateWidget<WProgressBar>(Program.GetGame().localHUD);
+            healthBarUI.minValue = 0.0f;
+            healthBarUI.value = healthComponent.health;
+            healthBarUI.maxValue = healthComponent.maxHealth;
+            healthBarUI.backgroundColor = Color.DarkRed;
+            healthComponent.onDamageGet += DamageReceived;
+
+            invOpen = true;
+            OpenInventory(new ActionMappingArgs(Keys.None));
+        }
+
+        private void OpenInventory(ActionMappingArgs e)
+        {
+            invOpen = !invOpen;
+            //Debug.WriteLine(invOpen);
+            Program.GetGame().localPlayerController.inUI = invOpen;
+            inventoryUI.SetOpenInv(invOpen);
+
+            if(!invOpen)
+            {
+                inventoryUI.SetGeometry(new Vector2(400, 100), AnchorPosition.BottomCenter, new(0, -25));
+                healthBarUI.SetGeometry(new Vector2(320, 32), AnchorPosition.BottomCenter, new(-40, -135));
+                healthBarUI.visible = true;
+            }
+            else
+            {
+                inventoryUI.SetGeometry(new Vector2(400, 540), AnchorPosition.Center, new(0, 0));
+                healthBarUI.SetGeometry(new Vector2(320, 32), AnchorPosition.BottomCenter, new(-40, -135));
+                healthBarUI.visible = false;
+            }
+        }
+
+        private void OpenEsc(ActionMappingArgs e)
+        {
+            Main.escMenuOpen = !Main.escMenuOpen;
+            if(Main.escMenuOpen)
+            {
+                escMenu = HUD.CreateWidget<UWEscapeMenu>(Program.GetGame().localHUD);
+                escMenu.SetGeometry(new Vector2(1920, 1080), AnchorPosition.Center);
+            }
+            else
+            {
+                if(settingsWidget != null)
+                {
+                    settingsWidget.DestroyWidget();
+                }
+
+                escMenu.DestroyWidget();
+            }
+        }
+
+        public void ClientInventoryReceived()
+        {
+            ClientCreateUI();
         }
 
         private void SetSlot(ActionMappingArgs e)
         {
+            if(invOpen || Main.escMenuOpen)
+            {
+                return;
+            }
+
+            int newSlot = -1;
+
             switch (e.key)
             {
                 case Keys.D1:
-                    selectedSlot = 0;
-                    return;
+                    newSlot = 0;
+                    break;
 
                 case Keys.D2:
-                    selectedSlot = 1;
-                    return;
+                    newSlot = 1;
+                    break;
 
                 case Keys.D3:
-                    selectedSlot = 2;
-                    return;
+                    newSlot = 2;
+                    break;
 
                 case Keys.D4:
-                    selectedSlot = 3;
-                    return;
+                    newSlot = 3;
+                    break;
 
                 case Keys.D5:
-                    selectedSlot = 4;
-                    return;
+                    newSlot = 4;
+                    break;
             }
+
+            selectedSlot = newSlot;
+
+#if !TILEDSERVER
+            if(Main.netMode == ENetMode.Client)
+            {
+                Main.netClient.SetSelectedSlot(newSlot);
+            }
+#endif
         }
 
         private void JumpReleased(ActionMappingArgs e)
@@ -117,6 +239,8 @@ namespace Tiled.Gameplay
 
             float inputLR = Program.GetGame().localPlayerController.inputLR;
 
+            velocity.Y += World.gravity;
+
             //if this player is not the local player
             if (Program.GetGame().localPlayerController.controlledEntity != this)
             {
@@ -130,8 +254,7 @@ namespace Tiled.Gameplay
             {
                 velocity.X *= 0.8f;
             }
-            velocity.Y += World.gravity;
-
+            
             if(Mappings.IsMappingHeld("move_jump") && jumpCounter < 15)
             {
                 Jump();
@@ -140,58 +263,127 @@ namespace Tiled.Gameplay
             
             MovementUpdate();
 
-            //inventoryUI.UpdateChildren(ref inventory);
+            if(Keyboard.GetState().IsKeyDown(Keys.D9))
+            {
+                Program.GetGame().world.worldTime += 0.1f;
+            }
+
+            if (Keyboard.GetState().IsKeyDown(Keys.D8))
+            {
+                Program.GetGame().world.worldTime -= 0.1f;
+            }
         }
 
         public override Rectangle? GetFrame()
         {
-            frameSlotSizeX = 24;
-            frameSlotSizeY = 48;
+            const byte fH = 48;
+            const byte fW = 24;
+            int fI = 0;
+            int walkI = 0;
 
-            if(velocity.Y == 0)
+            walkI = Main.runtime % 0.2f > 0.1f? 1 : 2;
+
+            fI = velocity.Y != 0? 0 : (Math.Abs(velocity.X) > 0.01f? walkI : 1);
+
+            return new Rectangle(0, fH * fI, fW, fH);
+        }
+
+        public override void Destroyed()
+        {
+#if !TILEDSERVER
+            inventory.items = null;
+            inventory = null;
+            InputManager.onLeftMousePressed -= LMB;
+            InputManager.onRightMousePressed -= RMB;
+            foreach(var mapping in Mappings.actionMappings)
             {
-                return new Rectangle(frameSlotSizeX * 0, frameSlotSizeY * 1, frameSlotSizeX, frameSlotSizeY);
+                EventHelper.UnbindAllEventHandlers(mapping.Value, "onActionMappingPressed");
+                EventHelper.UnbindAllEventHandlers(mapping.Value, "onActionMappingReleased");
             }
-            return new Rectangle(frameSlotSizeX * 0, frameSlotSizeY * 0, frameSlotSizeX, frameSlotSizeY);
+            inventoryUI.DestroyWidget();
+
+            EventHelper.UnbindAllEventHandlers(healthComponent, "onDamageGet");
+            healthComponent = null;
+            healthBarUI.backgroundTexture.Dispose();
+            healthBarUI.fillTexture.Dispose();
+            healthBarUI.DestroyWidget();
+#endif
         }
 
         private void LMB(MouseButtonEventArgs e)
         {
-            if (!Program.GetGame().IsActive)
+            if (!Program.GetGame().IsActive || invOpen || Main.escMenuOpen)
             {
                 return;
             }
 
             Point tile = Rendering.ScreenToTile(Mouse.GetState().Position);
 
-            SwingItem(selectedSlot, tile);
+            if(Main.netMode == ENetMode.Standalone)
+            {
+                SwingItem(selectedSlot, tile);
+            }
+
+#if !TILEDSERVER
+            RepSwingItem(tile);
+#endif
         }
 
+#if !TILEDSERVER
+        public void RepSwingItem(Point tile)
+        {
+            if (Main.netMode == ENetMode.Client)
+            {
+                Main.netClient.RequestItemSwing(tile);
+                SwingItem(selectedSlot, tile);
+            }
+
+            if(Main.netMode == ENetMode.Standalone)
+            {
+                SwingItem(selectedSlot, Rendering.ScreenToTile(Mouse.GetState().Position));
+            }
+        }
+#endif
+
+        /// <summary>
+        /// in multiplayer instances, the server will execute this
+        /// </summary>
+        /// <param name="slot"></param>
+        /// <param name="tile"></param>
         public void SwingItem(int slot, Point tile)
         {
-            if(!canUseItems || inventory.items[slot].type == EItemType.None)
+            if(Main.netMode != ENetMode.Server)
             {
-                return;
+                if (!canUseItems || inventory.items[slot].type == EItemType.None)
+                {
+                    return;
+                }
             }
 
             canUseItems = false;
             var swingItem = EItem.CreateItem(inventory.items[selectedSlot].type);
             swingItem.swingEnded += CurrentSwingItemSwingEnded;
+            swingItem.direction = direction;
             swingItem.isSwing = true;
             swingItem.swingOwner = this;
-            swingItem.Use();
-            swingItem.UseWithEntity(this);
-            swingItem.UseOnTile(tile.X, tile.Y);
+
+            if(Main.netMode != ENetMode.Client)
+            {
+                swingItem.Use();
+                swingItem.UseWithEntity(this, tile);
+                swingItem.UseOnTile(tile.X, tile.Y);
+            }
         }
 
         private void CurrentSwingItemSwingEnded(ItemSwingArgs e)
         {
             canUseItems = true;
-
+#if !TILEDSERVER
             if (Mouse.GetState().LeftButton == ButtonState.Pressed && ItemID.GetItem(e.type).autoReuse)
             {
-                SwingItem(selectedSlot, Rendering.ScreenToTile(Mouse.GetState().Position));
+                RepSwingItem(Rendering.ScreenToTile(Mouse.GetState().Position));
             }
+#endif
         }
 
         private void RMB(MouseButtonEventArgs e)

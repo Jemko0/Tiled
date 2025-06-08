@@ -16,6 +16,12 @@ namespace Tiled.UI.UserWidgets
         WButton multiplayerBtn;
         WText multiplayerBtnText;
 
+        WButton settingsBtn;
+        WText settingsBtnText;
+
+        WButton exitBtn;
+        WText exitBtnText;
+
         public override void Construct()
         {
             vb = HUD.CreateWidget<WVerticalBox>(owningHUD);
@@ -45,6 +51,40 @@ namespace Tiled.UI.UserWidgets
             multiplayerBtnText.text = "Multiplayer";
             multiplayerBtnText.justification = DataStructures.ETextJustification.Center;
             multiplayerBtnText.AttachToParent(multiplayerBtn);
+
+            settingsBtn = HUD.CreateWidget<WButton>(owningHUD);
+            settingsBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
+            settingsBtn.layerDepth = 1.0f;
+            settingsBtn.AttachToParent(vb);
+            settingsBtn.onButtonPressed += OnSettingsButtonPressed;
+
+            settingsBtnText = HUD.CreateWidget<WText>(owningHUD);
+            settingsBtnText.text = "Settings";
+            settingsBtnText.justification = DataStructures.ETextJustification.Center;
+            settingsBtnText.AttachToParent(settingsBtn);
+
+            exitBtn = HUD.CreateWidget<WButton>(owningHUD);
+            exitBtn.SetGeometry(new Vector2(0, 72), DataStructures.AnchorPosition.Center);
+            exitBtn.onButtonPressed += ExitBtn_onButtonPressed;
+            exitBtn.layerDepth = 1.0f;
+            exitBtn.AttachToParent(vb);
+
+            exitBtnText = HUD.CreateWidget<WText>(owningHUD);
+            exitBtnText.text = "Exit";
+            exitBtnText.justification = DataStructures.ETextJustification.Center;
+            exitBtnText.AttachToParent(exitBtn);
+        }
+
+        private void ExitBtn_onButtonPressed(DataStructures.ButtonPressArgs args)
+        {
+            Program.GetGame().Exit();
+        }
+
+        private void OnSettingsButtonPressed(DataStructures.ButtonPressArgs args)
+        {
+            var s = HUD.CreateWidget<UWSettings>(owningHUD);
+            s.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
+            DestroyWidget();
         }
 
         private void MultiplayerButtonPressed(DataStructures.ButtonPressArgs args)

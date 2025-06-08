@@ -1,7 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Tiled.Gameplay;
+using Tiled.DataStructures;
 using Tiled.ID;
+using Tiled.Input;
 using Tiled.Inventory;
 
 namespace Tiled.UI.UserWidgets
@@ -15,7 +16,6 @@ namespace Tiled.UI.UserWidgets
         public UWContainerSlot(HUD owner) : base(owner)
         {
             slotBg = Program.GetGame().Content.Load<Texture2D>("UI/inventory/inventorySlot");
-            
         }
 
         public override void Construct()
@@ -26,6 +26,40 @@ namespace Tiled.UI.UserWidgets
             amtText.AttachToParent(this, DataStructures.AnchorPosition.BottomRight);
             amtText.layerDepth = 0.8f;
             amtText.justification = DataStructures.ETextJustification.Center;
+
+            InputManager.onLeftMousePressed += InputManager_onLeftMousePressed;
+        }
+        private void InputManager_onLeftMousePressed(MouseButtonEventArgs e)
+        {
+#if !TILEDSERVER
+            if(IsHovered() && Program.GetGame().GetLocalPlayer().invOpen)
+            {
+                if(InputManager.mouseHasItem)
+                {
+                    if(container.items[slotID].type == EItemType.None)
+                    {
+                        container.items[slotID] = InputManager.mouseItem;
+                        InputManager.mouseHasItem = false;
+                        //Main.netClient.SendContainerState(Program.GetGame().GetLocalPlayer().inventory);
+                    }
+                    else
+                    {
+                        ContainerItem oldItem = container.items[slotID];
+                        container.items[slotID] = InputManager.mouseItem;
+                        InputManager.mouseItem = oldItem;
+                        InputManager.mouseHasItem = true;
+                        //Main.netClient.SendContainerState(Program.GetGame().GetLocalPlayer().inventory);
+                    }
+                }
+                else
+                {
+                    InputManager.mouseHasItem = true;
+                    InputManager.mouseItem = container.items[slotID];
+                    container.items[slotID] = ContainerItem.empty;
+                    //Main.netClient.SendContainerState(Program.GetGame().GetLocalPlayer().inventory);
+                }
+            }
+#endif
         }
 
         public override void DrawWidget(ref SpriteBatch sb)
@@ -36,6 +70,7 @@ namespace Tiled.UI.UserWidgets
             {
                 return;
             }
+
             amtText.text = container.items[slotID].stack > 0 ? container.items[slotID].stack.ToString() : "";
 
             if (container.items[slotID].type == DataStructures.EItemType.None)
@@ -49,7 +84,7 @@ namespace Tiled.UI.UserWidgets
             Texture2D itemIcon = ItemID.GetItem(container.items[slotID].type).sprite;
             sb.Draw(itemIcon, padded, null, Color.White, 0, new(), SpriteEffects.None, 0.9f);
 
-            base.DrawWidget(ref sb);
+            amtText.Draw(ref sb);
         }
     }
 }

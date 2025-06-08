@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tiled.ID;
 using System.Linq;
+using Tiled.Collision;
+using Tiled.classes.core.Debug;
 
 namespace Tiled
 {
@@ -12,7 +14,8 @@ namespace Tiled
     {
         public const uint MAX_LIGHT = 32;
         public const uint MAX_SKY_LIGHT = 32;
-        public static float SKY_LIGHT_MULT = 1.0f;
+
+        public static float skyLightMultiplier = 1.0f;
         private static readonly object queueLock = new object();
         private static HashSet<(int x, int y)> lightUpdateQueue = new HashSet<(int x, int y)>();
         public static bool isPerformingGlobalLightUpdate;
@@ -75,6 +78,7 @@ namespace Tiled
 
         private static void StartBackgroundProcessing()
         {
+            Benchmark.StartBenchmark("Lighting: Background Processing");
             var token = cancellationSource.Token;
             currentProcessingTask = Task.Run(async () =>
             {
@@ -116,11 +120,13 @@ namespace Tiled
                     }
                 }
             }, token);
+            Benchmark.EndBenchmark("Lighting: Background Processing");
         }
 
         // Called from your synchronous update method
         public static void Update()
         {
+            Benchmark.StartBenchmark("Lighting: Update");
             List<(int x, int y)> updates;
             lock (queueLock)
             {
@@ -133,10 +139,12 @@ namespace Tiled
             {
                 Task.Run(() => ProcessLightUpdatesAsync(updates, cancellationSource.Token));
             }
+            Benchmark.EndBenchmark("Lighting: Update");
         }
 
         private static async Task ProcessChunkAsync(int startX, int startY, int endX, int endY, CancellationToken token)
         {
+            Benchmark.StartBenchmark("Lighting: ProcessChunksAsync");
             for (int x = startX; x < endX; x++)
             {
                 for (int y = startY; y < endY; y++)
@@ -149,11 +157,13 @@ namespace Tiled
                     }
                 }
             }
+            Benchmark.EndBenchmark("Lighting: ProcessChunksAsync");
         }
 
         private static async Task ProcessLightUpdatesAsync(List<(int x, int y)> positions, CancellationToken token)
         {
-            var propagationQueue = new Queue<(int x, int y)>();
+            Benchmark.StartBenchmark("Lighting: ProcessLightUpdatesAsync");
+            Queue<(int x, int y)> propagationQueue = new Queue<(int x, int y)>();
 
             foreach (var pos in positions)
             {
@@ -176,10 +186,18 @@ namespace Tiled
                 var (x, y) = propagationQueue.Dequeue();
                 PropagateLight(x, y, propagationQueue);
             }
+            Benchmark.EndBenchmark("Lighting: ProcessLightUpdatesAsync");
         }
 
         private static uint CalculateLight(int x, int y)
         {
+            /*var entity = CollisionStatics.isEntityWithinRect(new System.Drawing.RectangleF(x * World.TILESIZE, y * World.TILESIZE, World.TILESIZE, World.TILESIZE));
+
+            if(entity != null)
+            {
+                return entity.light;
+            }*/
+            
             var tile = TileID.GetTile(World.tiles[x, y]);
 
             // Check if tile is a light source
@@ -193,11 +211,13 @@ namespace Tiled
                 return Math.Max(skyLight, maxNeighborLight > 0 ? maxNeighborLight - 1 : 0);
             }
 
-            // For solid blocks, consider their light blocking property
             uint neighborLight = GetMaxNeighborLight(x, y);
-            if (neighborLight == 0) return 0;
 
-            // Calculate light reduction based on tile's blockLight property
+            if (neighborLight == 0)
+            {
+                return 0;
+            }
+
             uint reduction = Math.Min(neighborLight, tile.blockLight);
             return neighborLight > reduction ? neighborLight - reduction : 0;
         }
@@ -206,7 +226,6 @@ namespace Tiled
         {
             uint maxLight = 0;
 
-            // Check each neighbor
             if (World.IsValidIndex(World.lightMap, x + 1, y))
             {
                 maxLight = Math.Max(maxLight, World.lightMap[x + 1, y]);
@@ -226,12 +245,12 @@ namespace Tiled
 
             return maxLight;
         }
-
+        
         public static uint CalculateSkyLight(int y)
         {
             if(y < World.averageSurfaceHeight + 80)
             {
-                return (uint)(MAX_SKY_LIGHT * SKY_LIGHT_MULT);
+                return (uint)(MAX_SKY_LIGHT * skyLightMultiplier);
             }
             return 0;
         }

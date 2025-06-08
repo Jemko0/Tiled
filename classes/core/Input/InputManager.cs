@@ -41,6 +41,10 @@ namespace Tiled.Input
         ButtonState lastMMBState = ButtonState.Released;
         #endregion
 
+        public static bool mouseHasItem = false;
+        public static ContainerItem mouseItem;
+        public static int mouseItemIndex = -1;
+
         static Dictionary<Keys, bool> pressedKeys = new Dictionary<Keys, bool>();
         public void Update()
         {

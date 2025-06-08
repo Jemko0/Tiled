@@ -4,12 +4,14 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Tiled.classes.core.Debug;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
 using Tiled.ID;
 using Tiled.Input;
 using Tiled.UI;
 using Tiled.UI.Font;
+using Tiled.User;
 using Tiled.Networking;
 using System.Diagnostics;
 using Tiled.UI.UserWidgets;
@@ -22,31 +24,49 @@ namespace Tiled
         private Texture2D sunTex;
         private SpriteBatch _spriteBatch;
         private Effect skyShader;
-        public TiledClient localClient;
-        public static bool isClient;
-        public static Dictionary<int, EPlayer> cl_playerDictionary = new Dictionary<int, EPlayer>();
+        public static ENetMode netMode;
 
         public GraphicsDeviceManager _graphics;
         public Camera localCamera;
         public InputManager localInputManager = new InputManager();
         public HUD localHUD;
-        public static List<Gameplay.Entity> entities;
+        public static List<Entity> entities;
         public World world;
 
         public Controller localPlayerController;
 
         public static float renderScale = 1.0f;
-        public static int SERVER_TICKRATE = -1;
         public static Point screenCenter;
 
         public static bool inTitle = true;
+        public static bool unlit = false;
         public static Texture2D undergroundBackgroundTexture;
         public static Texture2D tileBreakTexture;
+
+        public static Settings userSettings = new Settings();
+        public static bool escMenuOpen = false;
+
+        RenderTarget2D sceneRT;
+        RenderTarget2D lightRT;
+        RenderTarget2D backgroundUnlitRT;
+        
+        Texture2D t;
+
+        BlendState multiplyBlend;
+
+        Effect lightingShader;
+
+#if TILEDSERVER
+        public static TiledServer netServer;
+#else
+        public static TiledClient netClient;
+#endif
+
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            Window.Title = "cool game";
+            Window.Title = "Tiled";
             IsMouseVisible = true;
             Window.AllowUserResizing = true;
         }
@@ -58,26 +78,58 @@ namespace Tiled
             Mappings.InitializeMappings();
             entities = new List<Entity>();
             localPlayerController = new Controller();
-
-            
-
-            localCamera.position.Y = 8912.0f / 3f;
             
 
             Window.ClientSizeChanged += MainWindowResized;
+
+            t = new Texture2D(GraphicsDevice, 1, 1);
+            t.SetData(new Color[1] { Color.White });
+
+            multiplyBlend = new BlendState()
+            {
+                ColorSourceBlend = Blend.DestinationColor,
+                ColorDestinationBlend = Blend.Zero,
+            };
+
             CalcRenderScale();
         }
 
-        public void CreateNewClient()
-        {
-            Program.GetGame().localClient = new TiledClient();
-        }
-
+#if !TILEDSERVER
         public void JoinServer(string inputUri)
         {
-            localClient.SV_URI = inputUri;
-            localClient.Run();
+            netClient = new TiledClient();
+            netClient.clientException += NetClient_clientException;
+
+            try
+            {
+                string ipStr = inputUri.Split(':')[0];
+                string portStr = inputUri.Split(':')[1];
+
+                byte[] ip = ipStr.Split('.').Select(x => byte.Parse(x)).ToArray();
+                int port = int.Parse(portStr);
+
+                netClient.ConnectToServer(ip, port);
+            }
+            catch (Exception ex)
+            {
+                netClient.externClientInvokeException(ex);
+            }
         }
+
+        private void NetClient_clientException(Exception e)
+        {
+            UWMessage m = HUD.CreateWidget<UWMessage>(localHUD, "src: " + e.Source + "\n" + e.Message + "\n inner: " + e.InnerException);
+            m.onWidgetDestroyed += ExceptionMsgDestroyed;
+        }
+
+        private void ExceptionMsgDestroyed(WidgetDestroyArgs e)
+        {
+            localHUD.ClearAllWidgets();
+
+            var t = HUD.CreateWidget<UWTitle>(localHUD);
+            t.SetGeometry(new(1920, 1080), AnchorPosition.Center);
+        }
+#endif
 
         public void CreatePlayer(Vector2 location)
         {
@@ -96,26 +148,54 @@ namespace Tiled
         {
             Fonts.InitFonts();
 
-            world = new World();
             //world.Init();
+
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             localCamera = new Camera(this);
 
             skyTex = new Texture2D(GraphicsDevice, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight);
+
             skyShader = Content.Load<Effect>("Shaders/SkyShader");
 
             sunTex = Content.Load<Texture2D>("Sky/Sun");
+
             undergroundBackgroundTexture = Content.Load<Texture2D>("UndergroundBackgrounds/DefaultUndergroundBackground");
+
             tileBreakTexture = Content.Load<Texture2D>("TileBreakage/breakCombined");
+
+            lightingShader = Content.Load<Effect>("Shaders/LightingRTShader");
+
             localHUD = new HUD(_spriteBatch, _graphics);
+            world = new World();
+
+#if TILEDSERVER
+            RunServer();
+#endif
+
         }
 
-        
+#if TILEDSERVER
+        private async void RunServer()
+        {
+            netServer = new TiledServer();
+            netServer.onServerLog += NetServer_onServerLog;
+
+            Window.Title = "Tiled Server";
+
+            return;
+        }
+
+        private void NetServer_onServerLog(string msg)
+        {
+            System.Diagnostics.Debug.WriteLine("[SERVER] " + msg);
+        }
+#endif
 
         private void MainWindowResized(object sender, EventArgs e)
         {
             CalcRenderScale();
+            
         }
 
         public static void RegisterEntity(Gameplay.Entity e)
@@ -149,19 +229,34 @@ namespace Tiled
         {
             screenCenter = new Point(Window.ClientBounds.Width / 2, Window.ClientBounds.Height / 2);
             renderScale = Window.ClientBounds.Height / 1080.0f;
+            renderScale *= localCamera.zoom;
+
+            lightRT?.Dispose();
+            sceneRT?.Dispose();
+            lightRT = null;
+            sceneRT = null;
+
+            lightRT = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            sceneRT = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            backgroundUnlitRT = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+
+            GC.Collect();
+        }
+
+        public void ForceCalcRenderScale()
+        {
+            CalcRenderScale();
         }
 
         public static float delta;
+        public static double runtime;
         protected override void Update(GameTime gameTime)
         {
-            if (!IsActive && !isClient)
+            Benchmark.StartBenchmark("Update Loop");
+            if (!IsActive && netMode == ENetMode.Standalone)
             {
                 return;
             }
-
-                delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
 
             if(!inTitle)
             {
@@ -182,8 +277,8 @@ namespace Tiled
                     localCamera.position.Y += 50;
                 }
             }
-            
 
+#if !TILEDSERVER
             localInputManager.Update();
             Mappings.Update();
 
@@ -191,25 +286,37 @@ namespace Tiled
             {
                 Lighting.Update();
             }
-            
-            world.UpdateWorld();
 
             localPlayerController.Update();
-            
-            foreach(Entity entity in entities.ToList())
+#endif
+
+            delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            runtime += (double)delta;
+
+            world.UpdateWorld();
+
+            for(int i = 0; i < entities.Count; i++)
             {
-                entity.Update();
+                entities[i].Update();
             }
+
             base.Update(gameTime);
+            Benchmark.EndBenchmark("Update Loop");
         }
 
         protected override void Draw(GameTime gameTime)
         {
+            base.Draw(gameTime);
+            Benchmark.StartBenchmark("Draw Scene");
+            Benchmark.StartBenchmark("Basepass");
+            GraphicsDevice.SetRenderTarget(backgroundUnlitRT); //Draw unlit Background RT
             GraphicsDevice.Clear(Color.Black);
-            
+
             RenderSky();
             RenderSun();
-            
+
+            GraphicsDevice.SetRenderTarget(sceneRT); //Draw to Scene
+            GraphicsDevice.Clear(new Color(0, 0, 0, 0));
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
 
@@ -218,16 +325,137 @@ namespace Tiled
             RenderEntities();
 
             _spriteBatch.End();
+            Benchmark.EndBenchmark("Basepass");
+            GraphicsDevice.SetRenderTarget(lightRT);
 
+            Benchmark.StartBenchmark("LightPass");
+            RenderLightTarget();
+            Benchmark.EndBenchmark("LightPass");
+
+            GraphicsDevice.SetRenderTarget(null);
+
+            _spriteBatch.Begin(effect: lightingShader);
+            lightingShader.Parameters["Lighting"]?.SetValue(lightRT);
+            lightingShader.Parameters["Sky"]?.SetValue(backgroundUnlitRT);
+
+            Benchmark.StartBenchmark("Draw Scene Render Target");
+
+            _spriteBatch.Draw(sceneRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+
+            Benchmark.EndBenchmark("Draw Scene Render Target");
+
+            _spriteBatch.End();
+
+            /*_spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointWrap);
+            _spriteBatch.Draw(sceneRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+            _spriteBatch.End();
+
+            _spriteBatch.Begin(SpriteSortMode.Immediate, multiplyBlend, SamplerState.PointWrap);
+            _spriteBatch.Draw(lightRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
+            _spriteBatch.End();*/
+            Benchmark.StartBenchmark("UI");
             localHUD.DrawWidgets();
+            Benchmark.EndBenchmark("UI");
+
+            RenderMouseItem();
+            Benchmark.EndBenchmark("Draw Scene");
+            DrawBenchmarks();
+        }
+
+        public void DrawBenchmarks()
+        {
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
+            if(Benchmark.runningBenchmarks.Count > 0)
+            {
+                int i = 0;
+                foreach(var benchmark in Benchmark.solvedBenchmarks)
+                {
+                    _spriteBatch.DrawString(Fonts.Andy_24pt, benchmark.Key + " = " + benchmark.Value + "ms" + " | " + (int)(benchmark.Value) + "ms", new Vector2(0, i * 64 * (renderScale / localCamera.zoom)), Color.Red, 0, new(), 1.5f * (renderScale / localCamera.zoom), SpriteEffects.None, 1.0f);
+                    i++;
+                }
+                
+            }
+            _spriteBatch.End();
+        }
+
+        public void RenderMouseItem()
+        {
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp);
+            if(InputManager.mouseHasItem)
+            {
+                var s = ItemID.GetItem(InputManager.mouseItem.type).sprite;
+                _spriteBatch.Draw(s, new Rectangle(Mouse.GetState().X, Mouse.GetState().Y, (int)(32 * HUD.DPIScale), (int)(32 * HUD.DPIScale)), Color.White);
+            }
+            _spriteBatch.End();
         }
 
         public void RenderBackground()
         {
-            if(localCamera.position.Y >  World.averageSurfaceHeight * World.TILESIZE)
+            int backgroundStartY = (World.averageSurfaceHeight + 113) * World.TILESIZE;
+
+            if (localCamera.position.Y + (Window.ClientBounds.Height / renderScale) >= backgroundStartY)
             {
-                _spriteBatch.Draw(undergroundBackgroundTexture, new Rectangle(0, 1920 + World.averageSurfaceHeight * World.TILESIZE - (int)localCamera.position.Y, Window.ClientBounds.Width, Window.ClientBounds.Height), new Rectangle((int)localCamera.position.X, (int)localCamera.position.Y, (int)(Window.ClientBounds.Width / renderScale), (int)(Window.ClientBounds.Height / renderScale)), Color.White);
+                int textureWidth = undergroundBackgroundTexture.Width;
+                int textureHeight = undergroundBackgroundTexture.Height;
+
+                int screenY = 0;
+                if (localCamera.position.Y < backgroundStartY)
+                {
+                    screenY = (int)((backgroundStartY - localCamera.position.Y) * renderScale);
+                }
+
+                float verticalScrollOffset = Math.Max(0, localCamera.position.Y - backgroundStartY);
+                float horizontalScrollOffset = localCamera.position.X / 2;
+
+                Rectangle destRect = new Rectangle(0, screenY, Window.ClientBounds.Width, Window.ClientBounds.Height - screenY);
+
+                float texCoordX = horizontalScrollOffset / textureWidth;
+                float texCoordY = verticalScrollOffset / textureHeight;
+
+                float texWidth = (Window.ClientBounds.Width / renderScale) / textureWidth;
+                float texHeight = (Window.ClientBounds.Height - screenY) / renderScale / textureHeight;
+
+                Rectangle sourceRect = new Rectangle((int)(texCoordX * textureWidth) % textureWidth, (int)(texCoordY * textureHeight) % textureHeight, (int)(texWidth * textureWidth), (int)(texHeight * textureHeight));
+
+                _spriteBatch.Draw(undergroundBackgroundTexture, destRect, sourceRect, Color.White);
             }
+        }
+
+
+
+        public void RenderLightTarget()
+        {
+            const int TILE_PAD = 1;
+
+            int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE) + TILE_PAD - 1;
+            int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE) + TILE_PAD - 1;
+
+            int tilesX = (int)Math.Ceiling((Window.ClientBounds.Width / renderScale) / World.TILESIZE);
+            int tilesY = (int)Math.Ceiling((Window.ClientBounds.Height / renderScale) / World.TILESIZE);
+
+            int endX = startX + tilesX + TILE_PAD;
+            int endY = startY + tilesY + TILE_PAD;
+
+            GraphicsDevice.Clear(Color.White);
+
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
+            for (int x = startX; x < endX; x++)
+            {
+                for (int y = startY; y < endY; y++)
+                {
+                    if (!World.IsValidIndex(World.lightMap, x, y))
+                    {
+                        continue;
+                    }
+
+                    Color c = Color.White;
+                    float lerpValue = World.lightMap[x, y] / (float)Lighting.MAX_LIGHT;
+                    c = unlit? Color.White : Color.Lerp(Color.Black, Color.White, lerpValue);
+
+                    _spriteBatch.Draw(t, Rendering.GetLightTileTransform(x, y), c);
+                }
+            }
+            _spriteBatch.End();
         }
 
         public void RenderWorld()
@@ -238,15 +466,16 @@ namespace Tiled
                 return;
             }
 
+            const int TILE_PAD = 1;
             
-            int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE);
-            int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE);
+            int startX = (int)((localCamera.position.X - (screenCenter.X / renderScale)) / World.TILESIZE) + TILE_PAD - 1;
+            int startY = (int)((localCamera.position.Y - (screenCenter.Y / renderScale)) / World.TILESIZE) + TILE_PAD - 1;
 
             int tilesX = (int)Math.Ceiling((Window.ClientBounds.Width / renderScale) / World.TILESIZE);
             int tilesY = (int)Math.Ceiling((Window.ClientBounds.Height / renderScale) / World.TILESIZE);
 
-            int endX = startX + tilesX - 1;
-            int endY = startY + tilesY - 1;
+            int endX = startX + tilesX + TILE_PAD;
+            int endY = startY + tilesY + TILE_PAD;
 
             for (int x = startX; x < endX; x++)
             {
@@ -272,22 +501,20 @@ namespace Tiled
 
             Tile tileData = TileID.GetTile(World.tiles[x, y]);
             Rectangle frame = World.GetTileFrame(x, y, tileData);
-
-            Color finalColor = Color.White;
-            finalColor *= (float)World.lightMap[x, y] / Lighting.MAX_LIGHT;
-            finalColor.A = 255;
             
-            _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, finalColor);
+            _spriteBatch.Draw(tileData.sprite, Rendering.GetTileTransform(x, y), frame, Color.White);
 
             Rectangle? breakFrame = BreakTextureID.GetTextureFrame(World.tileBreak[x, y], tileData.hardness);
+
             if (breakFrame != null)
             {
-                _spriteBatch.Draw(tileBreakTexture, Rendering.GetTileTransform(x, y), breakFrame, finalColor);
+                _spriteBatch.Draw(tileBreakTexture, Rendering.GetTileTransform(x, y), breakFrame, Color.White);
             }
         }
 
         public void RenderWall(int x, int y)
         {
+
             if (!World.IsValidWall(x, y))
             {
                 return;
@@ -296,16 +523,13 @@ namespace Tiled
             Wall wallData = WallID.GetWall(World.walls[x, y]);
             Rectangle frame = World.GetWallFrame(x, y, wallData);
 
-            Color finalColor = Color.Gray;
-            finalColor *= ((float)World.lightMap[x, y] / Lighting.MAX_LIGHT);
-            finalColor.A = 255;
-            _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, finalColor);
+            _spriteBatch.Draw(wallData.sprite, Rendering.GetTileTransform(x, y), frame, Color.White);
         }
     
         public void RenderSky()
         {
             _spriteBatch.Begin(effect: skyShader);
-            skyShader.Parameters["timeLerp"].SetValue(Lighting.SKY_LIGHT_MULT);
+            skyShader.Parameters["timeLerp"].SetValue(Lighting.skyLightMultiplier);
             //skyShader.Parameters["surface"]?.SetValue((int)(World.surfaceHeights[0] * (float)World.TILESIZE));
             //skyShader.Parameters["cameraY"].SetValue(localCamera.position.Y);
             _spriteBatch.Draw(skyTex, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
@@ -317,8 +541,8 @@ namespace Tiled
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive);
             Rectangle sunRect = new Rectangle();
 
-            sunRect.Width = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.SKY_LIGHT_MULT, 4.0f));
-            sunRect.Height = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.SKY_LIGHT_MULT, 4.0f));
+            sunRect.Width = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.skyLightMultiplier, 4.0f));
+            sunRect.Height = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.skyLightMultiplier, 4.0f));
 
             sunRect.X = (int)MathHelper.Lerp(-2048.0f, Window.ClientBounds.Width + 128.0f, world.worldTime / 18.0f);
 
@@ -333,7 +557,11 @@ namespace Tiled
         {
             for(int i = 0; i < entities.Count; i++)
             {
-                entities[i].Draw(ref _spriteBatch);
+                if(localCamera.IsInView(entities[i].GetRectF()))
+                {
+                    entities[i].Draw(ref _spriteBatch);
+                }
+                
             }
         }
     }

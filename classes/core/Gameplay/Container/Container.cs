@@ -85,6 +85,29 @@ namespace Tiled.Inventory
             return true;
         }
 
+        public bool RepAdd(int clientID, ContainerItem item)
+        {
+#if TILEDSERVER
+            if(Main.netMode == ENetMode.Server)
+            {
+                bool result = Add(item);
+
+                if(!result)
+                {
+                    return false;
+                }
+
+                //send new items to client
+                Main.netServer.SendInventoryToClient(clientID, items);
+                
+            }
+            return true;
+#else
+            return false;
+#endif
+
+        }
+
         public bool Remove(EItemType type, ushort amount)
         {
             int foundSlot = FindItemLessOrEqual(type);
@@ -231,6 +254,11 @@ namespace Tiled.Inventory
                 }
             }
             return true;
+        }
+
+        public void SetItem(int i, ContainerItem item)
+        {
+            items[i] = item;
         }
     }
 }

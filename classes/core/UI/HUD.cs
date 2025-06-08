@@ -8,34 +8,36 @@ using System.Text;
 using System.Threading.Tasks;
 using Tiled.Gameplay;
 using Tiled.UI.UserWidgets;
+using Tiled.UI.Widgets;
 
 namespace Tiled.UI
 {
+    //Ugly UI Code
     public class HUD
     {
         protected SpriteBatch spriteBatch;
-        protected GraphicsDeviceManager GDM;
+        protected GraphicsDeviceManager graphicsDeviceManager;
         public static List<Widget> activeWidgets = new List<Widget>();
         public static float DPIScale = 1.0f;
 
         public HUD(SpriteBatch sb, GraphicsDeviceManager gdm)
         {
             spriteBatch = sb;
-            GDM = gdm;
+            graphicsDeviceManager = gdm;
             Program.GetGame().Window.ClientSizeChanged += MainWindowResized;
             Init();
-            Recalc();
+            InvalidateLayout();
         }
 
         private void MainWindowResized(object sender, EventArgs e)
         {
-            Recalc();
+            InvalidateLayout();
         }
 
-        private void Recalc()
+        private void InvalidateLayout()
         {
             GetDPIScale();
-            ScaleWidgets();
+            RescaleWidgets();
         }
 
         /// <summary>
@@ -53,10 +55,28 @@ namespace Tiled.UI
             return newWidget;
         }
 
+        public void ClearAllWidgets()
+        {
+            foreach(var widget in activeWidgets)
+            {
+                widget.DestroyWidget();
+            }
+
+            activeWidgets.Clear();
+        }
+
         internal void Init()
         {
+#if !TILEDSERVER
             var title = CreateWidget<UWTitle>(this);
             title.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
+#else
+            var text = CreateWidget<WText>(this);
+            text.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
+            text.fontScale = 3.0f;
+            text.justification = DataStructures.ETextJustification.Center;
+            text.text = "SERVER INSTANCE";
+#endif
         }
 
         private void GetDPIScale()
@@ -64,7 +84,7 @@ namespace Tiled.UI
             DPIScale = Program.GetGame().Window.ClientBounds.Height / 1080.0f;
         }
 
-        private void ScaleWidgets()
+        private void RescaleWidgets()
         {
             foreach (var widget in activeWidgets)
             {
@@ -80,10 +100,16 @@ namespace Tiled.UI
         public void DrawWidgets()
         {
             spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, SamplerState.PointClamp);
-            foreach (Widget w in activeWidgets.ToList())
+
+            // Only draw widgets that don't have a parent (root widgets)
+            for(int i = 0; i < activeWidgets.Count; i++)
             {
-                w.Draw(ref spriteBatch);
+                if (activeWidgets[i].parent == null && !activeWidgets[i].disposed)
+                {
+                    activeWidgets[i].Draw(ref spriteBatch);
+                }
             }
+
             spriteBatch.End();
         }
     }

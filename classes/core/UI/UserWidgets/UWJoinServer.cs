@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -20,8 +21,22 @@ namespace Tiled.UI.UserWidgets
             text = HUD.CreateWidget<WText>(owningHUD);
             
             text.text = "Joining Server...";
+            text.justification = ETextJustification.Center;
             text.AttachToParent(this, AnchorPosition.Center);
 
+            //Program.GetGame().localClient.OnException += LocalClient_OnException;
+#if !TILEDSERVER
+            Main.netClient.clientJoined += LocalClient_OnJoinResult;
+            Main.netClient.clientException += LocalClient_OnException;
+#endif
+        }
+
+        private void LocalClient_OnException(Exception e)
+        {
+            //HUD.CreateWidget<UWMessage>(owningHUD, e.Message);
+            //Program.GetGame().localClient.DestroySocket();
+            Debug.WriteLine("destroyed client socket cause of an exception!");
+            DestroyWidget();
             Program.GetGame().localClient.OnException += LocalClient_OnException;
             Program.GetGame().localClient.OnException += Program.GetGame().OnClientException;
             Program.GetGame().localClient.OnJoinResult += LocalClient_OnJoinResult;
@@ -39,10 +54,13 @@ namespace Tiled.UI.UserWidgets
                 DestroyWidget();
             }
         }
-
-        private void LocalClient_OnException(string obj)
+#if !TILEDSERVER
+        public override void DrawWidget(ref SpriteBatch sb)
         {
+            text.text = "Joining Server..." + "\n" + "STATUS: " + Main.netClient.loadState.ToString();
+            base.DrawWidget(ref sb);
             DestroyWidget();
         }
+#endif
     }
 }

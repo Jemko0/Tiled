@@ -1,35 +1,61 @@
-﻿using System.Net.WebSockets;
-using System.Threading.Tasks;
-using System.Threading;
+using Lidgren.Network;
+using Microsoft.Xna.Framework;
 using System;
 using System.Diagnostics;
-using Tiled.Gameplay;
+using System.Threading;
+using System.Timers;
+using Tiled;
 using Tiled.DataStructures;
+using Tiled.Gameplay;
+using Tiled.Inventory;
+using Tiled.Networking.Shared;
 using System.Text.Json;
 
-namespace Tiled.Networking
+namespace Tiled
 {
+
     public class TiledClient
     {
-        private ClientWebSocket ws;
-        public string SV_URI = "ws://localhost:17777";
-        private bool isRunning = true;
+        public NetClient client;
+        public int localPlayerID = -1;
+        public Thread clientThread;
+        public bool running = true;
 
-        public int PlayerID { get; private set; }
-        
-        // Event for message logging
-        public event Action<string> OnLogMessage;
+        public delegate void ClientJoinResult(bool obj);
+        public delegate void ClientException(Exception e);
+        public event ClientJoinResult clientJoined;
+        public event ClientException clientException;
 
-        public event Action<string> OnException;
-        public event Action<bool> OnJoinResult;
-        private class Packet
+        public TiledClient()
         {
-            public string type { get; set; }
-            public PacketData data { get; set; }
+            NetPeerConfiguration config = new NetPeerConfiguration("tiled");
+            config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
+            config.EnableMessageType(NetIncomingMessageType.Data);
+            config.EnableMessageType(NetIncomingMessageType.StatusChanged);
+            config.EnableMessageType(NetIncomingMessageType.DebugMessage);
+            config.EnableMessageType(NetIncomingMessageType.WarningMessage);
+            config.EnableMessageType(NetIncomingMessageType.ErrorMessage);
+            client = new NetClient(config);
+            client.Start();
+            Program.GetGame().Exiting += TiledClient_Exiting;
+            Debug.WriteLine("Client started");
         }
 
-        private class PacketData
+        public void ConnectToServer(byte[] ip, int port)
         {
+            try
+            {
+                Debug.WriteLine("Connecting to IPEndPoint: " + string.Join('.', ip) + ":" + port);
+                client.Connect(new System.Net.IPEndPoint(new System.Net.IPAddress(ip), port));
+                clientThread = new Thread(new ThreadStart(StartClient));
+                clientThread.Name = "Client Thread";
+                clientThread.Start();
+                return;
+            }
+            catch (Exception e)
+            {
+                clientException?.Invoke(e);
+            }
             public int id { get; set; }
             public int tickrate { get; set; }
             public int seed { get; set; }
@@ -44,43 +70,337 @@ namespace Tiled.Networking
             public object[] objectArray { get; set; }
         }
 
-        public TiledClient()
+        public void externClientInvokeException(Exception e)
         {
-            // Set up default log handler if none provided
-            Main.isClient = true;
-            OnLogMessage += (msg) => Debug.WriteLine(msg);
+            clientException?.Invoke(e);
         }
 
-        public void Run()
+        private void TiledClient_Exiting(object sender, EventArgs e)
         {
-            // Start client on the main thread
-            Task.Run(Client);
+            running = false;
         }
 
-        public void DestroySocket()
+        public enum WorldLoadState
         {
-            Main.isClient = false;
-            isRunning = false;
-            ws?.Abort();
-            ws?.Dispose();
+            NotStarted,
+            GeneratingWorld,
+            RequestingChanges,
+            RequestingEntities,
+            Complete
         }
 
-        private async Task Client()
-        {
-            ws = new ClientWebSocket();
-            Uri serverUri;
+        public WorldLoadState loadState = WorldLoadState.NotStarted;
 
-            try
+        public void StartClient()
+        {
+            Thread.Sleep(1000);
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestPlayerID);
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+            client.FlushSendQueue();
+
+            System.Timers.Timer clientTickTimer = new System.Timers.Timer(41);
+            clientTickTimer.Elapsed += ClientTick;
+
+            while (running)
             {
-               serverUri = new Uri(SV_URI);
-            }
-            catch (Exception ex)
-            {
-                Log($"URI_Error: {ex.Message}");
-                OnException?.Invoke(ex.Message);
-                return;
-            }
+                NetIncomingMessage inc;
+                while ((inc = client.ReadMessage()) != null)
+                {
+                    switch (inc.MessageType)
+                    {
+                        case NetIncomingMessageType.ConnectionApproval:
+                            inc.SenderConnection.Approve();
+                            break;
+                        case NetIncomingMessageType.Data:
+                            switch ((EPacketType)inc.ReadByte())
+                            {
+                                case EPacketType.ReceivePlayerID:
+                                    Main.netMode = ENetMode.Client;
+                                    Main.inTitle = false;
 
+                                    IDPacket playerIDPacket = new IDPacket(0);
+                                    playerIDPacket.PacketToNetIncomingMessage(inc);
+    
+                                    localPlayerID = playerIDPacket.ID;
+    
+                                    Debug.WriteLine("Player ID: " + localPlayerID);
+
+                                    //request World
+                                    ClientWorldRequestPacket worldRequestPacket = new ClientWorldRequestPacket(localPlayerID);
+                                    NetOutgoingMessage worldRequest = client.CreateMessage();
+                                    worldRequest.Write((byte)EPacketType.RequestWorld);
+                                    worldRequestPacket.PacketToNetOutgoingMessage(worldRequest);
+                                    client.SendMessage(worldRequest, NetDeliveryMethod.ReliableOrdered);
+                                    break;
+
+                                case EPacketType.ReceiveWorld:
+                                    WorldPacket worldPacket = new WorldPacket();
+                                    worldPacket.PacketToNetIncomingMessage(inc);
+                                    World.maxTilesX = worldPacket.maxTilesX;
+                                    World.maxTilesY = worldPacket.maxTilesY;
+                                    Program.GetGame().world.seed = worldPacket.seed;
+                                    Program.GetGame().world.StartWorldGeneration();
+
+                                    loadState = WorldLoadState.GeneratingWorld;
+
+                                    // Wait for world generation to complete locally before rendering
+                                    Thread worldGenWaitThread = new Thread(() => {
+                                        while (World.isGenerating)
+                                        {
+                                            Thread.Sleep(100);
+                                        }
+                                        World.renderWorld = true;
+                                    });
+                                    worldGenWaitThread.Start();
+                                    break;
+
+                                case EPacketType.ReceiveWorldComplete:
+                                    loadState = WorldLoadState.RequestingEntities;
+
+                                    NetOutgoingMessage entityRequest = client.CreateMessage();
+                                    entityRequest.Write((byte)EPacketType.RequestActiveEntities);
+                                    client.SendMessage(entityRequest, NetDeliveryMethod.ReliableOrdered);
+                                    break;
+
+                                case EPacketType.ReceiveSpawnClient:
+                                    ClientSpawnPacket spawnPacket = new ClientSpawnPacket();
+                                    spawnPacket.PacketToNetIncomingMessage(inc);
+                                    
+                                    EPlayer newPlayer = Entity.NewEntity<EPlayer>();
+                                    newPlayer.Initialize(EEntityType.Player);
+                                    newPlayer.clientID = spawnPacket.playerID;
+                                    newPlayer.position = spawnPacket.position;
+
+                                    if(NetShared.clientIDToPlayer.ContainsKey(newPlayer.clientID))
+                                    {
+                                        NetShared.clientIDToPlayer[spawnPacket.playerID] = newPlayer;
+                                    }
+                                    else
+                                    {
+                                        NetShared.clientIDToPlayer.Add(spawnPacket.playerID, newPlayer);
+                                    }
+                                    
+
+                                    if (localPlayerID == spawnPacket.playerID)
+                                    {
+                                        Program.GetGame().localPlayerController.Possess(newPlayer);
+
+                                        //if we spawned, request other clients
+                                        IDPacket requestOthersPacket = new IDPacket(localPlayerID);
+                                        NetOutgoingMessage requestOthers = client.CreateMessage();
+
+                                        requestOthers.Write((byte)EPacketType.RequestOtherClients);
+                                        requestOthersPacket.PacketToNetOutgoingMessage(requestOthers);
+                                        client.SendMessage(requestOthers, NetDeliveryMethod.ReliableOrdered);
+
+                                        clientTickTimer.Start();
+                                        loadState = WorldLoadState.Complete;
+                                        clientJoined?.Invoke(true);
+                                    }
+                                    break;
+
+                                case EPacketType.ReceiveClientDisconnected:
+                                    ClientDisconnectedPacket disconnectedPacket = new ClientDisconnectedPacket();
+                                    disconnectedPacket.PacketToNetIncomingMessage(inc);
+
+                                    if (NetShared.clientIDToPlayer.ContainsKey(disconnectedPacket.disconnectedPlayerID))
+                                    {
+                                        NetShared.clientIDToPlayer[disconnectedPacket.disconnectedPlayerID].Destroy();
+                                        NetShared.clientIDToPlayer.Remove(disconnectedPacket.disconnectedPlayerID);
+                                    }
+                                    break;
+
+                                case EPacketType.ReceiveWorldUpdate:
+                                    Debug.WriteLine("received world update");
+                                    WorldUpdatePacket worldUpdatePacket = new WorldUpdatePacket();
+                                    worldUpdatePacket.PacketToNetIncomingMessage(inc);
+                                    Program.GetGame().world.worldTime = worldUpdatePacket.time;
+                                    break;
+
+                                case EPacketType.ReceiveClientUpdate:
+                                    ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
+                                    clientUpdatePacket.PacketToNetIncomingMessage(inc);
+
+                                    if (NetShared.clientIDToPlayer.ContainsKey(clientUpdatePacket.playerID))
+                                    {
+                                        NetShared.clientIDToPlayer[clientUpdatePacket.playerID].position = clientUpdatePacket.position;
+                                        NetShared.clientIDToPlayer[clientUpdatePacket.playerID].velocity = clientUpdatePacket.velocity;
+                                    }
+                                    else
+                                    {
+                                        Debug.WriteLine("Client ID not found");
+                                    }
+                                    break;
+
+
+                                case EPacketType.ReceiveTileChange:
+                                    TileChangePacket change = new TileChangePacket();
+                                    change.PacketToNetIncomingMessage(inc);
+
+                                    World.SetTile(change.x, change.y, change.tileType);
+                                    break;
+
+                                case EPacketType.ReceiveSpawnEntity:
+                                    SpawnEntityPacket spawnEntityPacket = new SpawnEntityPacket();
+                                    spawnEntityPacket.PacketToNetIncomingMessage(inc);
+
+                                    //spawn entity locally/client
+                                    NetShared.SpawnEntityShared(spawnEntityPacket);
+                                    break;
+
+                                case EPacketType.ReceiveServerUpdateEntity:
+                                    EntityUpdatePacket entityUpdatePacket = new EntityUpdatePacket();
+                                    entityUpdatePacket.PacketToNetIncomingMessage(inc);
+
+                                    if(NetShared.netEntitites.ContainsKey(entityUpdatePacket.entityID))
+                                    {
+                                        NetShared.netEntitites[entityUpdatePacket.entityID].position = entityUpdatePacket.position;
+                                        NetShared.netEntitites[entityUpdatePacket.entityID].velocity = entityUpdatePacket.velocity;
+                                    }
+                                    else
+                                    {
+                                        Debug.WriteLine("client id was invalid");
+                                    }
+                                    
+                                    break;
+
+                                case EPacketType.ReceiveDestroyEntity:
+                                    IDPacket idPacket = new IDPacket(-1);
+                                    idPacket.PacketToNetIncomingMessage(inc);
+                                    
+                                    NetShared.netEntitites[idPacket.ID].LocalDestroy();
+                                    break;
+
+                                case EPacketType.ReceiveWorldChanges:
+                                    WorldChangesPacket worldChangesPacket = new WorldChangesPacket();
+                                    worldChangesPacket.PacketToNetIncomingMessage(inc);
+
+                                    for (int i = 0; i < worldChangesPacket.length; i++)
+                                    {
+                                        NetWorldChange c = worldChangesPacket.changes[i];
+                                        World.SetTile(c.x, c.y, (ETileType)c.type);
+                                    }
+
+                                    break;
+
+                                case EPacketType.ReceiveInventory:
+                                    InventoryPacket inventoryPacket = new InventoryPacket();
+                                    inventoryPacket.PacketToNetIncomingMessage(inc);
+
+                                    Container inv = new Container(inventoryPacket.size);
+                                    inv.items = inventoryPacket.items;
+
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).inventory = inv;
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).healthComponent = new Gameplay.Components.HealthComponent(100, 100, 0);
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).ClientInventoryReceived();
+
+
+                                    break;
+
+                                case EPacketType.ReceiveInventoryChange:
+                                    InventoryPacket newInventory = new InventoryPacket();
+                                    newInventory.PacketToNetIncomingMessage(inc);
+
+                                    ((EPlayer)(Program.GetGame().localPlayerController.controlledEntity)).inventory.items = newInventory.items;
+                                    break;
+
+                                case EPacketType.ReceiveEntities:
+                                    ActiveEntityPacket active = new ActiveEntityPacket();
+                                    active.PacketToNetIncomingMessage(inc);
+
+                                    for(int i = 0; i < active.arrayLength; i++)
+                                    {
+                                        SpawnEntityPacket newEntity = new SpawnEntityPacket();
+                                        newEntity.entityID = active.entities[i].netID;
+                                        newEntity.spawnType = active.entities[i].spawnType;
+                                        newEntity.entityType = active.entities[i].type;
+                                        newEntity.itemType = active.entities[i].itemType;
+                                        newEntity.projectileType = active.entities[i].projectileType;
+                                        newEntity.position = active.entities[i].position;
+                                        newEntity.velocity = new(0, 0);
+
+                                        NetShared.SpawnEntityShared(newEntity);
+                                    }
+
+                                    NetOutgoingMessage spawnRequest = client.CreateMessage();
+                                    spawnRequest.Write((byte)EPacketType.RequestClientSpawn);
+                                    spawnRequest.Write(localPlayerID);
+                                    client.SendMessage(spawnRequest, NetDeliveryMethod.ReliableOrdered);
+                                    break;
+
+                                case EPacketType.ReceiveWorldChunk:
+                                    WorldChunkPacket chunkPacket = new WorldChunkPacket();
+                                    chunkPacket.PacketToNetIncomingMessage(inc);
+
+                                    // Process this chunk
+                                    int baseX = chunkPacket.chunkX * chunkPacket.chunkSize;
+                                    int baseY = chunkPacket.chunkY * chunkPacket.chunkSize;
+
+                                    for (int x = 0; x < chunkPacket.chunkSize; x++)
+                                    {
+                                        for (int y = 0; y < chunkPacket.chunkSize; y++)
+                                        {
+                                            int worldX = baseX + x;
+                                            int worldY = baseY + y;
+
+                                            if (worldX < World.maxTilesX && worldY < World.maxTilesY)
+                                            {
+                                                World.SetTile(worldX, worldY, chunkPacket.tiles[x, y]);
+                                            }
+                                        }
+                                    }
+
+                                    loadState = WorldLoadState.RequestingChanges;
+                                    break;
+
+                                case EPacketType.ReceiveDamage:
+                                    DamagePacket damagePacket = new DamagePacket();
+                                    damagePacket.PacketToNetIncomingMessage(inc);
+
+                                    if (damagePacket.isPlayer)
+                                    {
+                                        EPlayer dmgPlayer = NetShared.clientIDToPlayer[damagePacket.toID];
+                                        dmgPlayer.healthComponent.DoDamage(damagePacket.damage, damagePacket.toID);
+                                    }
+                                    else
+                                    {
+                                        Entity dmgEntity = NetShared.netEntitites[damagePacket.toID];
+                                        dmgEntity.healthComponent.DoDamage(damagePacket.damage, damagePacket.toID);
+                                    }
+                                    break;
+                            }
+                            break;
+
+                        case NetIncomingMessageType.StatusChanged:
+                            break;
+                        case NetIncomingMessageType.DebugMessage:
+                            Debug.WriteLine(inc.ReadString());
+                            break;
+                        case NetIncomingMessageType.WarningMessage:
+                            break;
+                        case NetIncomingMessageType.ErrorMessage:
+                            break;
+                    }
+                }
+            }
+            Debug.WriteLine("Server stopped");
+        }
+
+        private void ClientTick(object sender, ElapsedEventArgs e)
+        {
+            if(localPlayerID != -1)
+            {
+                ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
+                clientUpdatePacket.playerID = localPlayerID;
+                clientUpdatePacket.position = Program.GetGame().localPlayerController.controlledEntity.position;
+                clientUpdatePacket.velocity = Program.GetGame().localPlayerController.controlledEntity.velocity;
+
+                NetOutgoingMessage clientUpdateMsg = client.CreateMessage();
+
+                clientUpdateMsg.Write((byte)EPacketType.ReceiveClientUpdate);
+                clientUpdatePacket.PacketToNetOutgoingMessage(clientUpdateMsg);
+                client.SendMessage(clientUpdateMsg, NetDeliveryMethod.Unreliable);
             try
             {
                 await ws.ConnectAsync(serverUri, CancellationToken.None);
@@ -94,21 +414,46 @@ namespace Tiled.Networking
             }
         }
 
-        private void Log(string message)
+        public void SendTileSquare(int x, int y, ETileType type)
         {
-            OnLogMessage?.Invoke(message);
+            TileChangePacket tileChangePacket = new TileChangePacket();
+            tileChangePacket.x = x;
+            tileChangePacket.y = y;
+            tileChangePacket.tileType = type;
+
+            NetOutgoingMessage msg = client.CreateMessage();
+
+            msg.Write((byte)EPacketType.RequestTileChange);
+            tileChangePacket.PacketToNetOutgoingMessage(msg);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
-        private async Task HandleMessages()
+        public void ClientRequestSpawnEntity(ENetEntitySpawnType type, EEntityType entityType, EItemType itemType, Vector2 position, Vector2 velocity)
         {
-            byte[] buffer = new byte[1024];
+            SpawnEntityPacket request = new SpawnEntityPacket();
+            request.spawnType = type;
+            request.entityType = entityType;
+            request.itemType = itemType;
+            request.spawnType = type;
+            request.position = position;
+            request.velocity = velocity;
 
-            while (isRunning && ws.State == WebSocketState.Open)
-            {
-                try
-                {
-                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            NetOutgoingMessage requestMsg = client.CreateMessage();
+            requestMsg.Write((byte)EPacketType.RequestSpawnEntity);
+            request.PacketToNetOutgoingMessage(requestMsg);
 
+            client.SendMessage(requestMsg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void ClientRequestDestroyEntity(int id)
+        {
+            IDPacket idPacket = new IDPacket(id);
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestDestroyEntity);
+            idPacket.PacketToNetOutgoingMessage(msg);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         string message = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -129,13 +474,39 @@ namespace Tiled.Networking
             }
         }
 
-        private void ProcessMessage(string message)
+        public void RequestInventory()
         {
-            try
-            {
-                var packet = System.Text.Json.JsonSerializer.Deserialize<Packet>(message);
-                Log($"Received packet: {message}");
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestInventory);
 
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void RequestItemPickup()
+        {
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestItemPickup);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableUnordered);
+        }
+
+        public void RequestItemSwing(Point onTile)
+        {
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.RequestItemSwing);
+            msg.Write(onTile.X);
+            msg.Write(onTile.Y);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void SetSelectedSlot(int slot)
+        {
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.ReceiveSelectedSlotChange);
+            msg.Write(slot);
+
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
                 switch (packet.type)
                 {
                     case "player_id":
@@ -252,31 +623,44 @@ namespace Tiled.Networking
         }
 
         /// <summary>
-        /// Send a packet to the SERVER (from client)
+        /// isPlayer flag will always be true since a client should only send damage events from themselves
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public async Task SendPacket(string type, object data)
+        /// <param name="d"></param>
+        /// <param name="netID"></param>
+        public void SendDamage(uint d, int netID)
         {
-            var packet = new
-            {
-                type = type,
-                data = data
-            };
+            DamagePacket p = new DamagePacket();
+            p.damage = d;
+            p.toID = netID;
+            p.isPlayer = true;
 
-            string jsonPacket = System.Text.Json.JsonSerializer.Serialize(packet);
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(jsonPacket);
+            NetOutgoingMessage msg = client.CreateMessage();
+            msg.Write((byte)EPacketType.ReceiveDamage);
+            p.PacketToNetOutgoingMessage(msg);
+            client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
+        }
 
-            if (ws.State == WebSocketState.Open)
-            {
-                await ws.SendAsync(
-                    new ArraySegment<byte>(bytes),
-                    WebSocketMessageType.Text,
-                    true,
-                    CancellationToken.None
-                );
-            }
+        public void SendInventoryMove(int from, int to)
+        {
+            InvMoveSlotPacket p = new InvMoveSlotPacket();
+            p.fromID = from;
+            p.toID = to;
+            NetOutgoingMessage msg = client.CreateMessage();
+            p.PacketToNetOutgoingMessage(msg);
+            client.SendMessage(msg, NetDeliveryMethod.ReliableSequenced);
+        }
+
+        public void SendContainerState(Container c)
+        {
+            InventoryPacket i = new InventoryPacket();
+            i.items = c.items;
+            i.size = c.items.Length;
+
+            NetOutgoingMessage m = client.CreateMessage();
+            m.Write((byte)EPacketType.ReceiveClientContainer);
+            i.PacketToNetOutgoingMessage(m);
+            
+            client.SendMessage(m, NetDeliveryMethod.ReliableSequenced);
         }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
+using Tiled.Gameplay.Items;
 using Tiled.ID;
 
 namespace Tiled.Collision
@@ -10,9 +11,13 @@ namespace Tiled.Collision
     {
         private Entity entity;
         private const float skinWidth = 0.1f;
+        public bool collidesWithEntities = false;
 
-        public delegate void Hit();
+        public delegate void Hit(Vector2 hitVelocity, Vector2 hitNormal);
         public event Hit onHit;
+
+        public delegate void HitEntity(Entity e);
+        public event HitEntity onEntityHit;
 
         public CollisionComponent(Entity entity)
         {
@@ -35,10 +40,23 @@ namespace Tiled.Collision
             float moveX = entity.velocity.X;
             float moveY = entity.velocity.Y;
             MoveWithCollision(ref moveX, ref moveY);
+
+            if(collidesWithEntities)
+            {
+                Entity e = GetCollidingEntity();
+                if(e != null)
+                {
+                    onEntityHit.Invoke(e);
+                }
+            }
         }
 
         private void MoveWithCollision(ref float moveX, ref float moveY)
         {
+            Vector2 hitVel = new();
+            Vector2 hitNormal = new();
+            bool anyCollision = false;
+
             // Handle X movement first
             if (moveX != 0)
             {
@@ -67,8 +85,11 @@ namespace Tiled.Collision
 
                 if (collision)
                 {
+                    anyCollision = true;
+                    hitVel.X = entity.velocity.X;
+                    hitNormal.X = direction;
+
                     moveX = direction * (Math.Max(0, shortestHit - skinWidth));
-                    onHit?.Invoke();
                     entity.velocity.X = 0;
                 }
             }
@@ -103,20 +124,36 @@ namespace Tiled.Collision
 
                 if (collision)
                 {
+                    anyCollision = true;
+                    hitVel.Y = entity.velocity.Y;
+                    hitNormal.Y = direction;
+
                     moveY = direction * (Math.Max(0, shortestHit - skinWidth));
                     entity.velocity.Y = 0;
                 }
             }
-
             entity.position.Y += moveY;
+
+            if (anyCollision)
+            {
+                onHit?.Invoke(hitVel, hitNormal);
+            }
         }
 
         public Entity? GetCollidingEntity()
         {
             for (int i = 0; i < Main.entities.Count; i++)
             {
-                if (entity.GetRectF().IntersectsWith(Main.entities[i].GetRectF()))
+                if (entity.canCollide && Main.entities[i].canCollide && entity.GetRectF().IntersectsWith(Main.entities[i].GetRectF()) && Main.entities[i] != entity)
                 {
+                    if (Main.entities[i] is EItem)
+                    {
+                        if ((Main.entities[i] as EItem).isSwing)
+                        {
+                            continue;
+                        }
+                    }
+
                     return Main.entities[i];
                 }
             }
@@ -258,6 +295,34 @@ namespace Tiled.Collision
             }
 
             return false;
+        }
+    }
+
+    public class CollisionStatics
+    {
+        public static Entity? isEntityAt(Vector2 position)
+        {
+            for (int i = 0; i < Main.entities.Count; i++)
+            {
+                if(Main.entities[i].GetRectF().Contains(new System.Drawing.PointF(position.X, position.Y)))
+                {
+                    return Main.entities[i];
+                }
+            }
+            return null;
+        }
+
+        public static Entity? isEntityWithinRect(System.Drawing.RectangleF rect)
+        {
+            for (int i = 0; i < Main.entities.Count; i++)
+            {
+                Entity? current = Main.entities[i];
+                if ((bool)current?.GetRectF().IntersectsWith(rect))
+                {
+                    return current;
+                }
+            }
+            return null;
         }
     }
 }

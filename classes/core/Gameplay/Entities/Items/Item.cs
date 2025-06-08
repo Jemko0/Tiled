@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Items.ItemBehaviours;
 using Tiled.ID;
@@ -21,6 +22,7 @@ namespace Tiled.Gameplay.Items
         public event swingEnd swingEnded;
 
         private IItemBehaviour behavior;
+
         public EItem()
         {
         }
@@ -49,10 +51,20 @@ namespace Tiled.Gameplay.Items
 
                 if (IsTouchingLocalPlayer() && canPickUp && !instaPickUpPrevention)
                 {
-                    if (((EPlayer)Program.GetGame().localPlayerController.controlledEntity).inventory.Add(new ContainerItem(type, count)))
+#if !TILEDSERVER
+                    if(Main.netMode == ENetMode.Client)
                     {
-                        Destroy();
+                        Main.netClient.RequestItemPickup();
                     }
+
+                    if(Main.netMode == ENetMode.Standalone)
+                    {
+                        if (((EPlayer)Program.GetGame().localPlayerController.controlledEntity).inventory.Add(new ContainerItem(type, count)))
+                        {
+                            Destroy();
+                        }
+                    }
+#endif
                 }
             }
             else
@@ -62,12 +74,18 @@ namespace Tiled.Gameplay.Items
                     SwingItem(swingOwner);
                 }
             }
+
+/*#if TILEDSERVER
+            velocity.X += 0.2f;
+#endif*/
         }
 
         public void SwingItem(Entity entity)
         {
             position = entity.position;
             float animProgress = age / Item.useTime;
+            facingLeft = entity.facingLeft;
+            direction = entity.direction;
 
             switch(Item.swingAnimationType)
             {
@@ -76,9 +94,9 @@ namespace Tiled.Gameplay.Items
 
                 case EItemSwingAnimationType.Swing:
                     position = new Vector2(entity.facingLeft? entity.GetRect().Left : entity.GetRect().Right, entity.GetRect().Center.Y);
-                    rotation = MathHelper.Lerp(entity.facingLeft? -5.0f : -4.0f, entity.facingLeft ? -10.0f : 1.0f, animProgress);
-                    rotOrigin.X = -8.0f;
-                    rotOrigin.Y = 40.0f;
+                    rotation = MathHelper.Lerp(-4.0f * direction, 1.0f * direction, animProgress);
+                    rotOrigin.X = entitySprite.Width * ((Math.Abs(direction) - direction) / 2);
+                    rotOrigin.Y = entitySprite.Height;
                     break;
             }
 
@@ -128,28 +146,23 @@ namespace Tiled.Gameplay.Items
             behavior?.Use(this);
         }
 
-        public void Use(int? tileX = null, int? tileY = null, Entity usingEntity = null)
-        {
-            if(usingEntity != null)
-            {
-                UseWithEntity(usingEntity);
-            }
-
-            if(tileX != null && tileY != null)
-            {
-                UseOnTile((int)tileX, (int)tileY);
-            }
-        }
-
         /// <summary>
         /// this is called before UseWithTile(int x, int y)
         /// </summary>
         /// <param name="entity"></param>
-        public void UseWithEntity(object entity)
+        public void UseWithEntity(object entity, Point tile)
         {
-            if (Item.consumable && behavior.CanConsume(this))
+            if (Item.consumable && behavior.CanConsume(this, tile))
             {
+                if(Main.netMode == ENetMode.Standalone)
+                {
+                    ((EPlayer)entity).inventory.RemoveFromSlot(((EPlayer)entity).selectedSlot, 1);
+                }
+
+#if TILEDSERVER
                 ((EPlayer)entity).inventory.RemoveFromSlot(((EPlayer)entity).selectedSlot, 1);
+                Main.netServer.SendInventoryToClient(((EPlayer)entity).clientID, ((EPlayer)entity).inventory.items);
+#endif
             }
 
             behavior?.UseWithEntity(this, entity);
