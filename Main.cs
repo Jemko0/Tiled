@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Tiled.classes.core.Debug;
 using Tiled.DataStructures;
 using Tiled.Gameplay;
 using Tiled.ID;
@@ -222,7 +221,6 @@ namespace Tiled
             }
 
             HUD.CreateWidget<UWMessage>(localHUD, obj);
-            localClient.DestroySocket();
         }
 
         private void CalcRenderScale()
@@ -252,7 +250,7 @@ namespace Tiled
         public static double runtime;
         protected override void Update(GameTime gameTime)
         {
-            Benchmark.StartBenchmark("Update Loop");
+            //Benchmark.StartBenchmark("Update Loop");
             if (!IsActive && netMode == ENetMode.Standalone)
             {
                 return;
@@ -301,14 +299,14 @@ namespace Tiled
             }
 
             base.Update(gameTime);
-            Benchmark.EndBenchmark("Update Loop");
+            //Benchmark.EndBenchmark("Update Loop");
         }
 
         protected override void Draw(GameTime gameTime)
         {
             base.Draw(gameTime);
-            Benchmark.StartBenchmark("Draw Scene");
-            Benchmark.StartBenchmark("Basepass");
+            //Benchmark.StartBenchmark("Draw Scene");
+            //Benchmark.StartBenchmark("Basepass");
             GraphicsDevice.SetRenderTarget(backgroundUnlitRT); //Draw unlit Background RT
             GraphicsDevice.Clear(Color.Black);
 
@@ -325,12 +323,12 @@ namespace Tiled
             RenderEntities();
 
             _spriteBatch.End();
-            Benchmark.EndBenchmark("Basepass");
+            //Benchmark.EndBenchmark("Basepass");
             GraphicsDevice.SetRenderTarget(lightRT);
 
-            Benchmark.StartBenchmark("LightPass");
+            //Benchmark.StartBenchmark("LightPass");
             RenderLightTarget();
-            Benchmark.EndBenchmark("LightPass");
+            //Benchmark.EndBenchmark("LightPass");
 
             GraphicsDevice.SetRenderTarget(null);
 
@@ -338,11 +336,11 @@ namespace Tiled
             lightingShader.Parameters["Lighting"]?.SetValue(lightRT);
             lightingShader.Parameters["Sky"]?.SetValue(backgroundUnlitRT);
 
-            Benchmark.StartBenchmark("Draw Scene Render Target");
+            //Benchmark.StartBenchmark("Draw Scene Render Target");
 
             _spriteBatch.Draw(sceneRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
 
-            Benchmark.EndBenchmark("Draw Scene Render Target");
+            //Benchmark.EndBenchmark("Draw Scene Render Target");
 
             _spriteBatch.End();
 
@@ -353,16 +351,16 @@ namespace Tiled
             _spriteBatch.Begin(SpriteSortMode.Immediate, multiplyBlend, SamplerState.PointWrap);
             _spriteBatch.Draw(lightRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
             _spriteBatch.End();*/
-            Benchmark.StartBenchmark("UI");
+            //Benchmark.StartBenchmark("UI");
             localHUD.DrawWidgets();
-            Benchmark.EndBenchmark("UI");
+            //Benchmark.EndBenchmark("UI");
 
             RenderMouseItem();
-            Benchmark.EndBenchmark("Draw Scene");
-            DrawBenchmarks();
+            //Benchmark.EndBenchmark("Draw Scene");
+            //DrawBenchmarks();
         }
 
-        public void DrawBenchmarks()
+        /*public void DrawBenchmarks()
         {
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap);
             if(Benchmark.runningBenchmarks.Count > 0)
@@ -376,7 +374,7 @@ namespace Tiled
                 
             }
             _spriteBatch.End();
-        }
+        }*/
 
         public void RenderMouseItem()
         {

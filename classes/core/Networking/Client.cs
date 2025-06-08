@@ -56,18 +56,6 @@ namespace Tiled
             {
                 clientException?.Invoke(e);
             }
-            public int id { get; set; }
-            public int tickrate { get; set; }
-            public int seed { get; set; }
-            public int maxTilesX { get; set; }
-            public int maxTilesY { get; set; }
-            public float x { get; set; }
-            public float y { get; set; }
-            public byte tileType { get; set; }
-            public float velX { get; set; }
-            public float velY { get; set; }
-
-            public object[] objectArray { get; set; }
         }
 
         public void externClientInvokeException(Exception e)
@@ -389,7 +377,7 @@ namespace Tiled
 
         private void ClientTick(object sender, ElapsedEventArgs e)
         {
-            if(localPlayerID != -1)
+            if (localPlayerID != -1)
             {
                 ClientUpdatePacket clientUpdatePacket = new ClientUpdatePacket();
                 clientUpdatePacket.playerID = localPlayerID;
@@ -401,16 +389,6 @@ namespace Tiled
                 clientUpdateMsg.Write((byte)EPacketType.ReceiveClientUpdate);
                 clientUpdatePacket.PacketToNetOutgoingMessage(clientUpdateMsg);
                 client.SendMessage(clientUpdateMsg, NetDeliveryMethod.Unreliable);
-            try
-            {
-                await ws.ConnectAsync(serverUri, CancellationToken.None);
-                Log("Connected to the server");
-                await HandleMessages();
-            }
-            catch (Exception ex)
-            {
-                Log($"Error: {ex.Message}");
-                OnException?.Invoke(ex.Message);
             }
         }
 
@@ -454,24 +432,6 @@ namespace Tiled
             idPacket.PacketToNetOutgoingMessage(msg);
 
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
-                    if (result.MessageType == WebSocketMessageType.Text)
-                    {
-                        string message = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        ProcessMessage(message);
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-                        break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"Error while receiving: {ex.Message}");
-                    OnException?.Invoke(ex.Message);
-                    break;
-                }
-            }
         }
 
         public void RequestInventory()
@@ -507,119 +467,6 @@ namespace Tiled
             msg.Write(slot);
 
             client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered);
-                switch (packet.type)
-                {
-                    case "player_id":
-                        PlayerID = packet.data.id;
-
-                        if(PlayerID == -1)
-                        {
-                            OnJoinResult?.Invoke(false);
-                            return;
-                        }
-
-                        OnJoinResult?.Invoke(true);
-                        Log($"Received player ID: {PlayerID}");
-
-                        SendPacket("requestWorld", null);
-                        
-                        break;
-
-                    case "world":
-                        Main.SERVER_TICKRATE = packet.data.tickrate;
-
-                        var seed = packet.data.seed;
-                        
-                        Log("Received world seed: " + seed);
-
-                        Program.GetGame().world.seed = seed;
-                        
-                        World.maxTilesX = packet.data.maxTilesX;
-                        World.maxTilesY = packet.data.maxTilesY;
-
-                        Program.GetGame().world.StartWorldGeneration();
-
-                        //when we have world, try spawning player
-                        SendPacket("requestWorldChanges", new { id = PlayerID });
-                        SendPacket("spawnNewClient", new { id = PlayerID });
-                        break;
-
-                    case "worldTime":
-                        var worldTime = packet.data.x;
-                        var worldTimeSpeed = packet.data.y;
-                        Program.GetGame().world.worldTime = worldTime;
-                        Program.GetGame().world.timeSpeed = worldTimeSpeed;
-                        break;
-
-                    case "worldChanges":
-                        object[] changes = packet.data.objectArray;
-
-                        for (int i = 0; i < changes.Length; i++)
-                        {
-                            var change = (JsonElement)changes[i];
-                            World.SetTile(change.GetProperty("x").GetInt32(), change.GetProperty("y").GetInt32(), (ETileType)change.GetProperty("tileType").GetByte(), true);
-                        }
-
-                        break;
-
-                    case "spawnNewClient":
-                        Log("player with ID: " + packet.data.id + " wants to spawn on Client");
-                        var p = Entity.NewEntity<EPlayer>();
-                        p.position.X = packet.data.x;
-                        p.position.Y = packet.data.y;
-
-                        World.renderWorld = true;
-
-                        if (packet.data.id == PlayerID)
-                        {
-                            Program.GetGame().localPlayerController.Possess(p);
-                            Program.GetGame().localPlayerController.StartMultiplayerUpdate();
-                        }
-                        SendPacket("requestOthers", new { id = PlayerID });
-                        break;
-
-                    case "spawnOthers":
-                        break;
-
-                    case "otherPlayerUpdate":
-
-                        if(!Main.cl_playerDictionary.ContainsKey(packet.data.id))
-                        {
-                            EPlayer newPlayer = Entity.NewEntity<EPlayer>();
-                            newPlayer.clientID = packet.data.id;
-                            newPlayer.position.X = packet.data.x;
-                            newPlayer.position.Y = packet.data.y;
-                            newPlayer.velocity.X = packet.data.velX;
-                            newPlayer.velocity.Y = packet.data.velY;
-                            Main.cl_playerDictionary.Add(packet.data.id, newPlayer);
-                            return;
-                        }
-
-                        Main.cl_playerDictionary[packet.data.id].position.X = packet.data.x;
-                        Main.cl_playerDictionary[packet.data.id].position.Y = packet.data.y;
-
-                        Main.cl_playerDictionary[packet.data.id].velocity.X = packet.data.velX;
-                        Main.cl_playerDictionary[packet.data.id].velocity.Y = packet.data.velY;
-                        break;
-
-                    case "newTile":
-                        World.SetTile(packet.data.maxTilesX, packet.data.maxTilesY, (ETileType)packet.data.tileType, true);
-                        break;
-
-                    case "clientDisconnect":
-                        if (Main.cl_playerDictionary.ContainsKey(packet.data.id))
-                        {
-                            Main.cl_playerDictionary[packet.data.id].Destroy();
-                            Main.cl_playerDictionary.Remove(packet.data.id);
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error processing message: {ex.Message}");
-                OnException?.Invoke(ex.Message);
-            }
         }
 
         /// <summary>

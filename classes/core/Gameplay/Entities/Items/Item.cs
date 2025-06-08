@@ -23,7 +23,7 @@ namespace Tiled.Gameplay.Items
 
         private IItemBehaviour behavior;
 
-        public EItem()
+        public EItem() : base()
         {
         }
 
