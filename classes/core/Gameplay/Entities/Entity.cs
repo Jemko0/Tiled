@@ -1,12 +1,14 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Diagnostics;
 using System.Net.Mime;
+using Tiled.Events;
 using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Components;
 using Tiled.ID;
+
 namespace Tiled.Gameplay
 {
     public class Entity : IDisposable
@@ -182,10 +184,13 @@ namespace Tiled.Gameplay
             //sb.Draw(Program.GetGame().Content.Load<Texture2D>("Entities/debug"), Rendering.WorldToScreen(GetRect()), null, Color.White, 0.0f, new(0,0), SpriteEffects.None, 1.0f);
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             position = Vector2.Zero;
             velocity = Vector2.Zero;
+            //entitySprite.Dispose();
+            EventHelper.RemoveAllEventHandlers(this);
+            collision = null;
         }
     }
 }

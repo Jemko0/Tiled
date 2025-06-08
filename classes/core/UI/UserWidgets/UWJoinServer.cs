@@ -37,6 +37,9 @@ namespace Tiled.UI.UserWidgets
             //Program.GetGame().localClient.DestroySocket();
             Debug.WriteLine("destroyed client socket cause of an exception!");
             DestroyWidget();
+            Program.GetGame().localClient.OnException += LocalClient_OnException;
+            Program.GetGame().localClient.OnException += Program.GetGame().OnClientException;
+            Program.GetGame().localClient.OnJoinResult += LocalClient_OnJoinResult;
         }
 
         private void LocalClient_OnJoinResult(bool obj)
@@ -56,6 +59,7 @@ namespace Tiled.UI.UserWidgets
         {
             text.text = "Joining Server..." + "\n" + "STATUS: " + Main.netClient.loadState.ToString();
             base.DrawWidget(ref sb);
+            DestroyWidget();
         }
 #endif
     }

@@ -48,7 +48,6 @@ namespace Tiled
         public static bool isGenerating = false;
 
         public static float difficulty = 1.0f;
-
         public World()
         {
         }
@@ -113,7 +112,6 @@ namespace Tiled
                         renderWorld = true;
                         Main.inTitle = false;
                     }
-
                     isGenerating = false;
                     _genTaskCompletionSource.SetResult(true);
                 }
@@ -586,6 +584,7 @@ namespace Tiled
         }
 
         public static void SetTile(int x, int y, ETileType type, bool noBroadcast = true)
+        public static void SetTile(int x, int y, ETileType type, bool fromServer = false)
         {
             if(!IsValidIndex(tiles, x, y))
             { 
@@ -593,6 +592,18 @@ namespace Tiled
             }
 
             tiles[x, y] = type;
+
+            if (Main.isClient && !isGenerating && !fromServer)
+            {
+                Program.GetGame().localClient.SendPacket("singleTile", new
+                { 
+                    id = Program.GetGame().localClient.PlayerID,
+                    x = x,
+                    y = y,
+                    tileType = (byte)type
+                });
+            }
+
             UpdateTileFramesAt(x, y);
             Lighting.QueueLightUpdate(x, y);
 #if !TILEDSERVER
