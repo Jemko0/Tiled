@@ -39,7 +39,5 @@ namespace Tiled.UI
         {
             children[childIdx].Draw(ref sb);
         }
-
-        
     }
 }

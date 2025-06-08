@@ -147,7 +147,7 @@ namespace Tiled
                 //worldTime += timeSpeed / Main.SERVER_TICKRATE;
             }
             
-            Lighting.SKY_LIGHT_MULT = Math.Clamp((float)Math.Sin(Math.Pow(worldTime / h, dnExp) * (Math.PI / 0.5f)), 0.0f, 1.0f);
+            Lighting.skyLightMultiplier = Math.Clamp((float)Math.Sin(Math.Pow(worldTime / h, dnExp) * (Math.PI / 0.5f)), 0.0f, 1.0f);
             lightUpdateCounter++;
 
             if(lightUpdateCounter >= 30 && renderWorld && !Lighting.isPerformingGlobalLightUpdate)

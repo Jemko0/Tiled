@@ -14,7 +14,8 @@ namespace Tiled
     {
         public const uint MAX_LIGHT = 32;
         public const uint MAX_SKY_LIGHT = 32;
-        public static float SKY_LIGHT_MULT = 1.0f;
+
+        public static float skyLightMultiplier = 1.0f;
         private static readonly object queueLock = new object();
         private static HashSet<(int x, int y)> lightUpdateQueue = new HashSet<(int x, int y)>();
         public static bool isPerformingGlobalLightUpdate;
@@ -196,7 +197,7 @@ namespace Tiled
             {
                 return entity.light;
             }*/
-
+            
             var tile = TileID.GetTile(World.tiles[x, y]);
 
             // Check if tile is a light source
@@ -249,7 +250,7 @@ namespace Tiled
         {
             if(y < World.averageSurfaceHeight + 80)
             {
-                return (uint)(MAX_SKY_LIGHT * SKY_LIGHT_MULT);
+                return (uint)(MAX_SKY_LIGHT * skyLightMultiplier);
             }
             return 0;
         }

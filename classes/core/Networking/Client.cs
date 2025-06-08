@@ -1,6 +1,4 @@
 ﻿using Lidgren.Network;
-using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.FileIO;
 using Microsoft.Xna.Framework;
 using System;
 using System.Diagnostics;

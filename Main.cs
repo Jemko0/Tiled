@@ -510,7 +510,7 @@ namespace Tiled
         public void RenderSky()
         {
             _spriteBatch.Begin(effect: skyShader);
-            skyShader.Parameters["timeLerp"].SetValue(Lighting.SKY_LIGHT_MULT);
+            skyShader.Parameters["timeLerp"].SetValue(Lighting.skyLightMultiplier);
             //skyShader.Parameters["surface"]?.SetValue((int)(World.surfaceHeights[0] * (float)World.TILESIZE));
             //skyShader.Parameters["cameraY"].SetValue(localCamera.position.Y);
             _spriteBatch.Draw(skyTex, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
@@ -522,8 +522,8 @@ namespace Tiled
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive);
             Rectangle sunRect = new Rectangle();
 
-            sunRect.Width = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.SKY_LIGHT_MULT, 4.0f));
-            sunRect.Height = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.SKY_LIGHT_MULT, 4.0f));
+            sunRect.Width = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.skyLightMultiplier, 4.0f));
+            sunRect.Height = (int)(64.0f * renderScale + 64.0f * Math.Pow(Lighting.skyLightMultiplier, 4.0f));
 
             sunRect.X = (int)MathHelper.Lerp(-2048.0f, Window.ClientBounds.Width + 128.0f, world.worldTime / 18.0f);
 

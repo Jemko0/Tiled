@@ -12,31 +12,32 @@ using Tiled.UI.Widgets;
 
 namespace Tiled.UI
 {
+    //Ugly UI Code
     public class HUD
     {
         protected SpriteBatch spriteBatch;
-        protected GraphicsDeviceManager GDM;
+        protected GraphicsDeviceManager graphicsDeviceManager;
         public static List<Widget> activeWidgets = new List<Widget>();
         public static float DPIScale = 1.0f;
 
         public HUD(SpriteBatch sb, GraphicsDeviceManager gdm)
         {
             spriteBatch = sb;
-            GDM = gdm;
+            graphicsDeviceManager = gdm;
             Program.GetGame().Window.ClientSizeChanged += MainWindowResized;
             Init();
-            Recalc();
+            InvalidateLayout();
         }
 
         private void MainWindowResized(object sender, EventArgs e)
         {
-            Recalc();
+            InvalidateLayout();
         }
 
-        private void Recalc()
+        private void InvalidateLayout()
         {
             GetDPIScale();
-            ScaleWidgets();
+            RescaleWidgets();
         }
 
         /// <summary>
@@ -83,7 +84,7 @@ namespace Tiled.UI
             DPIScale = Program.GetGame().Window.ClientBounds.Height / 1080.0f;
         }
 
-        private void ScaleWidgets()
+        private void RescaleWidgets()
         {
             foreach (var widget in activeWidgets)
             {
