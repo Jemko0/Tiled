@@ -27,7 +27,7 @@ namespace Tiled
         public static Rectangle[,] tileFramesCached;
         public static Rectangle[,] wallFramesCached;
         public static uint[,] lightMap;
-        public float worldTime = 5.0f;
+        public float worldTime = 11.0f;
         public float timeSpeed = 0.0002f;
         public float timeSpeedMultiplier = 1.0f;
         public const float gravity = 0.43f;
@@ -225,7 +225,7 @@ namespace Tiled
             }
             else
             {
-                worldTime = 1.0f;
+                worldTime = 8.0f;
             }
             return true;
         }
@@ -900,7 +900,7 @@ namespace Tiled
                 int junctionX = junctionPoints[junctionIndex].x;
                 int junctionY = junctionPoints[junctionIndex].y;
 
-                int tunnelLength = random.Next(1, maxLength); // Increased minimum length
+                int tunnelLength = random.Next(1, Math.Max(maxLength, 1)); // Increased minimum length
                 float curviness = 0.15f + (float)random.NextDouble() * 0.4f; // Increased variation in curves
                 int width = random.Next(minWidth, maxWidth);
 

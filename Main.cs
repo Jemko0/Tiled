@@ -289,6 +289,7 @@ namespace Tiled
         {
             base.Draw(gameTime);
             Benchmark.StartBenchmark("Draw Scene");
+            Benchmark.StartBenchmark("Basepass");
             GraphicsDevice.SetRenderTarget(backgroundUnlitRT); //Draw unlit Background RT
             GraphicsDevice.Clear(Color.Black);
 
@@ -305,7 +306,7 @@ namespace Tiled
             RenderEntities();
 
             _spriteBatch.End();
-
+            Benchmark.EndBenchmark("Basepass");
             GraphicsDevice.SetRenderTarget(lightRT);
 
             Benchmark.StartBenchmark("LightPass");
@@ -333,8 +334,9 @@ namespace Tiled
             _spriteBatch.Begin(SpriteSortMode.Immediate, multiplyBlend, SamplerState.PointWrap);
             _spriteBatch.Draw(lightRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
             _spriteBatch.End();*/
-
+            Benchmark.StartBenchmark("UI");
             localHUD.DrawWidgets();
+            Benchmark.EndBenchmark("UI");
 
             RenderMouseItem();
             Benchmark.EndBenchmark("Draw Scene");
@@ -349,7 +351,7 @@ namespace Tiled
                 int i = 0;
                 foreach(var benchmark in Benchmark.solvedBenchmarks)
                 {
-                    _spriteBatch.DrawString(Fonts.Andy_24pt, benchmark.Key + " = " + benchmark.Value + "ms" + " | " + (int)(benchmark.Value) + "ms", new Vector2(0, i * 64 * renderScale), Color.Red, 0, new(), 1.5f * renderScale, SpriteEffects.None, 1.0f);
+                    _spriteBatch.DrawString(Fonts.Andy_24pt, benchmark.Key + " = " + benchmark.Value + "ms" + " | " + (int)(benchmark.Value) + "ms", new Vector2(0, i * 64 * (renderScale / localCamera.zoom)), Color.Red, 0, new(), 1.5f * (renderScale / localCamera.zoom), SpriteEffects.None, 1.0f);
                     i++;
                 }
                 

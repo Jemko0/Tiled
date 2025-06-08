@@ -51,6 +51,8 @@ namespace Tiled.Input
             actionMappings.Add("inv_open", new ActionMapping(Keys.E));
             actionMappings.Add("esc_menu", new ActionMapping(Keys.Escape));
             actionMappings.Add("dbg_selfdmg", new ActionMapping(Keys.P));
+            actionMappings.Add("time_fwd", new ActionMapping(Keys.OemPeriod));
+            actionMappings.Add("time_bwd", new ActionMapping(Keys.OemComma));
         }
 
         /// <summary>

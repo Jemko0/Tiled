@@ -38,8 +38,8 @@ namespace Tiled.UI.UserWidgets
             progressText.AttachToParent(vb, DataStructures.AnchorPosition.Center);
 
             base.Construct();
-            World.maxTilesX = 8400;
-            World.maxTilesY = 2400;
+            World.maxTilesX = 8400 * 3;
+            World.maxTilesY = 2400 * 3;
             Program.GetGame().world.seed = 12345;
 
             Program.GetGame().world.StartWorldGeneration();

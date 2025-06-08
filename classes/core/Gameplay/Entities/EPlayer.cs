@@ -54,7 +54,8 @@ namespace Tiled.Gameplay
             Mappings.actionMappings["inv_open"].onActionMappingPressed += OpenInventory;
             Mappings.actionMappings["esc_menu"].onActionMappingPressed += OpenEsc;
             Mappings.actionMappings["dbg_selfdmg"].onActionMappingPressed += dbgSelfDamage;
-
+            Mappings.actionMappings["time_fwd"].onActionMappingPressed += TimeFwd;
+            Mappings.actionMappings["time_bwd"].onActionMappingPressed += TimeBwd;
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
 
@@ -80,6 +81,16 @@ namespace Tiled.Gameplay
             }
 #else
 #endif
+        }
+
+        private void TimeBwd(ActionMappingArgs e)
+        {
+            Program.GetGame().world.worldTime -= 100 * Main.delta;
+        }
+
+        private void TimeFwd(ActionMappingArgs e)
+        {
+            Program.GetGame().world.worldTime += 100 * Main.delta;
         }
 
         private void dbgSelfDamage(ActionMappingArgs e)

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Tiled.ID;
 using System.Linq;
 using Tiled.Collision;
+using Tiled.classes.core.Debug;
 
 namespace Tiled
 {
@@ -76,6 +77,7 @@ namespace Tiled
 
         private static void StartBackgroundProcessing()
         {
+            Benchmark.StartBenchmark("Lighting: Background Processing");
             var token = cancellationSource.Token;
             currentProcessingTask = Task.Run(async () =>
             {
@@ -117,11 +119,13 @@ namespace Tiled
                     }
                 }
             }, token);
+            Benchmark.EndBenchmark("Lighting: Background Processing");
         }
 
         // Called from your synchronous update method
         public static void Update()
         {
+            Benchmark.StartBenchmark("Lighting: Update");
             List<(int x, int y)> updates;
             lock (queueLock)
             {
@@ -134,10 +138,12 @@ namespace Tiled
             {
                 Task.Run(() => ProcessLightUpdatesAsync(updates, cancellationSource.Token));
             }
+            Benchmark.EndBenchmark("Lighting: Update");
         }
 
         private static async Task ProcessChunkAsync(int startX, int startY, int endX, int endY, CancellationToken token)
         {
+            Benchmark.StartBenchmark("Lighting: ProcessChunksAsync");
             for (int x = startX; x < endX; x++)
             {
                 for (int y = startY; y < endY; y++)
@@ -150,10 +156,12 @@ namespace Tiled
                     }
                 }
             }
+            Benchmark.EndBenchmark("Lighting: ProcessChunksAsync");
         }
 
         private static async Task ProcessLightUpdatesAsync(List<(int x, int y)> positions, CancellationToken token)
         {
+            Benchmark.StartBenchmark("Lighting: ProcessLightUpdatesAsync");
             Queue<(int x, int y)> propagationQueue = new Queue<(int x, int y)>();
 
             foreach (var pos in positions)
@@ -177,6 +185,7 @@ namespace Tiled
                 var (x, y) = propagationQueue.Dequeue();
                 PropagateLight(x, y, propagationQueue);
             }
+            Benchmark.EndBenchmark("Lighting: ProcessLightUpdatesAsync");
         }
 
         private static uint CalculateLight(int x, int y)
