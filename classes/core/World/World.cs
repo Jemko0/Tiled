@@ -602,7 +602,7 @@ namespace Tiled
             }
         */
 #else
-            if(!noBroadcast)
+            if(fromServer)
             {
                 TileChangePacket t = new TileChangePacket();
                 t.x = x;
