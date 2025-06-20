@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Tiled.DataStructures;
 
 namespace Tiled.Input
@@ -41,9 +42,14 @@ namespace Tiled.Input
         ButtonState lastMMBState = ButtonState.Released;
         #endregion
 
+
+        public delegate void MouseWheelAxis(float axis);
+        public static event MouseWheelAxis onMouseWheel;
+
         public static bool mouseHasItem = false;
         public static ContainerItem mouseItem;
         public static int mouseItemIndex = -1;
+        private float lastScroll;
 
         static Dictionary<Keys, bool> pressedKeys = new Dictionary<Keys, bool>();
         public void Update()
@@ -129,6 +135,12 @@ namespace Tiled.Input
 
             }
             #endregion
+
+
+            float wheelDelta = Mouse.GetState().ScrollWheelValue - lastScroll;
+            //Debug.WriteLine(wheelDelta);
+            onMouseWheel.Invoke(wheelDelta);
+            lastScroll = Mouse.GetState().ScrollWheelValue;
         }
 
         public void UpdateKeyboard()

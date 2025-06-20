@@ -8,10 +8,11 @@ using Tiled.Collision;
 using Tiled.DataStructures;
 using Tiled.Gameplay.Components;
 using Tiled.ID;
+using Tiled.Interfaces;
 
 namespace Tiled.Gameplay
 {
-    public class Entity : IDisposable
+    public class Entity : IDisposable, IDamageable
     {
         public Vector2 position;
         public Vector2 size;
@@ -151,6 +152,10 @@ namespace Tiled.Gameplay
 
         public virtual void MovementUpdate()
         {
+            if(collision == null)
+            {
+                return;
+            }
             if (canCollide)
             {
                 collision.Move();
@@ -191,6 +196,11 @@ namespace Tiled.Gameplay
             //entitySprite.Dispose();
             EventHelper.RemoveAllEventHandlers(this);
             collision = null;
+        }
+
+        public virtual void ApplyDamage(uint damage, int fromNetID)
+        {
+            return;
         }
     }
 }

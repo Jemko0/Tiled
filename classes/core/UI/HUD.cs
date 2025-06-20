@@ -19,6 +19,7 @@ namespace Tiled.UI
         protected GraphicsDeviceManager graphicsDeviceManager;
         public static List<Widget> activeWidgets = new List<Widget>();
         public static float DPIScale = 1.0f;
+        private RasterizerState _rasterizerState;
 
         public HUD(SpriteBatch sb, GraphicsDeviceManager gdm)
         {
@@ -70,6 +71,11 @@ namespace Tiled.UI
 #if !TILEDSERVER
             var title = CreateWidget<UWTitle>(this);
             title.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
+
+            _rasterizerState = new RasterizerState();
+            _rasterizerState.ScissorTestEnable = true;
+            _rasterizerState.MultiSampleAntiAlias = false;
+            _rasterizerState.CullMode = CullMode.CullCounterClockwiseFace;
 #else
             var text = CreateWidget<WText>(this);
             text.SetGeometry(new Vector2(1920, 1080), DataStructures.AnchorPosition.Center);
@@ -99,7 +105,7 @@ namespace Tiled.UI
         
         public void DrawWidgets()
         {
-            spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, SamplerState.PointClamp);
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, null, _rasterizerState);
 
             // Only draw widgets that don't have a parent (root widgets)
             for(int i = 0; i < activeWidgets.Count; i++)

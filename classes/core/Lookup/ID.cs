@@ -155,6 +155,12 @@ namespace Tiled.ID
                     entity.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/Player");
                     entity.size = new Vector2(20.0f, 40.0f);
                     break;
+
+                case EEntityType.Cow:
+                    entity.name = "cow";
+                    entity.sprite = Program.GetGame().Content.Load<Texture2D>("Entities/NPC/Cow");
+                    entity.size = new Vector2(40.0f, 20.0f);
+                    break;
             }
 
             return entity;

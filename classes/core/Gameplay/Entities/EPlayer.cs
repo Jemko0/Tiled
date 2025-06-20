@@ -13,6 +13,7 @@ using System.Diagnostics;
 using Tiled.Events;
 using Tiled.Gameplay.Components;
 using Tiled.UI.Widgets;
+using Tiled.Gameplay.Entities.AI;
 
 namespace Tiled.Gameplay
 {
@@ -96,6 +97,11 @@ namespace Tiled.Gameplay
         private void dbgSelfDamage(ActionMappingArgs e)
         {
             healthComponent.ApplyDamage(10, clientID);
+        }
+
+        public override void ApplyDamage(uint damage, int fromNetID)
+        {
+            healthComponent.ApplyDamage(damage, fromNetID);
         }
 
         private void DamageReceived(DamageEventArgs e)
@@ -395,6 +401,10 @@ namespace Tiled.Gameplay
 
             Point tile = Rendering.ScreenToTile(e.position);
             World.SetWall(tile.X, tile.Y, EWallType.Air);
+
+            var en = Entity.NewEntity<AIECow>();
+            en.Initialize(EEntityType.Cow);
+            en.position = position;
         }
 
         public void Jump()

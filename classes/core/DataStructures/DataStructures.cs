@@ -234,6 +234,7 @@ namespace Tiled.DataStructures
         None = 0,
         Entity,
         Player,
+        Cow,
     }
 
     public class ButtonPressArgs

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 
 namespace Tiled.UI.UserWidgets
 {
@@ -73,6 +74,26 @@ namespace Tiled.UI.UserWidgets
             exitBtnText.text = "Exit";
             exitBtnText.justification = DataStructures.ETextJustification.Center;
             exitBtnText.AttachToParent(exitBtn);
+
+            WScrollBox scrollbar = HUD.CreateWidget<WScrollBox>(owningHUD);
+            scrollbar.SetGeometry(new Vector2(500, 1000), null);
+            scrollbar.AttachToParent(this);
+            scrollbar.SetOffset(new Vector2(-700, -500));
+
+            for (int i = 0; i < 50; i++)
+            {
+                WButton b = HUD.CreateWidget<WButton>(owningHUD);
+                b.SetGeometry(new Vector2(0, new Random().NextSingle() + 1.0f * 48.0f), DataStructures.AnchorPosition.Center);
+                //b.layerDepth = 1.0f;
+                b.AttachToParent(scrollbar);
+
+                WText t = HUD.CreateWidget<WText>(owningHUD);
+                t.text = "SCROLL " + i;
+                t.fontScale = 0.5f;
+                t.justification = DataStructures.ETextJustification.Center;
+                t.AttachToParent(b);
+            }
+            
         }
 
         private void ExitBtn_onButtonPressed(DataStructures.ButtonPressArgs args)

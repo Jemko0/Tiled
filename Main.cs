@@ -77,7 +77,6 @@ namespace Tiled
             Mappings.InitializeMappings();
             entities = new List<Entity>();
             localPlayerController = new Controller();
-            
 
             Window.ClientSizeChanged += MainWindowResized;
 
