@@ -308,7 +308,7 @@ namespace Tiled
         {
             if (!tileData.useFrames)
             {
-                return new Rectangle(0, 0, TILESIZE, TILESIZE);
+                return new Rectangle(0, 0, 16, 16);
             }
 
             if (tileData.hangingOnWalls)
@@ -412,7 +412,7 @@ namespace Tiled
                     break;
             }
 
-            tileFramesCached[x, y] = new Rectangle(frameX, frameY, TILESIZE, TILESIZE);
+            tileFramesCached[x, y] = new Rectangle(frameX, frameY, 16, 16);
             return tileFramesCached[x, y];
         }
 

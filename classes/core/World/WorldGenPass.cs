@@ -139,7 +139,10 @@ namespace Tiled
                                 }
                             }
                             //World.walls[x, y] = EWallType.Dirt;
-                            World.tiles[x, y] = placeType;
+                            if(World.IsValidIndex(World.tiles, x, y))
+                            {
+                                World.tiles[x, y] = placeType;
+                            }
                         }
                     }
 

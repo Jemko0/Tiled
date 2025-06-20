@@ -53,6 +53,7 @@ namespace Tiled.Input
             actionMappings.Add("dbg_selfdmg", new ActionMapping(Keys.P));
             actionMappings.Add("time_fwd", new ActionMapping(Keys.OemPeriod));
             actionMappings.Add("time_bwd", new ActionMapping(Keys.OemComma));
+            actionMappings.Add("dbg_move", new ActionMapping(Keys.C));
         }
 
         /// <summary>

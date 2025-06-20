@@ -8,6 +8,7 @@ namespace Tiled.UI.UserWidgets
     {
         public Container container;
         public WWrapBox wrapBox;
+        public WScrollBox scrollBox;
 
         public bool renderFull = false;
         public UWContainerWidget(HUD owner) : base(owner)
@@ -16,8 +17,13 @@ namespace Tiled.UI.UserWidgets
 
         public override void Construct()
         {
+            scrollBox = HUD.CreateWidget<WScrollBox>(owningHUD);
+            scrollBox.SetGeometry(new Vector2(328, 512), DataStructures.AnchorPosition.TopLeft);
+            scrollBox.AttachToParent(this);
+
             wrapBox = HUD.CreateWidget<WWrapBox>(owningHUD);
-            wrapBox.AttachToParent(this);
+            wrapBox.SetGeometry(new Vector2(500, 10), DataStructures.AnchorPosition.Center);
+            wrapBox.AttachToParent(scrollBox);
             SetOpenInv(false);
         }
 
@@ -30,6 +36,7 @@ namespace Tiled.UI.UserWidgets
         {
             renderFull = open;
             wrapBox.maxChildIndex = open ? 512 : 5;
+            wrapBox.WrapEvery(open ? 5 : 5);
         }
 
         public void UpdateSlots()

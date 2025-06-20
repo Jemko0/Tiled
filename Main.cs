@@ -340,7 +340,11 @@ namespace Tiled
             _spriteBatch.Draw(sceneRT, new Rectangle(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height), Color.White);
 
             //Benchmark.EndBenchmark("Draw Scene Render Target");
-
+            if(localPlayerController.controlledEntity != null)
+            {
+                _spriteBatch.DrawString(Fonts.Andy_24pt, "TileX: " + localPlayerController.controlledEntity.position.X / World.TILESIZE + " " + "TileY: " + localPlayerController.controlledEntity.position.Y / World.TILESIZE, new Vector2(0, 4 + 24 * 2), Color.Yellow);
+                _spriteBatch.DrawString(Fonts.Andy_24pt, "X: " + localPlayerController.controlledEntity.position.X + " " + "Y: " + localPlayerController.controlledEntity.position.Y, new Vector2(0, 0), Color.Yellow);
+            }
             _spriteBatch.End();
 
             /*_spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointWrap);

@@ -27,7 +27,6 @@ namespace Tiled.Gameplay
         public int selectedSlot = 0;
         public int clientID = -1;
         public bool canUseItems = true;
-
         public bool invOpen;
         UWContainerWidget inventoryUI;
         public UWEscapeMenu escMenu;
@@ -37,6 +36,7 @@ namespace Tiled.Gameplay
 
         public EPlayer() : base() { }
 
+        bool debugMovement = false;
         public override void Begin()
         {
             base.Begin();
@@ -57,6 +57,7 @@ namespace Tiled.Gameplay
             Mappings.actionMappings["dbg_selfdmg"].onActionMappingPressed += dbgSelfDamage;
             Mappings.actionMappings["time_fwd"].onActionMappingPressed += TimeFwd;
             Mappings.actionMappings["time_bwd"].onActionMappingPressed += TimeBwd;
+            Mappings.actionMappings["dbg_move"].onActionMappingPressed += DebugMove;
             InputManager.onLeftMousePressed += LMB;
             InputManager.onRightMousePressed += RMB;
 
@@ -82,6 +83,11 @@ namespace Tiled.Gameplay
             }
 #else
 #endif
+        }
+
+        private void DebugMove(ActionMappingArgs e)
+        {
+            debugMovement = !debugMovement;
         }
 
         private void TimeBwd(ActionMappingArgs e)
@@ -244,8 +250,9 @@ namespace Tiled.Gameplay
             base.Update();
 
             float inputLR = Program.GetGame().localPlayerController.inputLR;
+            float inputUD = Program.GetGame().localPlayerController.inputUD;
 
-            velocity.Y += World.gravity;
+            velocity.Y += debugMovement? 0 : World.gravity;
 
             //if this player is not the local player
             if (Program.GetGame().localPlayerController.controlledEntity != this)
@@ -254,7 +261,15 @@ namespace Tiled.Gameplay
                 return;
             }
 
-            velocity.X = Math.Clamp(velocity.X + (accel * inputLR), -maxWalkSpeed, maxWalkSpeed);
+            if (!debugMovement)
+            {
+                velocity.X = Math.Clamp(velocity.X + (accel * inputLR), -maxWalkSpeed, maxWalkSpeed);
+            }
+            else
+            {
+                velocity.X += accel * inputLR;
+                velocity.Y += accel * inputUD;
+            }
 
             if(inputLR == 0)
             {

@@ -139,7 +139,7 @@ namespace Tiled.Input
 
             float wheelDelta = Mouse.GetState().ScrollWheelValue - lastScroll;
             //Debug.WriteLine(wheelDelta);
-            onMouseWheel.Invoke(wheelDelta);
+            onMouseWheel?.Invoke(wheelDelta);
             lastScroll = Mouse.GetState().ScrollWheelValue;
         }
 

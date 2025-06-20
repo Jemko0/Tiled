@@ -64,7 +64,10 @@ namespace Tiled.UI.UserWidgets
 
         public override void DrawWidget(ref SpriteBatch sb)
         {
-            sb.Draw(slotBg, scaledGeometry, null, Program.GetGame().GetLocalPlayer().selectedSlot == slotID? Color.LightSkyBlue : Color.MediumSlateBlue, 0, new(), SpriteEffects.None, 1.0f);
+            if(Program.GetGame().GetLocalPlayer() != null)
+            {
+                sb.Draw(slotBg, scaledGeometry, null, Program.GetGame().GetLocalPlayer().selectedSlot == slotID? Color.LightSkyBlue : Color.MediumSlateBlue, 0, new(), SpriteEffects.None, 1.0f);
+            }
 
             if(slotID > container.items.Length - 1)
             {

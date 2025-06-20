@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Diagnostics;
 
 namespace Tiled.UI
 {
@@ -10,8 +11,22 @@ namespace Tiled.UI
     public class WWrapBox : PanelWidget
     {
         int wrapEvery = 5;
+        float lowestY = 0;
         public WWrapBox(HUD owner) : base(owner)
         {
+        }
+
+        public void WrapEvery(int children)
+        {
+            lowestY = -1;
+            wrapEvery = children;
+        }
+
+        public override void DrawWidget(ref SpriteBatch sb)
+        {
+            base.DrawWidget(ref sb);
+            //Texture2D white = Program.GetGame().Content.Load<Texture2D>("Entities/Item/baseAxe");
+            //sb.Draw(white, scaledGeometry, Color.Blue);
         }
 
         public override void DrawChild(ref SpriteBatch sb, int childIdx)
@@ -33,6 +48,14 @@ namespace Tiled.UI
 
             children[childIdx].ScaleGeometry();
             children[childIdx].Draw(ref sb);
+
+            if(children[childIdx].GetSize().Y * row > lowestY)
+            {
+                lowestY = children[childIdx].GetSize().Y * row;
+                SetGeometry(new Vector2(GetSize().X, (int)lowestY), null);
+
+                //Debug.WriteLine("WRAP BOX LOWEST Y:" + lowestY);
+            }
         }
     }
 }

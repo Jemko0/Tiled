@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -59,6 +60,7 @@ namespace Tiled.Gameplay
                 return;
             }
             inputLR = 0.0f;
+            inputUD = 0.0f;
 
             if(Mappings.IsMappingHeld("move_left"))
             {
@@ -73,6 +75,15 @@ namespace Tiled.Gameplay
             if(Mappings.IsMappingHeld("move_left") && Mappings.IsMappingHeld("move_right"))
             {
                 inputLR = 0.0f;
+            }
+
+            if(Keyboard.GetState().IsKeyDown(Keys.W))
+            {
+                inputUD = -1.0f;
+            }
+            if (Keyboard.GetState().IsKeyDown(Keys.S))
+            {
+                inputUD = 1.0f;
             }
         }
     }
