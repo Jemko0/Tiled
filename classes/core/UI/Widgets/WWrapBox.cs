@@ -53,8 +53,6 @@ namespace Tiled.UI
             {
                 lowestY = children[childIdx].GetSize().Y * row;
                 SetGeometry(new Vector2(GetSize().X, (int)lowestY), null);
-
-                //Debug.WriteLine("WRAP BOX LOWEST Y:" + lowestY);
             }
         }
     }

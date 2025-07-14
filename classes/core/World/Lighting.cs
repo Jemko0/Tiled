@@ -196,7 +196,7 @@ namespace Tiled
             {
                 return entity.light;
             }*/
-            
+
             var tile = TileID.GetTile(World.tiles[x, y]);
 
             // Check if tile is a light source

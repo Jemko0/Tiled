@@ -82,9 +82,7 @@ namespace Tiled.UI
                 scrollBarRect.Y = (int)MathHelper.LerpPrecise(scaledGeometry.Y, (scaledGeometry.Y + scaledGeometry.Height) - scrollBarHeight, scrollOffset);
 
                 sb.Draw(scrollBarTexture, new Rectangle(scaledGeometry.X + scaledGeometry.Width, scaledGeometry.Y, (int)(scrollBarWidth * HUD.DPIScale), scaledGeometry.Height), new Color(0.2f, 0.2f, 0.2f));
-                //sb.DrawString(Font.Fonts.Andy_24pt, "IsOverflowing: " + IsOverflowing().ToString(), new(scaledGeometry.X, scaledGeometry.Y), Color.Yellow);
 
-                //Draw Scrollbar
                 Color scrollBarColor = IsScrollbarHovered() || isDragged ? new Color(1.0f, 1.0f, 1.0f) : new Color(0.9f, 0.9f, 0.9f);
                 sb.Draw(scrollBarTexture, scrollBarRect, scrollBarColor);
             }

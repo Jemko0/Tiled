@@ -422,6 +422,11 @@ namespace Tiled.Gameplay
             en.position = position;
         }
 
+        public override void Initialize(EEntityType type)
+        {
+            base.Initialize(type);
+        }
+
         public void Jump()
         {
             velocity.Y = -jumpPower;
